@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 root=Path('.')
 
 def rw(rel, old, new):
@@ -39,8 +40,13 @@ rw('src/ui/update-ui.js',"version:'0.19.11'","version:'0.19.12'")
 rw('src/ui/role-ux.js',"active:true,version:'0.19.11'","active:true,version:'0.19.12'")
 rw('src/ui/role-ux.js',"||'0.19.11'","||'0.19.12'")
 rw('src/ui/role-ux.js',"K.roleUx={version:'0.19.11'","K.roleUx={version:'0.19.12'")
-rw('index.html','src/core/update-manager.js?v=0.19.10','src/core/update-manager.js?v=0.19.12')
-rw('index.html','src/ui/update-ui.js?v=0.19.10','src/ui/update-ui.js?v=0.19.12')
+
+p=root/'index.html'; s=p.read_text(encoding='utf-8')
+s,n1=re.subn(r'src/core/update-manager\.js\?v=0\.19\.(?:10|11)', 'src/core/update-manager.js?v=0.19.12', s, count=1)
+s,n2=re.subn(r'src/ui/update-ui\.js\?v=0\.19\.(?:10|11)', 'src/ui/update-ui.js?v=0.19.12', s, count=1)
+if n1!=1 or n2!=1: raise SystemExit(f'index cache-buster migration failed: manager={n1} ui={n2}')
+p.write_text(s,encoding='utf-8')
+
 rw('service-worker.js','./src/core/update-manager.js?v=0.19.11','./src/core/update-manager.js?v=0.19.12')
 rw('service-worker.js','./src/ui/update-ui.js?v=0.19.11','./src/ui/update-ui.js?v=0.19.12')
 (root/'RELEASE.txt').write_text('KC-DP2 0.19.12\n',encoding='utf-8')
