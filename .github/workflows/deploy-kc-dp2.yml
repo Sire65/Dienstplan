@@ -89,7 +89,7 @@ jobs:
           root=Path('build/site');m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
           assert m['version']=='0.19.6';total=0
           for f in m['files']:
-              p=root[f['installPath']];data=p.read_bytes();h=hashlib.sha256(data).hexdigest()
+              p=root/f['installPath'];data=p.read_bytes();h=hashlib.sha256(data).hexdigest()
               if len(data)!=f['bytes'] or h!=f['sha256']: raise SystemExit(f'Integrität falsch: {f["installPath"]}')
               if f.get('runtime') is not False:
                   r=root/f['path']
