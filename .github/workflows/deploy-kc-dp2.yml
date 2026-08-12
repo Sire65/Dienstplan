@@ -30,10 +30,11 @@ jobs:
           VERSION="$(jq -r '.version' release/current.json)"
           RELEASE_FILE="$(jq -r '.release' release/current.json)"
           EXPECTED_SHA="$(jq -r '.sha256' release/current.json)"
-
           mkdir -p "$(dirname "$RELEASE_FILE")" build/unpacked build/site
 
-          cat release/v0.19.0/part{00..10}.b64 \
+          cat release/v0.19.0/part{00..07}.b64 \
+              release/v0.19.0/fix08/part{00..02}.b64 \
+              release/v0.19.0/part{09..10}.b64 \
               release/v0.19.0/tail8/part{00..12}.b64 \
               release/v0.19.0/tail1k/part{000..040}.b64 \
               > /tmp/kc-dp2-release.b64
@@ -46,22 +47,12 @@ jobs:
 
           base64 --decode /tmp/kc-dp2-release.b64 > "$RELEASE_FILE"
           echo "$EXPECTED_SHA  $RELEASE_FILE" | sha256sum -c -
-
           unzip -q "$RELEASE_FILE" -d build/unpacked
           TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
-          if [ -n "$TOP" ]; then
-            cp -a "$TOP"/. build/site/
-          else
-            cp -a build/unpacked/. build/site/
-          fi
-
+          if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
           for REQUIRED in index.html manifest.webmanifest service-worker.js update-manifest.json; do
-            test -f "build/site/$REQUIRED" || {
-              echo "::error::Pflichtdatei fehlt: $REQUIRED"
-              exit 21
-            }
+            test -f "build/site/$REQUIRED" || { echo "::error::Pflichtdatei fehlt: $REQUIRED"; exit 21; }
           done
-
           printf 'KC-DP2 %s\n' "$VERSION" > build/site/RELEASE.txt
           touch build/site/.nojekyll
 
@@ -83,7 +74,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Reconstruct verified site for Pages
         shell: bash
         run: |
@@ -92,7 +82,9 @@ jobs:
           EXPECTED_SHA="$(jq -r '.sha256' release/current.json)"
           VERSION="$(jq -r '.version' release/current.json)"
           mkdir -p "$(dirname "$RELEASE_FILE")" build/unpacked build/site
-          cat release/v0.19.0/part{00..10}.b64 \
+          cat release/v0.19.0/part{00..07}.b64 \
+              release/v0.19.0/fix08/part{00..02}.b64 \
+              release/v0.19.0/part{09..10}.b64 \
               release/v0.19.0/tail8/part{00..12}.b64 \
               release/v0.19.0/tail1k/part{000..040}.b64 \
               > /tmp/kc-dp2-release.b64
@@ -105,15 +97,12 @@ jobs:
           for REQUIRED in index.html manifest.webmanifest service-worker.js update-manifest.json; do test -f "build/site/$REQUIRED"; done
           printf 'KC-DP2 %s\n' "$VERSION" > build/site/RELEASE.txt
           touch build/site/.nojekyll
-
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: build/site
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
