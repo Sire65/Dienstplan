@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - release-v019-staging
+      - release-v0191-staging
   workflow_dispatch:
 
 permissions:
@@ -23,46 +23,78 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Reconstruct and verify KC-DP2 V0.19.0
+      - name: Reconstruct verified V0.19.0 base
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="$(jq -r '.version' release/current.json)"
-          RELEASE_FILE="$(jq -r '.release' release/current.json)"
-          EXPECTED_SHA="$(jq -r '.sha256' release/current.json)"
-          mkdir -p "$(dirname "$RELEASE_FILE")" build/unpacked build/site
-
+          mkdir -p build/unpacked build/site
           cat release/v0.19.0/part{00..07}.b64 \
               release/v0.19.0/fix08/part{00..02}.b64 \
               release/v0.19.0/part{09..10}.b64 \
               release/v0.19.0/tail8/part{00..12}.b64 \
               release/v0.19.0/tail1k/part{000..040}.b64 \
-              > /tmp/kc-dp2-release.b64
-
-          ACTUAL_B64="$(wc -c < /tmp/kc-dp2-release.b64 | tr -d ' ')"
-          if [ "$ACTUAL_B64" != "318168" ]; then
-            echo "::error::Base64-Laenge ist $ACTUAL_B64 statt 318168. Deployment gestoppt."
-            exit 20
-          fi
-
-          base64 --decode /tmp/kc-dp2-release.b64 > "$RELEASE_FILE"
-          echo "$EXPECTED_SHA  $RELEASE_FILE" | sha256sum -c -
-          unzip -q "$RELEASE_FILE" -d build/unpacked
+              > /tmp/kc-dp2-v0190.b64
+          test "$(wc -c < /tmp/kc-dp2-v0190.b64 | tr -d ' ')" = "318168"
+          base64 --decode /tmp/kc-dp2-v0190.b64 > /tmp/kc-dp2-v0190.zip
+          echo "246c8ef625280337d4ba309e34862c2fdce2ba8023313f2d9f75426cf1ffc80e  /tmp/kc-dp2-v0190.zip" | sha256sum -c -
+          unzip -q /tmp/kc-dp2-v0190.zip -d build/unpacked
           TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
           if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
-          for REQUIRED in index.html manifest.webmanifest service-worker.js update-manifest.json; do
-            test -f "build/site/$REQUIRED" || { echo "::error::Pflichtdatei fehlt: $REQUIRED"; exit 21; }
-          done
-          printf 'KC-DP2 %s\n' "$VERSION" > build/site/RELEASE.txt
+
+      - name: Apply KC-DP2 V0.19.1 delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.1/apply.py")
+          cat release/v0.19.1/assets/startbild-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
+          cat release/v0.19.1/assets/logo-*.b64 | base64 --decode > build/site/assets/kc-login-logo.webp
+          cp release/v0.19.1/update-manifest.json build/site/update-manifest.json
+          printf 'KC-DP2 0.19.1\n' > build/site/RELEASE.txt
           touch build/site/.nojekyll
+
+      - name: Verify KC-DP2 V0.19.1 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          root=Path('build/site')
+          manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          assert manifest['schema']=='KC_DP_UPDATE_MANIFEST_V1'
+          assert manifest['app']=='KC-DP2'
+          assert manifest['version']=='0.19.1'
+          total=0
+          checked=0
+          for item in manifest['files']:
+              p=root/item['path']
+              if not p.is_file():
+                  raise SystemExit(f"Pflichtdatei fehlt: {item['path']}")
+              data=p.read_bytes()
+              if len(data)!=item['bytes']:
+                  raise SystemExit(f"Dateigroesse falsch: {item['path']} {len(data]} != {item['bytes']}")
+              actual=hashlib.sha256(data).hexdigest()
+              if actual!=item['sha256']:
+                  raise SystemExit(f"SHA-256 falsch: {item['path']} {actual} != {item['sha256']}")
+              if item.get('runtime'):
+                  total+=len(data)
+              checked+=1
+          if total!=manifest['totalRuntimeBytes']:
+              raise SystemExit(f"Runtime-Groesse falsch: {total} != {manifest['totalRuntimeBytes']}")
+          for required in ('index.html','manifest.webmanifest','service-worker.js','update-manifest.json'):
+              if not (root/required).is_file():
+                  raise SystemExit(f"Pflichtdatei fehlt: {required}")
+          print(f"KC-DP2 V0.19.1 manifest verification OK: {checked} Dateien, {total} Runtime-Bytes")
+          PY
 
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site
+          name: kc-dp2-verified-site-v0191
           path: build/site
           if-no-files-found: error
           retention-days: 2
+          include-hidden-files: true
 
   deploy:
     if: github.ref == 'refs/heads/main'
@@ -72,31 +104,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Reconstruct verified site for Pages
-        shell: bash
-        run: |
-          set -euo pipefail
-          RELEASE_FILE="$(jq -r '.release' release/current.json)"
-          EXPECTED_SHA="$(jq -r '.sha256' release/current.json)"
-          VERSION="$(jq -r '.version' release/current.json)"
-          mkdir -p "$(dirname "$RELEASE_FILE")" build/unpacked build/site
-          cat release/v0.19.0/part{00..07}.b64 \
-              release/v0.19.0/fix08/part{00..02}.b64 \
-              release/v0.19.0/part{09..10}.b64 \
-              release/v0.19.0/tail8/part{00..12}.b64 \
-              release/v0.19.0/tail1k/part{000..040}.b64 \
-              > /tmp/kc-dp2-release.b64
-          test "$(wc -c < /tmp/kc-dp2-release.b64 | tr -d ' ')" = "318168"
-          base64 --decode /tmp/kc-dp2-release.b64 > "$RELEASE_FILE"
-          echo "$EXPECTED_SHA  $RELEASE_FILE" | sha256sum -c -
-          unzip -q "$RELEASE_FILE" -d build/unpacked
-          TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
-          if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
-          for REQUIRED in index.html manifest.webmanifest service-worker.js update-manifest.json; do test -f "build/site/$REQUIRED"; done
-          printf 'KC-DP2 %s\n' "$VERSION" > build/site/RELEASE.txt
-          touch build/site/.nojekyll
+      - name: Download verified site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kc-dp2-verified-site-v0191
+          path: build/site
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
       - name: Upload Pages artifact
