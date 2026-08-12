@@ -3,7 +3,6 @@ import base64,zlib,hashlib,subprocess
 root=Path('.')
 repo=Path(__file__).resolve().parent
 old={
-'index.html':'40a42a5fb3026cd3f40e0586c4371bf1b06852891a0de2b97362243115a34dd2',
 'service-worker.js':'b827c9973d8c19b164c50e5a249814359290a465a83f8b4b3f9b5feae188e302',
 'src/adapters/storage.js':'8f7814791638f878e4ee06bd7bdfef7b584f1b99099b80b1cc1f5e844bacde46',
 'src/ui/app.js':'35e4278ea6d0ed2dfc12912f8f49a38ae2a8421ec2faade18a4646497e7a37b5',
@@ -21,6 +20,9 @@ new={
 for rel,want in old.items():
     got=hashlib.sha256((root/rel).read_bytes()).hexdigest()
     if got!=want: raise SystemExit(f'V0.19.12 base hash mismatch: {rel} {got} != {want}')
+index_before=hashlib.sha256((root/'index.html').read_bytes()).hexdigest()
+if index_before not in {'40a42a5fb3026cd3f40e0586c4371bf1b06852891a0de2b97362243115a34dd2','70627147dcd5ee4859d19519db59c8f2bcb1f7fbf5d9731a9d174e96ddac1aee'}:
+    raise SystemExit(f'unknown V0.19.12 index variant: {index_before}')
 payload=''.join((repo/'patch'/f'part{i:02d}.b64').read_text() for i in range(8))
 patch=zlib.decompress(base64.b64decode(payload))
 subprocess.run(['patch','-p0','--batch','--forward'],cwd=root,input=patch,check=True)
