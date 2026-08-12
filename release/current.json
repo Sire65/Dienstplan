@@ -1,10 +1,10 @@
 {
   "app": "KC-DP2",
-  "version": "0.19.5",
-  "mode": "login-finish-update-test",
-  "baseVersion": "0.19.4",
-  "previousVersion": "0.19.4",
-  "webReleaseSha256": "6121b26519f68e94d2eaa2b3afaa59424f6cac897d5d0e5c658761fce5ce05d9",
-  "manifest": "release/v0.19.5/update-manifest.json",
-  "releasedAt": "2026-08-12T11:03:00Z"
+  "version": "0.19.6",
+  "mode": "login-background-fix",
+  "baseVersion": "0.19.5",
+  "previousVersion": "0.19.5",
+  "webReleaseSha256": "481df996b6212e3488d47c1c8740eb1cfdc1f955839341d32a642c4a8333eaa3",
+  "releaseScript": "release/v0.19.6/apply.py",
+  "releasedAt": "2026-08-12T11:36:30Z"
 }
