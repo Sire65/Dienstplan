@@ -1,0 +1,37 @@
+from pathlib import Path
+root=Path('.')
+
+def edit(rel,fn):
+ p=root/rel;s=p.read_text(encoding='utf-8');p.write_text(fn(s),encoding='utf-8')
+
+for rel in ['index.html','src/core/update-manager.js','src/ui/update-ui.js','service-worker.js']:
+ edit(rel,lambda s:s.replace('0.19.3','0.19.4'))
+
+def role_patch(s):
+ old="function loginFrame(inner){setBody('ux-login');root().innerHTML=`<div class=\"ux-login-shell\"><section class=\"ux-login-card\">${logo()}${inner}<div class=\"ux-credit\">Erstellt und Designed by: Hans-Joachim Koch</div></section></div>`;}"
+ new="function loginFrame(inner){setBody('ux-login');const rel=esc(K.updateManager?.CURRENT_RELEASE||K.APP_RELEASE||'0.19.4');root().innerHTML=`<div class=\"ux-login-shell\"><section class=\"ux-login-card\">${logo()}${inner}<div class=\"ux-login-system\"><span>KC-DP2 <b>V${rel}</b></span><button class=\"ux-link\" id=\"uxUpdateCheck\" type=\"button\">Update prüfen</button></div><div class=\"ux-credit\">Erstellt und Designed by: Hans-Joachim Koch</div></section></div>`;const ub=$('uxUpdateCheck');if(ub)ub.onclick=async()=>{const old=ub.textContent;ub.disabled=true;ub.textContent='Prüft…';try{if(K.updateUi?.checkNow)await K.updateUi.checkNow();else await K.updateManager?.check?.({manual:true});}finally{setTimeout(()=>{if(ub.isConnected){ub.disabled=false;ub.textContent=old;}},900);}};}"
+ if old not in s: raise SystemExit('loginFrame target missing')
+ s=s.replace(old,new,1)
+ old='<input id=\"uxEmail\" type=\"email\" autocomplete=\"username\" required placeholder=\"z. B. mitglied@koecheclub-werne.de\">'
+ new='<input id=\"uxEmail\" name=\"kc_dp_member_email\" type=\"email\" autocomplete=\"email\" autocapitalize=\"none\" spellcheck=\"false\" required placeholder=\"z. B. mitglied@koecheclub-werne.de\">'
+ if old not in s: raise SystemExit('email target missing')
+ s=s.replace(old,new,1)
+ old=" $('uxLoginForm').onsubmit=async e=>{e.preventDefault();"
+ new=" const email=$('uxEmail');const scrubBadAutofill=()=>{if(!email)return;const v=String(email.value||'').trim();if(/^https?:\\/\\//i.test(v)||/supabase\\.co/i.test(v))email.value='';};scrubBadAutofill();let scrubN=0;const scrubTimer=setInterval(()=>{scrubBadAutofill();if(++scrubN>=12)clearInterval(scrubTimer);},250);email?.addEventListener('focus',scrubBadAutofill);\n $('uxLoginForm').onsubmit=async e=>{e.preventDefault();"
+ if old not in s: raise SystemExit('submit target missing')
+ return s.replace(old,new,1)
+edit('src/ui/role-ux.js',role_patch)
+
+def css_patch(s):
+ marker='/* V0.19.1 LOGIN-STARTBILD */'
+ i=s.find(marker)
+ if i<0: raise SystemExit('css marker missing')
+ return s[:i]+'/* V0.19.4 LOGIN-SZENE: keine eingebrannte zweite Login-Karte */\nbody.ux-login{background:#e7e1da;color:var(--ux-ink);overflow-x:hidden}\nbody.ux-login #kcdpUxRoot{min-height:100dvh;background:linear-gradient(180deg,#eee9e3,#dfd7cf);padding:1px 0;box-sizing:border-box}\nbody.ux-login .ux-login-shell{\n  width:min(1480px,calc(100vw - 36px));height:min(900px,calc(100dvh - 32px));min-height:720px;\n  margin:16px auto;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;\n  position:relative;overflow:hidden;border-radius:30px;background:linear-gradient(90deg,#342a24 0%,#eee7df 32%,#f5f0ea 50%,#eee7df 68%,#342a24 100%);\n  box-shadow:0 24px 70px rgba(48,35,26,.22);\n}\nbody.ux-login .ux-login-shell:before,body.ux-login .ux-login-shell:after{\n  content:"";position:absolute;top:0;bottom:0;width:35%;height:auto;border:0;border-radius:0;opacity:.96;z-index:0;\n  background-repeat:no-repeat;background-size:380% auto;pointer-events:none;\n}\nbody.ux-login .ux-login-shell:before{left:0;background-image:linear-gradient(90deg,rgba(25,18,14,.04),rgba(25,18,14,.18)),url("../../assets/kc-login-startbild.webp");background-position:left center}\nbody.ux-login .ux-login-shell:after{right:0;background-image:linear-gradient(270deg,rgba(25,18,14,.03),rgba(25,18,14,.18)),url("../../assets/kc-login-startbild.webp");background-position:right center}\nbody.ux-login .ux-login-card{\n  width:min(590px,100%);max-height:calc(100% - 20px);overflow:auto;background:rgba(255,251,247,.98);backdrop-filter:blur(8px);\n  border:1px solid rgba(255,255,255,.82);box-shadow:0 24px 60px rgba(0,0,0,.22);border-radius:28px;padding:20px 26px 16px;position:relative;z-index:2;\n}\nbody.ux-login .ux-brand{text-align:center;margin:0 0 5px}\nbody.ux-login .ux-logo-banner{width:min(205px,56%);height:auto;display:block;margin:0 auto 2px;border-radius:10px}\nbody.ux-login .ux-brand .ux-club{font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,3.5vw,38px);font-weight:700;color:var(--ux-bordeaux);line-height:1.04;margin-top:1px}\nbody.ux-login .ux-login-card h1{margin:8px 0 6px;text-align:center;color:var(--ux-bordeaux);font-size:clamp(25px,3.2vw,36px);line-height:1.08}\nbody.ux-login .ux-login-card .ux-lead{text-align:center;color:#68615c;font-size:clamp(16px,1.8vw,19px);margin:0 0 14px}\nbody.ux-login .ux-field{margin:10px 0}\nbody.ux-login .ux-field input::placeholder{color:#aaa39c;opacity:.58}\nbody.ux-login .ux-note{margin-top:10px;background:#f7eedb;border:1px solid #e7ce8b;color:#635547}\nbody.ux-login .ux-login-system{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:7px;color:#8a8179;font-size:12px}\nbody.ux-login .ux-login-system .ux-link{font-size:12px;padding:5px 7px;color:#7a1420}\nbody.ux-login .ux-credit{color:#8d847d;font-size:11px;margin-top:8px}\n@media(max-width:1000px){\n  body.ux-login .ux-login-shell{width:calc(100vw - 20px);height:calc(100dvh - 20px);margin:10px auto;min-height:680px;border-radius:24px}\n  body.ux-login .ux-login-shell:before,body.ux-login .ux-login-shell:after{width:39%;opacity:.82}\n  body.ux-login .ux-login-card{width:min(560px,calc(100% - 24px));padding:18px 22px 14px}\n}\n@media(max-width:760px){\n  body.ux-login #kcdpUxRoot{padding:0}\n  body.ux-login .ux-login-shell{width:100%;min-height:100dvh;height:auto;margin:0;border-radius:0;padding:12px;background:#eee7df}\n  body.ux-login .ux-login-shell:before,body.ux-login .ux-login-shell:after{width:50%;opacity:.16;filter:saturate(.8)}\n  body.ux-login .ux-login-card{width:min(560px,100%);max-height:none;padding:17px 16px 13px;border-radius:22px}\n  body.ux-login .ux-logo-banner{width:min(190px,62%)}\n  body.ux-login .ux-brand .ux-club{font-size:clamp(24px,7vw,34px)}\n  body.ux-login .ux-login-card h1{font-size:clamp(22px,6.6vw,32px)}\n}\n@media(max-width:520px){body.ux-login .ux-login-shell:before,body.ux-login .ux-login-shell:after{display:none}}\n'
+edit('src/ui/role-ux.css',css_patch)
+
+def mgr_patch(s):
+ old="function schedule(){ensureEngine();setTimeout(confirmBoot,8000);setTimeout(()=>{flushQueuedReports();check();},6000);setInterval(()=>flushQueuedReports(),15*60*1000);setInterval(()=>check(),30*60*1000);window.addEventListener('online',()=>{flushQueuedReports();check();});}"
+ new="function schedule(){ensureEngine();setTimeout(confirmBoot,5000);setTimeout(()=>{flushQueuedReports();check();},1500);setInterval(()=>flushQueuedReports(),15*60*1000);setInterval(()=>check(),30*60*1000);window.addEventListener('online',()=>{flushQueuedReports();check();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const last=Date.parse(state.lastCheckAt||0)||0;if(Date.now()-last>60000)check();}});}"
+ if old not in s: raise SystemExit('schedule target missing')
+ return s.replace(old,new,1)
+edit('src/core/update-manager.js',mgr_patch)
