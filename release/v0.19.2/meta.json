@@ -1,0 +1,12 @@
+{
+  "version": "0.19.2",
+  "cacheName": "kc-dp-release-0.19.2",
+  "generatedAt": "2026-08-12T09:42:34.014790+00:00",
+  "releaseNotes": [
+    "Update-Engine-Hotfix: Update-Dateien werden zwingend frisch aus dem Netzwerk geladen",
+    "Verhindert SHA-256-Fehler durch alten Service-Worker-Cache",
+    "Neuer Service Worker aktiviert sich sofort und übernimmt bestehende Clients",
+    "Neuer kulinarischer KC-DP2-Anmeldebildschirm",
+    "Sichere Update-Erkennung mit SHA-256 und Rückfall"
+  ]
+}
