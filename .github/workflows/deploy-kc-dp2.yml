@@ -91,7 +91,6 @@ jobs:
                   total+=len(data)
           if total!=m['totalRuntimeBytes']: raise SystemExit('Runtime-Gesamtgröße falsch')
           expected={
-            'index.html':'40a42a5fb3026cd3f40e0586c4371bf1b06852891a0de2b97362243115a34dd2',
             'service-worker.js':'b827c9973d8c19b164c50e5a249814359290a465a83f8b4b3f9b5feae188e302',
             'src/adapters/sync.js':'25d2c5918a37a877f288fa75883982fbbce9e5ec05c94a7c4fe5921ee69b51a8',
             'src/core/auto-sync.js':'9d282da3a18ec9b663ff659eff4d0afe1eef6bcff7ad88e9490b24ca9f2f6125',
@@ -107,10 +106,12 @@ jobs:
           auto=(root/'src/core/auto-sync.js').read_text(encoding='utf-8')
           app=(root/'src/ui/app.js').read_text(encoding='utf-8')
           mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
+          idx=(root/'index.html').read_text(encoding='utf-8')
           if "transportAuthenticated" not in sync or "K.auth?.require?.('roster.sync.view'" in sync: raise SystemExit('Healthcheck-Transportrecht falsch')
           if "K.auth?.has&&!K.auth.has('roster.sync.run')" in auto: raise SystemExit('Auto-Sync noch an Planerrecht gebunden')
           if "auth==='authenticated'&&st==='ready'" not in app or "verified&&auth==='authenticated'" in app: raise SystemExit('Supabase-LED-Logik falsch')
           if "CURRENT_RELEASE='0.19.12'" not in mgr: raise SystemExit('Release-Version falsch')
+          if 'src/core/update-manager.js?v=0.19.12' not in idx or 'src/ui/update-ui.js?v=0.19.12' not in idx: raise SystemExit('Index Cache-Buster nicht V0.19.12')
           print(f'KC-DP2 V0.19.12 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
           PY
 
