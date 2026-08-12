@@ -1,10 +1,10 @@
 {
   "app": "KC-DP2",
-  "version": "0.19.3",
-  "mode": "bootstrap-recovery",
-  "baseVersion": "0.19.2",
-  "previousVersion": "0.19.2",
-  "webReleaseSha256": "6811ea5518973da99028746fed61be28478cd9b62e3b928a2d943e4da6c418af",
-  "manifest": "release/v0.19.3/update-manifest.json",
-  "releasedAt": "2026-08-12T10:03:00Z"
+  "version": "0.19.4",
+  "mode": "login-update-ux-hotfix",
+  "baseVersion": "0.19.3",
+  "previousVersion": "0.19.3",
+  "webReleaseSha256": "7b84711a897318a0691f4ff91ada23237111c828a1015cad31e53e4a7e272da9",
+  "releaseMeta": "release/v0.19.4/meta.json",
+  "releasedAt": "2026-08-12T10:28:00Z"
 }
