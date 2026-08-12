@@ -2,7 +2,7 @@ name: KC-DP2 Verified Web Release
 
 on:
   push:
-    branches: [main, release-v01911-staging]
+    branches: [main, release-v01912-staging]
   workflow_dispatch:
 
 permissions:
@@ -34,7 +34,7 @@ jobs:
           TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
           if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
 
-      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.11
+      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.12
         shell: bash
         run: |
           set -euo pipefail
@@ -46,11 +46,9 @@ jobs:
           (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.8/apply.py")
           cat release/v0.19.8/assets/bg-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
           echo "c2e250d35eba2a098cd27af353820c56e8da305998321573a1119579e077dee9  build/site/assets/kc-login-startbild.webp" | sha256sum -c -
-          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.9/apply.py")
-          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.10/apply.py")
-          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.11/apply.py")
+          for v in 0.19.9 0.19.10 0.19.11 0.19.12; do (cd build/site && python3 "$GITHUB_WORKSPACE/release/v${v}/apply.py"); done
 
-      - name: Build V0.19.11 recovery manifest and files
+      - name: Build V0.19.12 recovery manifest and files
         shell: bash
         run: |
           set -euo pipefail
@@ -65,17 +63,17 @@ jobs:
               install=old.get('installPath') or old['path']; p=root/install
               if not p.is_file(): raise SystemExit(f'Kanonische Datei fehlt: {install}')
               data=p.read_bytes(); runtime=old.get('runtime') is not False
-              item={'path':f'__update/0.19.11/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}
+              item={'path':f'__update/0.19.12/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}
               files.append(item)
               if runtime:
                   dst=root/item['path']; dst.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,dst); total+=len(data)
-          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.11','cacheName':'kc-dp-release-0.19.11','releaseNotes':['Admin-Testszenario mit zwei echten Supabase-Mitarbeiterkonten','Testmitglied 2 besitzt für jeden Veranstaltungstag vorbereitete Wunschzeiten','Kollegensuche und Übernahme können real als Mitarbeiter getestet werden','Zufällige Testpasswörter werden nur einmal angezeigt und nicht gespeichert','Testszenario kann durch den Administrator vollständig entfernt werden'],'generatedAt':'2026-08-12T16:25:00Z','totalRuntimeBytes':total,'files':files}
+          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.12','cacheName':'kc-dp-release-0.19.12','releaseNotes':['Supabase-LED: ready + authenticated bleibt grün; blau nur bei Prüfung/Sync; rot nur bei echtem Fehler','Healthcheck ist für jeden angemeldeten KC-DP2-Benutzer möglich','Transport-Synchronisation für Mitarbeiter freigegeben; fachliche Schreibrechte bleiben durch Supabase-RLS geschützt','Cache-Buster der Update-Engine vereinheitlicht'],'generatedAt':'2026-08-12T17:10:00Z','totalRuntimeBytes':total,'files':files}
           (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          (root/'RELEASE.txt').write_text('KC-DP2 0.19.11\n',encoding='utf-8')
+          (root/'RELEASE.txt').write_text('KC-DP2 0.19.12\n',encoding='utf-8')
           (root/'.nojekyll').touch()
           PY
 
-      - name: Verify KC-DP2 V0.19.11
+      - name: Verify KC-DP2 V0.19.12
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +81,7 @@ jobs:
           from pathlib import Path
           import hashlib,json
           root=Path('build/site'); m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert m['version']=='0.19.11'; total=0
+          assert m['version']=='0.19.12'; total=0
           for f in m['files']:
               data=(root/f['installPath']).read_bytes(); h=hashlib.sha256(data).hexdigest()
               if len(data)!=f['bytes'] or h!=f['sha256']: raise SystemExit(f'Integrität falsch: {f["installPath"]}')
@@ -93,40 +91,33 @@ jobs:
                   total+=len(data)
           if total!=m['totalRuntimeBytes']: raise SystemExit('Runtime-Gesamtgröße falsch')
           expected={
-            'index.html':'20ce43cdd92461881946378fc6731401e05f35765c57a18b9352a4a14d3b73a5',
-            'service-worker.js':'996af0286b6801d457d6fb6081c67c984ffb728496dc9e9bd03e2b4608acb37e',
-            'src/core/update-manager.js':'8742611f1eaae09514ef82f3ec872d8f4a8d0d9c08e5bd7bcec0023cd5d24632',
-            'src/ui/update-ui.js':'d9adef644921bd48510a82760f9ab22ec8ade1e1192514ceac1e870e0bc495b2',
-            'src/ui/role-ux.js':'b4a2b4db922364daac10ee68142cc6494fbc9e6f05c6449dd5fd9dd705b1274a',
-            'src/core/member-access.js':'a9f14e8ce07b01069f493abf98ba7e50f90fa1c71a924515f73b7955d33e5f38',
-            'src/adapters/supabase-provider.js':'8725fcd90e928b94316465e7292281f3a5cce2772b67280d491f46c29a72deaf',
-            'src/core/integrations.js':'4c797404a1d256d4e819fa601db5b0cb02931e5635a7c85ddfe8607b3ed5aa38',
-            'src/ui/app.js':'712a7be524ed01c33e39606c7cdb127d5cae6974f72398441965bbed997e5bf3',
-            'src/ui/app.css':'44b9e72286055533282a171237ba76a1455fcdd921ec085bca34ddd54486075e',
-            'src/adapters/storage.js':'8f7814791638f878e4ee06bd7bdfef7b584f1b99099b80b1cc1f5e844bacde46',
-            'src/core/database-diagnostics.js':'150652a36057dbc78e491abd4d551e04ec724b566e7a8fe1e20aac7a7fa2c588',
-            'RELEASE.txt':'c8f542a2a1ade3f5cf6948e72d2e6fe7682949f923926a79532f94c9728d496f'}
+            'index.html':'40a42a5fb3026cd3f40e0586c4371bf1b06852891a0de2b97362243115a34dd2',
+            'service-worker.js':'b827c9973d8c19b164c50e5a249814359290a465a83f8b4b3f9b5feae188e302',
+            'src/adapters/sync.js':'25d2c5918a37a877f288fa75883982fbbce9e5ec05c94a7c4fe5921ee69b51a8',
+            'src/core/auto-sync.js':'9d282da3a18ec9b663ff659eff4d0afe1eef6bcff7ad88e9490b24ca9f2f6125',
+            'src/ui/app.js':'35e4278ea6d0ed2dfc12912f8f49a38ae2a8421ec2faade18a4646497e7a37b5',
+            'src/core/update-manager.js':'d26cdd89f784a7950d62aeceb10ee231d49c0f5a6443e6b3067e59241693bf8c',
+            'src/ui/update-ui.js':'e72de6d9e11cfaca7820ab8e89f59b6eb437b5bb708e158af0ea1be2dd76585e',
+            'src/ui/role-ux.js':'339e1af9cac253b9673a6f27aaf4568891acdb2660f935048b992b3e4e4f0cbd',
+            'RELEASE.txt':'b037f432aa7d1a6e6c3b31e7f06fb4eb0f9e23b9cdf876abca549196547b5954'}
           for rel,want in expected.items():
               got=hashlib.sha256((root/rel).read_bytes()).hexdigest()
               if got!=want: raise SystemExit(f'Lokaler Release-Hash weicht ab: {rel} {got} != {want}')
-          role=(root/'src/ui/role-ux.js').read_text(encoding='utf-8')
-          access=(root/'src/core/member-access.js').read_text(encoding='utf-8')
-          provider=(root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
+          sync=(root/'src/adapters/sync.js').read_text(encoding='utf-8')
+          auto=(root/'src/core/auto-sync.js').read_text(encoding='utf-8')
+          app=(root/'src/ui/app.js').read_text(encoding='utf-8')
           mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          for t in ('KC-TEST-001','KC-TEST-002','Testszenario Mitarbeiterzugang','crypto.getRandomValues','Als Testmitglied 1 anmelden','W-TEST-002-'):
-              if t not in role: raise SystemExit('Testszenario UI fehlt: '+t)
-          for t in ('provisionTestMember','removeTestMember','KC-TEST-001'):
-              if t not in access: raise SystemExit('Testszenario MemberAccess fehlt: '+t)
-          for t in ('provision_test','remove_test'):
-              if t not in provider: raise SystemExit('Testszenario Provider fehlt: '+t)
-          if "CURRENT_RELEASE='0.19.11'" not in mgr: raise SystemExit('Release-Version falsch')
-          print(f'KC-DP2 V0.19.11 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
+          if "transportAuthenticated" not in sync or "K.auth?.require?.('roster.sync.view'" in sync: raise SystemExit('Healthcheck-Transportrecht falsch')
+          if "K.auth?.has&&!K.auth.has('roster.sync.run')" in auto: raise SystemExit('Auto-Sync noch an Planerrecht gebunden')
+          if "auth==='authenticated'&&st==='ready'" not in app or "verified&&auth==='authenticated'" in app: raise SystemExit('Supabase-LED-Logik falsch')
+          if "CURRENT_RELEASE='0.19.12'" not in mgr: raise SystemExit('Release-Version falsch')
+          print(f'KC-DP2 V0.19.12 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
           PY
 
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v01911
+          name: kc-dp2-verified-site-v01912
           path: build/site
           if-no-files-found: error
           retention-days: 2
@@ -141,7 +132,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/download-artifact@v4
-        with: {name: kc-dp2-verified-site-v01911, path: build/site}
+        with: {name: kc-dp2-verified-site-v01912, path: build/site}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with: {path: build/site}
