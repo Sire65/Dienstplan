@@ -1,0 +1,74 @@
+name: Deploy KC-DP2 to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate and unpack KC-DP2 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_FILE="$(jq -r '.release' release/current.json)"
+          EXPECTED_SHA="$(jq -r '.sha256' release/current.json)"
+          VERSION="$(jq -r '.version' release/current.json)"
+
+          if [ ! -f "$RELEASE_FILE" ]; then
+            echo "::error::Freigegebene Release-Datei fehlt: $RELEASE_FILE"
+            exit 20
+          fi
+
+          echo "$EXPECTED_SHA  $RELEASE_FILE" | sha256sum -c -
+
+          rm -rf build
+          mkdir -p build/unpacked build/site
+          unzip -q "$RELEASE_FILE" -d build/unpacked
+
+          TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          if [ -n "$TOP" ]; then
+            cp -a "$TOP"/. build/site/
+          else
+            cp -a build/unpacked/. build/site/
+          fi
+
+          for REQUIRED in index.html manifest.webmanifest service-worker.js update-manifest.json; do
+            if [ ! -f "build/site/$REQUIRED" ]; then
+              echo "::error::Pflichtdatei fehlt im Release: $REQUIRED"
+              exit 21
+            fi
+          done
+
+          printf 'KC-DP2 %s\n' "$VERSION" > build/site/RELEASE.txt
+          touch build/site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
