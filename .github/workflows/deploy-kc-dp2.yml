@@ -2,7 +2,7 @@ name: KC-DP2 Verified Web Release
 
 on:
   push:
-    branches: [main, release-v0198-staging]
+    branches: [main, release-v0199-staging]
   workflow_dispatch:
 
 permissions:
@@ -20,6 +20,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
       - name: Reconstruct verified V0.19.0 base
         shell: bash
         run: |
@@ -32,7 +33,8 @@ jobs:
           unzip -q /tmp/base.zip -d build/unpacked
           TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
           if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
-      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.8
+
+      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.9
         shell: bash
         run: |
           set -euo pipefail
@@ -44,7 +46,9 @@ jobs:
           (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.8/apply.py")
           cat release/v0.19.8/assets/bg-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
           echo "c2e250d35eba2a098cd27af353820c56e8da305998321573a1119579e077dee9  build/site/assets/kc-login-startbild.webp" | sha256sum -c -
-      - name: Build V0.19.8 recovery manifest and files
+          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.9/apply.py")
+
+      - name: Build V0.19.9 recovery manifest and files
         shell: bash
         run: |
           set -euo pipefail
@@ -52,20 +56,24 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import hashlib,json,shutil
-          root=Path('build/site'); template=json.loads(Path('release/v0.19.5/update-manifest.json').read_text(encoding='utf-8'))
+          root=Path('build/site')
+          template=json.loads(Path('release/v0.19.5/update-manifest.json').read_text(encoding='utf-8'))
           files=[]; total=0
           for old in template['files']:
               install=old.get('installPath') or old['path']; p=root/install
               if not p.is_file(): raise SystemExit(f'Kanonische Datei fehlt: {install}')
               data=p.read_bytes(); runtime=old.get('runtime') is not False
-              item={'path':f'__update/0.19.8/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}; files.append(item)
+              item={'path':f'__update/0.19.9/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}
+              files.append(item)
               if runtime:
                   dst=root/item['path']; dst.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,dst); total+=len(data)
-          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.8','cacheName':'kc-dp-release-0.19.8','releaseNotes':['Login-Hintergrund final proportional eingebaut','Kein starker Zoom und keine Schattenkante','Post-it und Holzbrett deutlich vollständiger sichtbar','Login-/Autofill-Fix aus V0.19.7 unverändert beibehalten','Update-Test V0.19.7 auf V0.19.8'],'generatedAt':'2026-08-12T12:55:00Z','totalRuntimeBytes':total,'files':files}
+          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.9','cacheName':'kc-dp-release-0.19.9','releaseNotes':['Supabase Live-Verbindung für Future Academy vorkonfiguriert','Project URL und Publishable Key automatisch übernommen','KC-DP2 Mitglieder-Login per E-Mail und Passwort aktiviert','Falscher alter Project-Ref lddud… wird automatisch auf iddud… migriert'],'generatedAt':'2026-08-12T15:00:00Z','totalRuntimeBytes':total,'files':files}
           (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          (root/'RELEASE.txt').write_text('KC-DP2 0.19.8\n',encoding='utf-8'); (root/'.nojekyll').touch()
+          (root/'RELEASE.txt').write_text('KC-DP2 0.19.9\n',encoding='utf-8')
+          (root/'.nojekyll').touch()
           PY
-      - name: Verify KC-DP2 V0.19.8
+
+      - name: Verify KC-DP2 V0.19.9
         shell: bash
         run: |
           set -euo pipefail
@@ -73,7 +81,7 @@ jobs:
           from pathlib import Path
           import hashlib,json
           root=Path('build/site'); m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert m['version']=='0.19.8'; total=0
+          assert m['version']=='0.19.9'; total=0
           for f in m['files']:
               data=(root/f['installPath']).read_bytes(); h=hashlib.sha256(data).hexdigest()
               if len(data)!=f['bytes'] or h!=f['sha256']: raise SystemExit(f'Integrität falsch: {f["installPath"]}')
@@ -82,26 +90,40 @@ jobs:
                   if not r.is_file() or r.read_bytes()!=data: raise SystemExit(f'Recovery falsch: {f["installPath"]}')
                   total+=len(data)
           if total!=m['totalRuntimeBytes']: raise SystemExit('Runtime-Gesamtgröße falsch')
-          expected={'index.html':'1cc6ce60c4ad8f2c4d9f4406ba8e3e1ab5982cfdc06ddc27467cb17740c01cc6','service-worker.js':'690d92cd3d32e7ec76ace915d23f302e0c421895f6233ccd255e8ef1e1e20393','src/core/update-manager.js':'fd8fd5d9c0a2ac05415cc8c210ebe55f29dc83b3da1e1c3210113a4668095228','src/ui/update-ui.js':'effbfcc26092e6c493a2af9a545c7199252e4ec756087cb1cf1abc5b424debdd','src/ui/role-ux.js':'2403f713dbef884f86281bf508d145e5e3dc8007d44c2fd71d9ecdefd0a66ec7','src/ui/role-ux.css':'24ab9d979f45363f1b433c8801830d2f1304c1af60b624bc299f0481ac3f5e9c','assets/kc-login-startbild.webp':'c2e250d35eba2a098cd27af353820c56e8da305998321573a1119579e077dee9','RELEASE.txt':'bec32ab991fd44d9e1a658cf07f5a876d70a7e4c02886cff6175541949d872d1'}
+          expected={
+            'index.html':'4808587fb34e4d41bac3c77958773fe9747970d0a01af38daaaa99cc7c7de77f',
+            'service-worker.js':'c1d5e533a4ff543ac97a84a786eb59aa98bcff916a50b70974b321191ad90cb9',
+            'src/core/update-manager.js':'d240567dcc11974a23524b4e3b72dfcaeed99b6e3e9a5bb0ec33777222549c23',
+            'src/ui/update-ui.js':'1b06e01aee1285844abae0053c082d6903fa6fbc1b83c6e4537a8b68cdad6712',
+            'src/ui/role-ux.js':'11c5fa0a060a5c98a08bc95c6e230b0fd5de3895f7e8c7f157318ad30d87e81f',
+            'src/core/integrations.js':'4c797404a1d256d4e819fa601db5b0cb02931e5635a7c85ddfe8607b3ed5aa38',
+            'src/ui/app.js':'35fa864b3202b3e5cd2f5fc6109d3b77c42b7d035f78917940f9492b307ce259',
+            'src/core/database-diagnostics.js':'150652a36057dbc78e491abd4d551e04ec724b566e7a8fe1e20aac7a7fa2c588',
+            'src/adapters/supabase-provider.js':'c4c97658991a5748768c3a17c847dee29213ba07edc963e1394eb67929287c11',
+            'RELEASE.txt':'b7fac0bcc1d418a7f4945dc6f92267a928d4326b83a7bc2cc845278b47678581'}
           for rel,want in expected.items():
               got=hashlib.sha256((root/rel).read_bytes()).hexdigest()
               if got!=want: raise SystemExit(f'Lokaler Release-Hash weicht ab: {rel} {got} != {want}')
-          css=(root/'src/ui/role-ux.css').read_text(); role=(root/'src/ui/role-ux.js').read_text(); mgr=(root/'src/core/update-manager.js').read_text()
-          for t in ('V0.19.8 FINAL-BACKGROUND','background-size:100% 100%','content:none!important'):
-              if t not in css: raise SystemExit('Background-Fix fehlt: '+t)
-          for t in ('ux-autofill-trap','scrubBadAutofill','supabase\\.co'):
-              if t not in role: raise SystemExit('Autofill-Schutz fehlt: '+t)
-          if "CURRENT_RELEASE='0.19.8'" not in mgr: raise SystemExit('Release-Version falsch')
-          print(f'KC-DP2 V0.19.8 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
+          integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
+          app=(root/'src/ui/app.js').read_text(encoding='utf-8')
+          mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
+          for t in ('https://iddudrxuihdodnvejxcp.supabase.co','sb_publishable_DWLycZijZEBvakXVncI5IQ_38LZCQxW',"authMode:'password'",'iddudrxuihdodnvejxcp'):
+              if t not in integ: raise SystemExit('Supabase Live-Konfiguration fehlt: '+t)
+          for t in ('Benutzer-Anmeldung',"supabaseProjectRef:'iddudrxuihdodnvejxcp'",'E-Mail + Passwort'):
+              if t not in app: raise SystemExit('Supabase UI-Konfiguration fehlt: '+t)
+          if "CURRENT_RELEASE='0.19.9'" not in mgr: raise SystemExit('Release-Version falsch')
+          print(f'KC-DP2 V0.19.9 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
           PY
+
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v0198
+          name: kc-dp2-verified-site-v0199
           path: build/site
           if-no-files-found: error
           retention-days: 2
           include-hidden-files: true
+
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: verify
@@ -111,7 +133,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/download-artifact@v4
-        with: {name: kc-dp2-verified-site-v0198, path: build/site}
+        with: {name: kc-dp2-verified-site-v0199, path: build/site}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with: {path: build/site}
