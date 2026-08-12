@@ -1,10 +1,10 @@
 {
   "app": "KC-DP2",
-  "version": "0.19.9",
-  "mode": "supabase-live",
-  "baseVersion": "0.19.8",
-  "previousVersion": "0.19.8",
-  "webReleaseSha256": "2f7b9238028cdf6cc0363286fef17c0ee692004054d8df856901637288973c7c",
-  "releaseScript": "release/v0.19.9/apply.py",
-  "releasedAt": "2026-08-12T15:00:00Z"
+  "version": "0.19.10",
+  "mode": "database-diagnostics",
+  "baseVersion": "0.19.9",
+  "previousVersion": "0.19.9",
+  "webReleaseSha256": "136f5a8ac88da6f6bd872558bd632158be20ab3b5e42b0ddf4f205f25e3b5834",
+  "releaseScript": "release/v0.19.10/apply.py",
+  "releasedAt": "2026-08-12T15:56:00Z"
 }
