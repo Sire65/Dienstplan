@@ -1,10 +1,10 @@
 {
   "app": "KC-DP2",
-  "version": "0.19.7",
-  "mode": "login-background-autofill-fix",
-  "baseVersion": "0.19.6",
-  "previousVersion": "0.19.6",
-  "webReleaseSha256": "e876ea2b4c0614a113b457667d6b42fe98e441192d72acca8c6bd342478179fd",
-  "releaseScript": "release/v0.19.7/apply.py",
-  "releasedAt": "2026-08-12T11:48:00Z"
+  "version": "0.19.8",
+  "mode": "background-final",
+  "baseVersion": "0.19.7",
+  "previousVersion": "0.19.7",
+  "webReleaseSha256": "be9a6933f06d27f48b8c827095ba25184ab6a974f9c1a1194062004ba5b3aee7",
+  "releaseScript": "release/v0.19.8/apply.py",
+  "releasedAt": "2026-08-12T13:22:00Z"
 }
