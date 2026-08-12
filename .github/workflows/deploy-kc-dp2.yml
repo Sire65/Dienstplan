@@ -2,7 +2,7 @@ name: KC-DP2 Verified Web Release
 
 on:
   push:
-    branches: [main, release-v01912-staging]
+    branches: [main, release-v01913-staging]
   workflow_dispatch:
 
 permissions:
@@ -21,104 +21,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Reconstruct verified V0.19.0 base
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p build/unpacked build/site
-          cat release/v0.19.0/part{00..07}.b64 release/v0.19.0/fix08/part{00..02}.b64 release/v0.19.0/part{09..10}.b64 release/v0.19.0/tail8/part{00..12}.b64 release/v0.19.0/tail1k/part{000..040}.b64 > /tmp/base.b64
-          test "$(wc -c < /tmp/base.b64 | tr -d ' ')" = "318168"
-          base64 --decode /tmp/base.b64 > /tmp/base.zip
-          echo "246c8ef625280337d4ba309e34862c2fdce2ba8023313f2d9f75426cf1ffc80e  /tmp/base.zip" | sha256sum -c -
-          unzip -q /tmp/base.zip -d build/unpacked
-          TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
-          if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
+      - name: Build and verify KC-DP2 V0.19.13
+        run: python3 release/build_site.py 0.19.13
 
-      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.12
+      - name: Verify performance and security invariants
         shell: bash
         run: |
           set -euo pipefail
-          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.1/apply.py")
-          cat release/v0.19.1/assets/startbild-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
-          cat release/v0.19.1/assets/logo-*.b64 | base64 --decode > build/site/assets/kc-login-logo.webp
-          for v in 0.19.2 0.19.3 0.19.4 0.19.5 0.19.6 0.19.7; do (cd build/site && python3 "$GITHUB_WORKSPACE/release/v${v}/apply.py"); done
-          cat release/v0.19.7/assets/bg-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
-          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.8/apply.py")
-          cat release/v0.19.8/assets/bg-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
-          echo "c2e250d35eba2a098cd27af353820c56e8da305998321573a1119579e077dee9  build/site/assets/kc-login-startbild.webp" | sha256sum -c -
-          for v in 0.19.9 0.19.10 0.19.11 0.19.12; do (cd build/site && python3 "$GITHUB_WORKSPACE/release/v${v}/apply.py"); done
-
-      - name: Build V0.19.12 recovery manifest and files
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf build/site/__update
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib,json,shutil
           root=Path('build/site')
-          template=json.loads(Path('release/v0.19.5/update-manifest.json').read_text(encoding='utf-8'))
-          files=[]; total=0
-          for old in template['files']:
-              install=old.get('installPath') or old['path']; p=root/install
-              if not p.is_file(): raise SystemExit(f'Kanonische Datei fehlt: {install}')
-              data=p.read_bytes(); runtime=old.get('runtime') is not False
-              item={'path':f'__update/0.19.12/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}
-              files.append(item)
-              if runtime:
-                  dst=root/item['path']; dst.parent.mkdir(parents=True,exist_ok=True); shutil.copy2(p,dst); total+=len(data)
-          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.12','cacheName':'kc-dp-release-0.19.12','releaseNotes':['Supabase-LED: ready + authenticated bleibt grün; blau nur bei Prüfung/Sync; rot nur bei echtem Fehler','Healthcheck ist für jeden angemeldeten KC-DP2-Benutzer möglich','Transport-Synchronisation für Mitarbeiter freigegeben; fachliche Schreibrechte bleiben durch Supabase-RLS geschützt','Cache-Buster der Update-Engine vereinheitlicht'],'generatedAt':'2026-08-12T17:10:00Z','totalRuntimeBytes':total,'files':files}
-          (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          (root/'RELEASE.txt').write_text('KC-DP2 0.19.12\n',encoding='utf-8')
-          (root/'.nojekyll').touch()
-          PY
-
-      - name: Verify KC-DP2 V0.19.12
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import hashlib,json
-          root=Path('build/site'); m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert m['version']=='0.19.12'; total=0
-          for f in m['files']:
-              data=(root/f['installPath']).read_bytes(); h=hashlib.sha256(data).hexdigest()
-              if len(data)!=f['bytes'] or h!=f['sha256']: raise SystemExit(f'Integrität falsch: {f["installPath"]}')
-              if f.get('runtime') is not False:
-                  r=root/f['path']
-                  if not r.is_file() or r.read_bytes()!=data: raise SystemExit(f'Recovery falsch: {f["installPath"]}')
-                  total+=len(data)
-          if total!=m['totalRuntimeBytes']: raise SystemExit('Runtime-Gesamtgröße falsch')
-          expected={
-            'service-worker.js':'b827c9973d8c19b164c50e5a249814359290a465a83f8b4b3f9b5feae188e302',
-            'src/adapters/sync.js':'25d2c5918a37a877f288fa75883982fbbce9e5ec05c94a7c4fe5921ee69b51a8',
-            'src/core/auto-sync.js':'9d282da3a18ec9b663ff659eff4d0afe1eef6bcff7ad88e9490b24ca9f2f6125',
-            'src/ui/app.js':'35e4278ea6d0ed2dfc12912f8f49a38ae2a8421ec2faade18a4646497e7a37b5',
-            'src/core/update-manager.js':'d26cdd89f784a7950d62aeceb10ee231d49c0f5a6443e6b3067e59241693bf8c',
-            'src/ui/update-ui.js':'e72de6d9e11cfaca7820ab8e89f59b6eb437b5bb708e158af0ea1be2dd76585e',
-            'src/ui/role-ux.js':'339e1af9cac253b9673a6f27aaf4568891acdb2660f935048b992b3e4e4f0cbd',
-            'RELEASE.txt':'b037f432aa7d1a6e6c3b31e7f06fb4eb0f9e23b9cdf876abca549196547b5954'}
-          for rel,want in expected.items():
-              got=hashlib.sha256((root/rel).read_bytes()).hexdigest()
-              if got!=want: raise SystemExit(f'Lokaler Release-Hash weicht ab: {rel} {got} != {want}')
-          sync=(root/'src/adapters/sync.js').read_text(encoding='utf-8')
-          auto=(root/'src/core/auto-sync.js').read_text(encoding='utf-8')
+          storage=(root/'src/adapters/storage.js').read_text(encoding='utf-8')
           app=(root/'src/ui/app.js').read_text(encoding='utf-8')
+          ux=(root/'src/ui/role-ux.js').read_text(encoding='utf-8')
           mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          idx=(root/'index.html').read_text(encoding='utf-8')
-          if "transportAuthenticated" not in sync or "K.auth?.require?.('roster.sync.view'" in sync: raise SystemExit('Healthcheck-Transportrecht falsch')
-          if "K.auth?.has&&!K.auth.has('roster.sync.run')" in auto: raise SystemExit('Auto-Sync noch an Planerrecht gebunden')
-          if "auth==='authenticated'&&st==='ready'" not in app or "verified&&auth==='authenticated'" in app: raise SystemExit('Supabase-LED-Logik falsch')
-          if "CURRENT_RELEASE='0.19.12'" not in mgr: raise SystemExit('Release-Version falsch')
-          if 'src/core/update-manager.js?v=0.19.12' not in idx or 'src/ui/update-ui.js?v=0.19.12' not in idx: raise SystemExit('Index Cache-Buster nicht V0.19.12')
-          print(f'KC-DP2 V0.19.12 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
+          assert "FORMAT='KC_DP_LOCAL_V2'" in storage
+          assert '_sessionKeyPromise' in storage
+          assert 'putMany(entries' in storage and 'getMany(keys' in storage
+          assert 'KCSecureSync.decryptEnvelope' in storage
+          assert "ITERATIONS=310000" in storage
+          assert 'K.storage.putMany' in app and 'K.storage.getMany' in app
+          assert 'Restzeit wird berechnet' in app and 'Laufzeit' in app
+          assert "title:'Zeiten werden übernommen'" in ux
+          assert "CURRENT_RELEASE='0.19.13'" in mgr
+          print('V0.19.13 performance/security assertions OK')
           PY
 
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v01912
+          name: kc-dp2-verified-site-v01913
           path: build/site
           if-no-files-found: error
           retention-days: 2
@@ -133,7 +65,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/download-artifact@v4
-        with: {name: kc-dp2-verified-site-v01912, path: build/site}
+        with: {name: kc-dp2-verified-site-v01913, path: build/site}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with: {path: build/site}
