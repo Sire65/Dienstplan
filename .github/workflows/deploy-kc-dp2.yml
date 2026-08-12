@@ -72,7 +72,7 @@ jobs:
                   raise SystemExit(f"Pflichtdatei fehlt: {item['path']}")
               data=p.read_bytes()
               if len(data)!=item['bytes']:
-                  raise SystemExit(f"Dateigroesse falsch: {item['path']} {len(data]} != {item['bytes']}")
+                  raise SystemExit(f"Dateigroesse falsch: {item['path']} {len(data)} != {item['bytes']}")
               actual=hashlib.sha256(data).hexdigest()
               if actual!=item['sha256']:
                   raise SystemExit(f"SHA-256 falsch: {item['path']} {actual} != {item['sha256']}")
