@@ -1,0 +1,6 @@
+{
+  "version": "0.19.0",
+  "release": "release/current/KC_DP2_WEB_RELEASE_V0_19_0.zip",
+  "sha256": "246c8ef625280337d4ba309e34862c2fdce2ba8023313f2d9f75426cf1ffc80e",
+  "source": "release/v0.19.0/part00..part10 + tail-blobs.txt"
+}
