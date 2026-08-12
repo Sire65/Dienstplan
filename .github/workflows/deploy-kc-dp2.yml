@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - release-v0192-staging
+      - release-v0193-staging
   workflow_dispatch:
 
 permissions:
@@ -61,25 +61,38 @@ jobs:
           root=Path('build/site')
           meta=json.loads(Path('release/v0.19.2/meta.json').read_text(encoding='utf-8'))
           manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          manifest['version']=meta['version']
-          manifest['cacheName']=meta['cacheName']
-          manifest['generatedAt']=meta['generatedAt']
-          manifest['releaseNotes']=meta['releaseNotes']
+          manifest['version']=meta['version']; manifest['cacheName']=meta['cacheName']; manifest['generatedAt']=meta['generatedAt']; manifest['releaseNotes']=meta['releaseNotes']
           total=0
           for item in manifest['files']:
-              p=root/item['path']
-              data=p.read_bytes()
-              item['bytes']=len(data)
-              item['sha256']=hashlib.sha256(data).hexdigest()
-              if item.get('runtime') is not False:
-                  total+=len(data)
+              p=root/item['path']; data=p.read_bytes(); item['bytes']=len(data); item['sha256']=hashlib.sha256(data).hexdigest()
+              if item.get('runtime') is not False: total+=len(data)
           manifest['totalRuntimeBytes']=total
           (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
-          printf 'KC-DP2 0.19.2\n' > build/site/RELEASE.txt
+
+      - name: Apply KC-DP2 V0.19.3 bootstrap recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.3/apply.py")
+          cp release/v0.19.3/update-manifest.json build/site/update-manifest.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, shutil
+          root=Path('build/site')
+          manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          for item in manifest['files']:
+              if item.get('runtime') is False: continue
+              src=root/item['installPath']
+              dst=root/item['path']
+              if not src.is_file(): raise SystemExit(f"Kanonische Quelldatei fehlt: {item['installPath']}")
+              dst.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copy2(src,dst)
+          PY
+          printf 'KC-DP2 0.19.3\n' > build/site/RELEASE.txt
           touch build/site/.nojekyll
 
-      - name: Verify KC-DP2 V0.19.2 manifest and update-engine bypass
+      - name: Verify KC-DP2 V0.19.3 bootstrap recovery
         shell: bash
         run: |
           set -euo pipefail
@@ -90,39 +103,43 @@ jobs:
           manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
           assert manifest['schema']=='KC_DP_UPDATE_MANIFEST_V1'
           assert manifest['app']=='KC-DP2'
-          assert manifest['version']=='0.19.2'
+          assert manifest['version']=='0.19.3'
+          runtime=[x for x in manifest['files'] if x.get('runtime') is not False]
+          if not runtime: raise SystemExit('Keine Runtime-Dateien im Manifest')
           total=0
-          checked=0
+          install_paths=set()
           for item in manifest['files']:
-              p=root/item['path']
-              if not p.is_file():
-                  raise SystemExit(f"Pflichtdatei fehlt: {item['path']}")
-              data=p.read_bytes()
-              if len(data)!=item['bytes']:
-                  raise SystemExit(f"Dateigroesse falsch: {item['path']} {len(data)} != {item['bytes']}")
-              actual=hashlib.sha256(data).hexdigest()
-              if actual!=item['sha256']:
-                  raise SystemExit(f"SHA-256 falsch: {item['path']} {actual} != {item['sha256']}")
+              install=item.get('installPath') or item['path']
+              if install in install_paths: raise SystemExit(f"Doppelter Installationspfad: {install}")
+              install_paths.add(install)
+              canonical=root/install
+              if not canonical.is_file(): raise SystemExit(f"Kanonische Datei fehlt: {install}")
+              cdata=canonical.read_bytes()
+              actual=hashlib.sha256(cdata).hexdigest()
+              if len(cdata)!=item['bytes']: raise SystemExit(f"Dateigroesse falsch: {install} {len(cdata)} != {item['bytes']}")
+              if actual!=item['sha256']: raise SystemExit(f"SHA-256 falsch: {install} {actual} != {item['sha256']}")
               if item.get('runtime') is not False:
-                  total+=len(data)
-              checked+=1
-          if total!=manifest['totalRuntimeBytes']:
-              raise SystemExit(f"Runtime-Groesse falsch: {total} != {manifest['totalRuntimeBytes']}")
-          sw=(root/'service-worker.js').read_text(encoding='utf-8')
+                  if not item['path'].startswith('__update/0.19.3/'): raise SystemExit(f"Recovery-Pfad fehlt: {item['path']}")
+                  recovery=root/item['path']
+                  if not recovery.is_file(): raise SystemExit(f"Recovery-Datei fehlt: {item['path']}")
+                  rdata=recovery.read_bytes()
+                  if rdata!=cdata: raise SystemExit(f"Recovery-Datei weicht ab: {install}")
+                  if hashlib.sha256(rdata).hexdigest()!=item['sha256']: raise SystemExit(f"Recovery-SHA falsch: {install}")
+                  total+=len(cdata)
+          if total!=manifest['totalRuntimeBytes']: raise SystemExit(f"Runtime-Groesse falsch: {total} != {manifest['totalRuntimeBytes']}")
           mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          if "url.searchParams.has('kc_update')" not in sw:
-              raise SystemExit('Update-Netzwerkbypass fehlt im Service Worker')
-          if 'self.skipWaiting()' not in sw:
-              raise SystemExit('Service-Worker-Sofortaktivierung fehlt')
-          if "'X-KC-DP-Update':'1'" not in mgr:
-              raise SystemExit('Update-Request-Markierung fehlt')
-          print(f"KC-DP2 V0.19.2 verification OK: {checked} Dateien, {total} Runtime-Bytes")
+          sw=(root/'service-worker.js').read_text(encoding='utf-8')
+          for token in ('file?.installPath||file?.path','file?.downloadPath||file?.path','sameOriginUrl(installPath(file),false)'):
+              if token not in mgr: raise SystemExit(f"Updater-Recoverylogik fehlt: {token}")
+          for token in ('f.installPath||f.path','f.downloadPath||f.path','normalizeRecoveryCache'):
+              if token not in sw: raise SystemExit(f"Service-Worker-Recoverylogik fehlt: {token}")
+          print(f"KC-DP2 V0.19.3 bootstrap verification OK: {len(manifest['files'])} Dateien, {total} Runtime-Bytes")
           PY
 
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v0192
+          name: kc-dp2-verified-site-v0193
           path: build/site
           if-no-files-found: error
           retention-days: 2
@@ -139,7 +156,7 @@ jobs:
       - name: Download verified site artifact
         uses: actions/download-artifact@v4
         with:
-          name: kc-dp2-verified-site-v0192
+          name: kc-dp2-verified-site-v0193
           path: build/site
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
