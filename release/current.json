@@ -1,6 +1,10 @@
 {
-  "version": "0.19.0",
-  "release": "release/current/KC_DP2_WEB_RELEASE_V0_19_0.zip",
-  "sha256": "246c8ef625280337d4ba309e34862c2fdce2ba8023313f2d9f75426cf1ffc80e",
-  "source": "release/v0.19.0/part00..part10 + tail-blobs.txt"
+  "app": "KC-DP2",
+  "version": "0.19.1",
+  "mode": "delta",
+  "baseVersion": "0.19.0",
+  "baseSha256": "246c8ef625280337d4ba309e34862c2fdce2ba8023313f2d9f75426cf1ffc80e",
+  "webReleaseSha256": "1f19638d642be9be3159a7ef9264750fae6b4558964909f80bc86453d211d4d6",
+  "manifest": "release/v0.19.1/update-manifest.json",
+  "releasedAt": "2026-08-12T08:58:45.430410+00:00"
 }
