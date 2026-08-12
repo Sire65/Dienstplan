@@ -1,0 +1,13 @@
+{
+  "version": "0.19.4",
+  "cacheName": "kc-dp-release-0.19.4",
+  "generatedAt": "2026-08-12T10:24:28.094627+00:00",
+  "releaseNotes": [
+    "Anmeldebildschirm räumlich korrigiert",
+    "Keine doppelte Login-Grafik mehr im sichtbaren Hintergrund",
+    "Supabase-URL wird nicht mehr als E-Mail-Autofill übernommen",
+    "Hintergrund auf großen Bildschirmen verkleinert",
+    "Updateprüfung startet schneller und kann manuell ausgelöst werden",
+    "Versionsspezifische Recovery-Downloads mit SHA-256"
+  ]
+}
