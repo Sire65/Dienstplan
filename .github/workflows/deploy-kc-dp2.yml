@@ -1,0 +1,109 @@
+name: KC-DP2 Production Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  RELEASE_DIR: release/v0.19.0
+
+concurrency:
+  group: kc-dp2-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Reconstruct verified web release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$(jq -r '.version' release/current.json)"
+          RELEASE_FILE="$(jq -r '.release' release/current.json)"
+          EXPECTED_SHA="$(jq -r '.sha256' release/current.json)"
+          mkdir -p "$(dirname "$RELEASE_FILE")"
+
+          # The first 174000 Base64 characters are committed as part00..part10.
+          cat "$RELEASE_DIR"/part00.b64 "$RELEASE_DIR"/part01.b64 "$RELEASE_DIR"/part02.b64 \
+              "$RELEASE_DIR"/part03.b64 "$RELEASE_DIR"/part04.b64 "$RELEASE_DIR"/part05.b64 \
+              "$RELEASE_DIR"/part06.b64 "$RELEASE_DIR"/part07.b64 "$RELEASE_DIR"/part08.b64 \
+              "$RELEASE_DIR"/part09.b64 "$RELEASE_DIR"/part10.b64 > /tmp/kc-dp2-release.b64
+
+          # Remaining verified Git blobs are fetched in the exact original order.
+          while IFS= read -r SHA; do
+            [ -n "$SHA" ] || continue
+            curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${SHA}" \
+              | jq -r '.content' | tr -d '\r\n' | base64 --decode >> /tmp/kc-dp2-release.b64
+          done < "$RELEASE_DIR/tail-blobs.txt"
+
+          tr -d '\r\n' < /tmp/kc-dp2-release.b64 | base64 --decode > "$RELEASE_FILE"
+          echo "$EXPECTED_SHA  $RELEASE_FILE" | sha256sum -c -
+
+          rm -rf build
+          mkdir -p build/unpacked build/site
+          unzip -q "$RELEASE_FILE" -d build/unpacked
+          TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
+          if [ -n "$TOP" ]; then
+            cp -a "$TOP"/. build/site/
+          else
+            cp -a build/unpacked/. build/site/
+          fi
+
+          for REQUIRED in index.html manifest.webmanifest service-worker.js update-manifest.json; do
+            test -f "build/site/$REQUIRED" || { echo "::error::Pflichtdatei fehlt: $REQUIRED"; exit 21; }
+          done
+          printf 'KC-DP2 %s\n' "$VERSION" > build/site/RELEASE.txt
+          touch build/site/.nojekyll
+
+      - name: Enable GitHub Pages for Actions if needed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="https://api.github.com/repos/${GITHUB_REPOSITORY}/pages"
+          STATUS="$(curl -sS -o /tmp/pages.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" "$API")"
+          if [ "$STATUS" = "404" ]; then
+            curl --fail-with-body -sS -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$API" -d '{"build_type":"workflow"}'
+          elif [ "$STATUS" != "200" ]; then
+            cat /tmp/pages.json
+            exit 22
+          fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
