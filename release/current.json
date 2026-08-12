@@ -1,10 +1,10 @@
 {
   "app": "KC-DP2",
-  "version": "0.19.8",
-  "mode": "background-final",
-  "baseVersion": "0.19.7",
-  "previousVersion": "0.19.7",
-  "webReleaseSha256": "be9a6933f06d27f48b8c827095ba25184ab6a974f9c1a1194062004ba5b3aee7",
-  "releaseScript": "release/v0.19.8/apply.py",
-  "releasedAt": "2026-08-12T13:22:00Z"
+  "version": "0.19.9",
+  "mode": "supabase-live",
+  "baseVersion": "0.19.8",
+  "previousVersion": "0.19.8",
+  "webReleaseSha256": "2f7b9238028cdf6cc0363286fef17c0ee692004054d8df856901637288973c7c",
+  "releaseScript": "release/v0.19.9/apply.py",
+  "releasedAt": "2026-08-12T15:00:00Z"
 }
