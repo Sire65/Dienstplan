@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - release-v0196-staging
+      - release-v0197-staging
   workflow_dispatch:
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           TOP="$(find build/unpacked -mindepth 1 -maxdepth 1 -type d | head -n1 || true)"
           if [ -n "$TOP" ]; then cp -a "$TOP"/. build/site/; else cp -a build/unpacked/. build/site/; fi
 
-      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.6
+      - name: Apply KC-DP2 release deltas V0.19.1-V0.19.7
         shell: bash
         run: |
           set -euo pipefail
@@ -52,8 +52,10 @@ jobs:
           (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.4/apply.py")
           (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.5/apply.py")
           (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.6/apply.py")
+          (cd build/site && python3 "$GITHUB_WORKSPACE/release/v0.19.7/apply.py")
+          cat release/v0.19.7/assets/bg-*.b64 | base64 --decode > build/site/assets/kc-login-startbild.webp
 
-      - name: Build V0.19.6 recovery manifest and files
+      - name: Build V0.19.7 recovery manifest and files
         shell: bash
         run: |
           set -euo pipefail
@@ -69,17 +71,17 @@ jobs:
               p=root/install
               if not p.is_file(): raise SystemExit(f'Kanonische Datei fehlt: {install}')
               data=p.read_bytes();runtime=old.get('runtime') is not False
-              item={'path':f'__update/0.19.6/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}
+              item={'path':f'__update/0.19.7/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime}
               files.append(item)
               if runtime:
                   dst=root/item['path'];dst.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,dst);total+=len(data)
-          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.6','cacheName':'kc-dp-release-0.19.6','releaseNotes':['Login-Hintergrund korrekt skaliert statt extrem vergrößert','Post-it vollständig sichtbar','Schloss-/Sicher-Hinweis und alte Versionsplakette weich ausgeblendet','Zweiter echter Update-Test V0.19.5 auf V0.19.6'],'generatedAt':'2026-08-12T11:30:00Z','totalRuntimeBytes':total,'files':files}
+          manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':'0.19.7','cacheName':'kc-dp-release-0.19.7','releaseNotes':['Login-Hintergrund neu und sauber aufgebaut – keine doppelte Login-Maske, kein Schloss, Post-it vollständig sichtbar','E-Mail-Feld gegen falsche Browser-/Passwortmanager-Autofill-Werte gehärtet','Supabase-URL wird dauerhaft erkannt, entfernt und kann nicht als Login-E-Mail abgesendet werden','Updatepfade und SHA-256-Integritätsprüfung unverändert beibehalten'],'generatedAt':'2026-08-12T11:48:00Z','totalRuntimeBytes':total,'files':files}
           (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          (root/'RELEASE.txt').write_text('KC-DP2 0.19.6\n',encoding='utf-8')
+          (root/'RELEASE.txt').write_text('KC-DP2 0.19.7\n',encoding='utf-8')
           (root/'.nojekyll').touch()
           PY
 
-      - name: Verify KC-DP2 V0.19.6
+      - name: Verify KC-DP2 V0.19.7
         shell: bash
         run: |
           set -euo pipefail
@@ -87,7 +89,8 @@ jobs:
           from pathlib import Path
           import hashlib,json
           root=Path('build/site');m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert m['version']=='0.19.6';total=0
+          assert m['schema']=='KC_DP_UPDATE_MANIFEST_V1' and m['app']=='KC-DP2' and m['version']=='0.19.7'
+          total=0
           for f in m['files']:
               p=root/f['installPath'];data=p.read_bytes();h=hashlib.sha256(data).hexdigest()
               if len(data)!=f['bytes'] or h!=f['sha256']: raise SystemExit(f'Integrität falsch: {f["installPath"]}')
@@ -96,19 +99,31 @@ jobs:
                   if not r.is_file() or r.read_bytes()!=data: raise SystemExit(f'Recovery falsch: {f["installPath"]}')
                   total+=len(data)
           if total!=m['totalRuntimeBytes']: raise SystemExit('Runtime-Gesamtgröße falsch')
-          css=(root/'src/ui/role-ux.css').read_text(encoding='utf-8');mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          for t in ('V0.19.6 BACKGROUND-FIX','background-size:auto 100%','width:31%','kc-login-startbild.webp'):
-              if t not in css: raise SystemExit(f'Background-Fix fehlt: {t}')
-          for t in ('450% auto','330% auto'):
-              if t in css: raise SystemExit(f'Alter Zoom noch aktiv: {t}')
-          if "CURRENT_RELEASE='0.19.6'" not in mgr: raise SystemExit('Release-Version falsch')
-          print(f'KC-DP2 V0.19.6 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
+          expected={
+            'index.html':'b0d90f67c993e2880b65e53db0921f41c52d8a3d02958961f843de00630ded86',
+            'service-worker.js':'6791f15ecb2746cc2168380aa19c76ada7295a6b916cd2e1ebaf0c5db6d00c7f',
+            'src/core/update-manager.js':'08da8b0b688ec4d74aa655859ee50f5b8e3c5cd7e165eaf9a0952fe3186ebd31',
+            'src/ui/update-ui.js':'39b3bc6ebd4798a5b9bd1c8b52751f195ef022edd7d824520f5940daa1b33614',
+            'src/ui/role-ux.js':'dca2750a7ac6653d864922ef6b6390d41d945077d46bea28ca1cbd04e815fc34',
+            'src/ui/role-ux.css':'70f9fb0ca697c3545c0e8177d6f78700ffe2c839e11a2d62e6b95181355a590a',
+            'assets/kc-login-startbild.webp':'fc0f499416dc63bcd4bed935ab36cfe42b59a1c52415174ec95abbd8f1effd05',
+            'RELEASE.txt':'52867da76ae8ebcead7fa94a42e9d92428e4092113c6fd5e8f9ecb702c275253'}
+          for rel,want in expected.items():
+              got=hashlib.sha256((root/rel).read_bytes()).hexdigest()
+              if got!=want: raise SystemExit(f'Lokaler Release-Hash weicht ab: {rel} {got} != {want}')
+          css=(root/'src/ui/role-ux.css').read_text(encoding='utf-8');role=(root/'src/ui/role-ux.js').read_text(encoding='utf-8');mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
+          for t in ('V0.19.7 LOGIN-BACKGROUND + AUTOFILL-FIX','background-size:cover','content:none!important','ux-autofill-trap'):
+              if t not in css: raise SystemExit(f'Login-CSS fehlt: {t}')
+          for t in ('kc_member_mail_0197','data-lpignore="true"','supabase\\.co','Bitte geben Sie Ihre persönliche E-Mail-Adresse ein.'):
+              if t not in role: raise SystemExit(f'Autofill-Schutz fehlt: {t}')
+          if "CURRENT_RELEASE='0.19.7'" not in mgr: raise SystemExit('Release-Version falsch')
+          print(f'KC-DP2 V0.19.7 verification OK: {len(m["files"])} Dateien, {total} Runtime-Bytes')
           PY
 
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v0196
+          name: kc-dp2-verified-site-v0197
           path: build/site
           if-no-files-found: error
           retention-days: 2
@@ -125,7 +140,7 @@ jobs:
       - name: Download verified site artifact
         uses: actions/download-artifact@v4
         with:
-          name: kc-dp2-verified-site-v0196
+          name: kc-dp2-verified-site-v0197
           path: build/site
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
