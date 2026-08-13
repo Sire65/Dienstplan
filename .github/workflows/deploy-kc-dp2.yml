@@ -20,10 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Build and verify KC-DP2 V0.19.13
         run: python3 release/build_site.py 0.19.13
-
       - name: Verify performance and security invariants
         shell: bash
         run: |
@@ -34,19 +32,24 @@ jobs:
           storage=(root/'src/adapters/storage.js').read_text(encoding='utf-8')
           app=(root/'src/ui/app.js').read_text(encoding='utf-8')
           ux=(root/'src/ui/role-ux.js').read_text(encoding='utf-8')
+          sync=(root/'src/adapters/sync.js').read_text(encoding='utf-8')
+          recovery=(root/'src/core/recovery.js').read_text(encoding='utf-8')
+          diagnostics=(root/'src/core/database-diagnostics.js').read_text(encoding='utf-8')
           mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          assert "FORMAT='KC_DP_LOCAL_V2'" in storage
-          assert '_sessionKeyPromise' in storage
-          assert 'putMany(entries' in storage and 'getMany(keys' in storage
+          assert 'KC_DP_LOCAL_V2' in storage
+          assert '_localKeyPromise' in storage and 'ITERATIONS=310000' in storage
+          assert 'PBKDF2-SHA-256' in storage and 'AES-256-GCM' in storage
+          assert 'putMany(entries)' in storage and 'getMany(keys)' in storage
           assert 'KCSecureSync.decryptEnvelope' in storage
-          assert "ITERATIONS=310000" in storage
           assert 'K.storage.putMany' in app and 'K.storage.getMany' in app
-          assert 'Restzeit wird berechnet' in app and 'Laufzeit' in app
-          assert "title:'Zeiten werden übernommen'" in ux
+          assert 'ensureFastLocalStore' in app and 'taskProgressOpen' in app
+          assert 'Restzeit' in app and 'Laufzeit' in app
+          assert 'Zeiten werden übernommen' in ux and 'Sollplan wird berechnet' in ux
+          assert "emit('progress'" in sync and 'Synchronisation läuft' in app
+          assert 'scheduleCheckpoint' in recovery and 'K.storage?.benchmark' in diagnostics
           assert "CURRENT_RELEASE='0.19.13'" in mgr
           print('V0.19.13 performance/security assertions OK')
           PY
-
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
@@ -55,7 +58,6 @@ jobs:
           if-no-files-found: error
           retention-days: 2
           include-hidden-files: true
-
   deploy:
     if: github.ref == 'refs/heads/main'
     needs: verify

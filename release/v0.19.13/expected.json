@@ -1,10 +1,13 @@
 {
-  "index.html": "2dad61bc6b95ef2d17fd4924bcb27766eefb36826431eebaa255d4340f932299",
-  "service-worker.js": "e3b8607c3e4a6c629df1f99aa65f1e19db3e93bd8df7c36f722feabcba3c9bf1",
-  "src/adapters/storage.js": "084b285e33c0afe87777ac818cf30830798105f6c7ca1e96d2408c42eb8d91c3",
-  "src/ui/app.js": "4b247c7ed2497c7d637d3c4a9cf3739a7ce4cc41250beb11580ac9d6a588d6ed",
-  "src/ui/role-ux.js": "41ffac5de3f2767c1075bac1928b1db3355e43aa78fda695964faf7b75dbbacd",
+  "index.html": "a3f479deba99cd82e0591dbae3ea8493e1bce34848d2329c6c98a7440af47f5f",
+  "service-worker.js": "64558c98dd7c7c74398314686bb628f5b320fb84051e0cf399f531ba52c22e19",
+  "src/core/database-diagnostics.js": "4d942e94f60ec9cb04b3b13e02b661ef0d8e58f363902aa39c09241dc072baa5",
+  "src/core/recovery.js": "3c8bd011adb769cc85440fdfc95308b8fc16d35b0c9257cffb820024c17fd5c5",
   "src/core/update-manager.js": "9b2b58b53ad6400b4524f6336cf0917fd9fedfd42b994ff8eb87577d5c6f70a5",
+  "src/adapters/sync.js": "cc05917db5c12b5de86fad9b24d4682a9cba5e4a767860538597686ea1f1f303",
+  "src/adapters/storage.js": "ef043726c8c97a278f4da89dd621ab2045d7486ca47fed2cc414594f6ee7c148",
+  "src/ui/role-ux.js": "bb545e5198d87e112478b4636e32fab2f764bfc41f3772d375efc41b55b33641",
+  "src/ui/app.js": "f6750b0b72f83d20328851e644300cf782355573222a793a233ed3b3cd433772",
   "src/ui/update-ui.js": "554bc96405490e0154ffb83816502a911889e1833e51c72209c54d6029999213",
   "RELEASE.txt": "133c530f10198a471578c6548acaf957da70bb3f9a379f074c188481affac27c"
 }
