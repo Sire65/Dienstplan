@@ -1,10 +1,10 @@
 {
   "app": "KC-DP2",
-  "version": "0.19.12",
-  "mode": "sync-transport-led-fix",
-  "baseVersion": "0.19.11",
-  "previousVersion": "0.19.11",
-  "webReleaseSha256": "eb63819604041bca1511a6e6498995de41eb792a066a17081253623f010b6469",
-  "releaseScript": "release/v0.19.12/apply.py",
-  "releasedAt": "2026-08-12T17:23:00Z"
+  "version": "0.19.13",
+  "mode": "performance-session-master",
+  "baseVersion": "0.19.12",
+  "previousVersion": "0.19.12",
+  "webReleaseSha256": "34567fe917455b8876e4c0ae41954a6b3aec7567ab66251f1ed1b5f85426e78f",
+  "releaseScript": "release/v0.19.13/apply.py",
+  "releasedAt": "2026-08-13T02:47:00Z"
 }
