@@ -1,0 +1,15 @@
+KC DP2 V0.19.20
+
+- Veraltete lokale Supabase-Einstellungen werden beim Start automatisch auf das richtige KC-DP2-Projekt repariert.
+- Passwort-Anmeldung und Passwort-Wiederherstellung können dadurch nicht mehr unbemerkt das alte Fremdprojekt mit localhost-Weiterleitung verwenden.
+- Push-Benachrichtigungen sind jetzt im Benutzermenü sichtbar und können pro Gerät aktiviert oder deaktiviert werden.
+- Administratoren können dort eine Testnachricht an das eigene Gerät senden.
+- Excel-Wunschzeitenvorlage wird beim Download mit Name, Personen-ID und E-Mail des angemeldeten Mitarbeiters versehen.
+- Kollegenzeiten können vor der Übernahme nach Tag, Woche oder Gesamtzeitraum geprüft werden.
+- Mehrere Zeitfenster je Tag werden getrennt und übersichtlich dargestellt.
+- Einzelne Zeitfenster oder ganze Tage können nach Bestätigung übernommen werden; Dubletten werden ausgelassen.
+- Namen und Telefonnummern bleiben im zentralen Personenstamm (PC Manager, später KC Verwaltung).
+- Supabase speichert nur die sichere Zuordnung von Mitgliedschaft, Person und Push-Gerät.
+- Push-Abonnements und Versand sind mit RLS und rollenbeschränkter Edge Function vorbereitet.
+
+Hinweis: Die drei VAPID-Secrets sind serverseitig erforderlich. Danach muss jedes gewünschte Gerät Push einmal im Benutzermenü aktivieren.
