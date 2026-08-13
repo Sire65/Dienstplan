@@ -1,7 +1,7 @@
 from pathlib import Path
 import base64,hashlib,io,json,shutil,subprocess,sys,zipfile
 ROOT=Path(__file__).resolve().parents[1]
-VERSION=sys.argv[1] if len(sys.argv)>1 else '0.19.13'
+VERSION=sys.argv[1] if len(sys.argv)>1 else '0.19.14'
 OUT=ROOT/'build/site'
 TMP=ROOT/'build/unpacked'
 shutil.rmtree(ROOT/'build',ignore_errors=True);OUT.mkdir(parents=True);TMP.mkdir(parents=True)
@@ -30,6 +30,8 @@ apply('0.19.8')
 (OUT/'assets/kc-login-startbild.webp').write_bytes(base64.b64decode(b''.join(p.read_bytes() for p in sorted((ROOT/'release/v0.19.8/assets').glob('bg-*.b64')))))
 if hashlib.sha256((OUT/'assets/kc-login-startbild.webp').read_bytes()).hexdigest()!='c2e250d35eba2a098cd27af353820c56e8da305998321573a1119579e077dee9':raise SystemExit('background sha mismatch')
 for v in ['0.19.9','0.19.10','0.19.11','0.19.12','0.19.13']:apply(v)
+if VERSION=='0.19.14':apply('0.19.14')
+elif VERSION!='0.19.13':raise SystemExit(f'unsupported release {VERSION}')
 base_manifest=json.loads((ROOT/'release/v0.19.5/update-manifest.json').read_text())
 shutil.rmtree(OUT/'__update',ignore_errors=True);files=[];total=0
 for old in base_manifest['files']:
@@ -39,7 +41,8 @@ for old in base_manifest['files']:
     item={'path':f'__update/{VERSION}/{install}' if runtime else install,'installPath':install,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':runtime};files.append(item)
     if runtime:
         dst=OUT/item['path'];dst.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(p,dst);total+=len(data)
-manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':VERSION,'cacheName':f'kc-dp-release-{VERSION}','releaseNotes':['Performance-Core: PBKDF2 einmal pro Sitzung statt pro IndexedDB-Zugriff','Bulk-IndexedDB-Transaktionen für Laden und Speichern','Einmalige sichere Migration bestehender lokaler Daten','Fortschrittsanzeige mit Prozent, Laufzeit und Restzeit für längere Vorgänge'],'generatedAt':'2026-08-12T20:45:00+02:00','totalRuntimeBytes':total,'files':files}
+notes={'0.19.13':['Performance-Core: PBKDF2 einmal pro Sitzung statt pro IndexedDB-Zugriff','Bulk-IndexedDB-Transaktionen für Laden und Speichern','Einmalige sichere Migration bestehender lokaler Daten','Fortschrittsanzeige mit Prozent, Laufzeit und Restzeit für längere Vorgänge'],'0.19.14':['Supabase sauber getrennt: KC-DP2 verwendet ein eigenes Dienstplan-Projekt','Bestehende Academy-Konfiguration wird automatisch auf das neue KC-DP-Projekt migriert','Publishable Key und Projektprofil sind fest auf den freigegebenen KC-DP-Stand gebunden','Sync-, Verschlüsselungs- und Rollback-Mechanismen bleiben unverändert']}[VERSION]
+manifest={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC-DP2','version':VERSION,'cacheName':f'kc-dp-release-{VERSION}','releaseNotes':notes,'generatedAt':'2026-08-13T05:00:00+02:00','totalRuntimeBytes':total,'files':files}
 (OUT/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 (OUT/'RELEASE.txt').write_text(f'KC-DP2 {VERSION}\n');(OUT/'.nojekyll').touch()
 expected=json.loads((ROOT/f'release/v{VERSION}/expected.json').read_text())
