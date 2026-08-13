@@ -20,26 +20,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Bootstrap dedicated KC-DP Supabase backend
-        if: github.ref == 'refs/heads/kc-dp2-supabase-split-v01914'
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --show-error --silent --retry 3 --retry-delay 5 --max-time 240 \
-            -X POST \
-            https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/kc-dp-split-bootstrap-v01914 \
-            -o /tmp/kcdp-bootstrap.json
-          cat /tmp/kcdp-bootstrap.json
-          python3 - <<'PY'
-          import json
-          d=json.load(open('/tmp/kcdp-bootstrap.json',encoding='utf-8'))
-          assert d.get('ok') is True, d
-          assert int(d.get('memberships',0)) >= 1, d
-          print('KC-DP target bootstrap OK:', {k:d.get(k) for k in ('memberships','sync_ops','entity_versions')})
-          PY
       - name: Build and verify KC-DP2 V0.19.14
         run: python3 release/build_site.py 0.19.14
-      - name: Verify performance and security invariants
+      - name: Verify performance, security and split invariants
         shell: bash
         run: |
           set -euo pipefail
@@ -66,9 +49,10 @@ jobs:
           assert "emit('progress'" in sync and 'Synchronisation läuft' in app
           assert 'scheduleCheckpoint' in recovery and 'K.storage?.benchmark' in diagnostics
           assert "CURRENT_RELEASE='0.19.14'" in mgr
-          assert 'ptblnpiroqftcvlsrhac' in integrations
+          assert 'https://ptblnpiroqftcvlsrhac.supabase.co' in integrations
           assert 'KC_DP_DEDICATED_PROJECT' in integrations
           assert 'sb_publishable_SqXIeGN-clcZ4gjmpLdSww_4DLfyy24' in integrations
+          assert 'FUTURA_SHARED_PROJECT' not in integrations
           print('V0.19.14 performance/security/split assertions OK')
           PY
       - name: Upload verified site artifact
