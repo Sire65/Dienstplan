@@ -1,9 +1,9 @@
 {
   "app": "KC DP2",
-  "version": "0.19.21",
+  "version": "0.19.22",
   "mode": "verified-direct-site",
-  "baseVersion": "0.19.20",
-  "previousVersion": "0.19.20",
-  "releasePath": "release/v0.19.21/site",
+  "baseVersion": "0.19.21",
+  "previousVersion": "0.19.21",
+  "releasePath": "release/v0.19.22/site",
   "releasedAt": "2026-08-13T15:10:00+02:00"
 }
