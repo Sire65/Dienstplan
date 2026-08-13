@@ -9,8 +9,8 @@
     "Gerätebezogene Push-Anbindung über sichere Supabase Edge Function vorbereitet",
     "Deutsche Rückmeldungen und Regressionstests erweitert"
   ],
-  "generatedAt": "2026-08-13T11:26:18.620Z",
-  "totalRuntimeBytes": 785969,
+  "generatedAt": "2026-08-13T12:47:52.988Z",
+  "totalRuntimeBytes": 786165,
   "files": [
     {
       "path": "index.html",
@@ -253,8 +253,8 @@
     {
       "path": "src/adapters/supabase-provider.js",
       "installPath": "src/adapters/supabase-provider.js",
-      "bytes": 18602,
-      "sha256": "20d00ae926a62f144c54cf5f9060a784b9f0b4364f373b77ca323415f4b50502",
+      "bytes": 18798,
+      "sha256": "7ee32365d7c5883a1e18d33fc6b9cb0833767adab42792fca9e5bae3bcc448c5",
       "runtime": true
     },
     {

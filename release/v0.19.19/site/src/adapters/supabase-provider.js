@@ -55,7 +55,7 @@
  async function requestPasswordReset(email,redirectTo=''){
    validateConfig();const body={email:String(email).trim()};if(redirectTo)body.redirect_to=redirectTo;await raw('/auth/v1/recover',{method:'POST',body:JSON.stringify(body)},false);return {ok:true};
  }
- async function updatePassword(password){await ensureSession();const {data}=await api('/auth/v1/user',{method:'PUT',body:JSON.stringify({password:String(password)})});return {ok:true,user:data};}
+ async function updatePassword(password){await ensureSession();try{const {data}=await api('/auth/v1/user',{method:'PUT',body:JSON.stringify({password:String(password)})});return {ok:true,user:data};}catch(e){if(e?.code==='same_password'||/new password should be different/i.test(e?.message||''))throw new Error('Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.');throw e;}}
  async function currentMembership(){await ensureSession();const c=validateConfig(),uid=state.userId;if(!uid)throw new Error('Supabase Benutzer-ID fehlt.');const {data}=await api(`/rest/v1/kc_dp_memberships?select=org_id,user_id,role,active,person_id,display_name,email,phone&org_id=eq.${encodeURIComponent(c.orgId)}&user_id=eq.${encodeURIComponent(uid)}&active=is.true&limit=1`,{method:'GET'});const row=Array.isArray(data)?data[0]:null;if(!row)throw new Error('Keine aktive KC-DP-Mitgliedschaft gefunden.');return row;}
  async function signOut(){try{if(session?.access_token)await raw('/auth/v1/logout',{method:'POST'},true);}finally{await clearSession();state.status='signed_out';state.authStatus='signed_out';}return true;}
  async function provisionMemberAccess({personId,displayName,email='',phone='',role='employee'}={}){

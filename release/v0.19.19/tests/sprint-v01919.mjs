@@ -33,5 +33,6 @@ const checks=[
  ['VAPID-Anleitung vorhanden',setup.includes('KC_DP_VAPID_PRIVATE_KEY')],
  ['Private Key nur als Secret dokumentiert',setup.includes('Edge Functions → Secrets')],
  ['Supabase Fehlermeldungen deutsch',provider.includes('E-Mail-Adresse oder Passwort ist falsch.')],
+ ['Gleiches neues Passwort deutsch',provider.includes('Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.')],
  ['Push-Nutzlast enthält Planversion',notes.includes('data:{version:snapshot.version')]
 ];let passed=0;for(const [name,ok] of checks){console.log(`${ok?'PASS':'FAIL'} ${name}`);if(ok)passed++}console.log(`ERGEBNIS ${passed}/${checks.length}`);if(passed!==checks.length)process.exitCode=1;
