@@ -1,0 +1,11 @@
+KC DP2 V0.19.19
+
+- Excel-Wunschzeitenvorlage wird beim Download mit Name, Personen-ID und E-Mail des angemeldeten Mitarbeiters versehen.
+- Kollegenzeiten können vor der Übernahme nach Tag, Woche oder Gesamtzeitraum geprüft werden.
+- Mehrere Zeitfenster je Tag werden getrennt und übersichtlich dargestellt.
+- Einzelne Zeitfenster oder ganze Tage können nach Bestätigung übernommen werden; Dubletten werden ausgelassen.
+- Namen und Telefonnummern bleiben im zentralen Personenstamm (PC Manager, später KC Verwaltung).
+- Supabase speichert nur die sichere Zuordnung von Mitgliedschaft, Person und Push-Gerät.
+- Push-Abonnements und Versand sind mit RLS und rollenbeschränkter Edge Function vorbereitet.
+
+Hinweis: Für echten Push-Versand müssen einmalig die drei VAPID-Secrets gemäß PUSH_SETUP.md im Supabase-Dashboard gesetzt werden.

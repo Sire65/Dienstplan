@@ -1,0 +1,429 @@
+{
+  "schema": "KC_DP_UPDATE_MANIFEST_V1",
+  "app": "KC DP2",
+  "version": "0.19.19",
+  "cacheName": "kc-dp-release-0.19.19",
+  "releaseNotes": [
+    "Personalisierte Excel-Vorlage mit Name und Personen-ID",
+    "Kollegenzeiten mit Tag-, Wochen- und Gesamtfilter sowie mehreren Zeitfenstern",
+    "Gerätebezogene Push-Anbindung über sichere Supabase Edge Function vorbereitet",
+    "Deutsche Rückmeldungen und Regressionstests erweitert"
+  ],
+  "generatedAt": "2026-08-13T11:26:18.620Z",
+  "totalRuntimeBytes": 785969,
+  "files": [
+    {
+      "path": "index.html",
+      "installPath": "index.html",
+      "bytes": 9137,
+      "sha256": "bffdaf4ab071412816f20ce3e57c5f4f0ac4ad4be1145a49f45a7ef013cf8ec0",
+      "runtime": true
+    },
+    {
+      "path": "src/core/model.js",
+      "installPath": "src/core/model.js",
+      "bytes": 7720,
+      "sha256": "d9ca46a985ed5c8d20801b91b56d7d36251ab819765a84bfeee1b5f7c281a899",
+      "runtime": true
+    },
+    {
+      "path": "src/core/planning.js",
+      "installPath": "src/core/planning.js",
+      "bytes": 14388,
+      "sha256": "4e35403e7eb3fd93323e28231a338d4c0273ec151bf1e7ebd5e68e44771c94bf",
+      "runtime": true
+    },
+    {
+      "path": "src/core/auth.js",
+      "installPath": "src/core/auth.js",
+      "bytes": 10798,
+      "sha256": "e831a5b2cd3c61b36da4600aceaec4ea5e1132bd5c58f1cf751230fcc201d142",
+      "runtime": true
+    },
+    {
+      "path": "src/core/session.js",
+      "installPath": "src/core/session.js",
+      "bytes": 2334,
+      "sha256": "6b98fcfa305481f5ded0f89c712ebc71e311571b06dfa546ea89e921e3b76d82",
+      "runtime": true
+    },
+    {
+      "path": "src/core/member-access.js",
+      "installPath": "src/core/member-access.js",
+      "bytes": 10771,
+      "sha256": "a9f14e8ce07b01069f493abf98ba7e50f90fa1c71a924515f73b7955d33e5f38",
+      "runtime": true
+    },
+    {
+      "path": "src/core/configuration.js",
+      "installPath": "src/core/configuration.js",
+      "bytes": 6397,
+      "sha256": "1730e4ee8c19a951df8f4972ee6c827454032427046db7143388d79920fd4800",
+      "runtime": true
+    },
+    {
+      "path": "src/core/integrations.js",
+      "installPath": "src/core/integrations.js",
+      "bytes": 2570,
+      "sha256": "4c797404a1d256d4e819fa601db5b0cb02931e5635a7c85ddfe8607b3ed5aa38",
+      "runtime": true
+    },
+    {
+      "path": "src/core/database-diagnostics.js",
+      "installPath": "src/core/database-diagnostics.js",
+      "bytes": 8144,
+      "sha256": "5b69f41fe43f8a165c98f596a2e71ec9ef82fd302f7c94b5ecd1bad40e48052e",
+      "runtime": true
+    },
+    {
+      "path": "src/core/auto-sync.js",
+      "installPath": "src/core/auto-sync.js",
+      "bytes": 2003,
+      "sha256": "9d282da3a18ec9b663ff659eff4d0afe1eef6bcff7ad88e9490b24ca9f2f6125",
+      "runtime": true
+    },
+    {
+      "path": "src/core/intelligence.js",
+      "installPath": "src/core/intelligence.js",
+      "bytes": 3638,
+      "sha256": "10a180d6dbf28e2f5b8a3a4d00e2b66fe72682071b9b4e43d9c78d50562eea30",
+      "runtime": true
+    },
+    {
+      "path": "src/core/history.js",
+      "installPath": "src/core/history.js",
+      "bytes": 1794,
+      "sha256": "d4ae320d6e246aec89471498ec5a3747f578ef1371d377c8f6e917a8327669f0",
+      "runtime": true
+    },
+    {
+      "path": "src/core/locks.js",
+      "installPath": "src/core/locks.js",
+      "bytes": 1544,
+      "sha256": "a00f7f211c09a67c930c180d0623519cc8f0ed0545810dd633430cffe7036cad",
+      "runtime": true
+    },
+    {
+      "path": "src/core/recovery.js",
+      "installPath": "src/core/recovery.js",
+      "bytes": 1792,
+      "sha256": "07eeb746915a02b39b96418684a05fb37457d6ddf5e7eadcf8c70de099116f46",
+      "runtime": true
+    },
+    {
+      "path": "src/core/release.js",
+      "installPath": "src/core/release.js",
+      "bytes": 2091,
+      "sha256": "525c135cb3cfa6f4d63e80c21b518cad5e301310cc1187b4f21f88f4d3c7c289",
+      "runtime": true
+    },
+    {
+      "path": "src/core/staffing.js",
+      "installPath": "src/core/staffing.js",
+      "bytes": 18811,
+      "sha256": "829359697f824a9a5f2da3ed2caf05c5ba1471aef908083699d1141499376554",
+      "runtime": true
+    },
+    {
+      "path": "src/core/breaks.js",
+      "installPath": "src/core/breaks.js",
+      "bytes": 9086,
+      "sha256": "6a6a8c12159258c311b12be886bce360077b9d98e11991244c1103ffab55bab4",
+      "runtime": true
+    },
+    {
+      "path": "src/core/workflow.js",
+      "installPath": "src/core/workflow.js",
+      "bytes": 13470,
+      "sha256": "100d5f9aa36d1260b0af6f156927b482308e13d149586e5f21473101a32b44bc",
+      "runtime": true
+    },
+    {
+      "path": "src/core/actual.js",
+      "installPath": "src/core/actual.js",
+      "bytes": 17666,
+      "sha256": "93cba040d989a76f355bf747ae449e51dfaa98cf1c9832bc8d69d630d1e257a9",
+      "runtime": true
+    },
+    {
+      "path": "src/core/analytics.js",
+      "installPath": "src/core/analytics.js",
+      "bytes": 7913,
+      "sha256": "5be0442e229cb0e81f9cd0c8d37182dcd732a38cb943f9b4d35d6ffbcd9817eb",
+      "runtime": true
+    },
+    {
+      "path": "src/core/export.js",
+      "installPath": "src/core/export.js",
+      "bytes": 11153,
+      "sha256": "2922e46616d6d24368820b3a28d1a16737a1efd8281b78121277b27ecf17aa9d",
+      "runtime": true
+    },
+    {
+      "path": "src/core/documents.js",
+      "installPath": "src/core/documents.js",
+      "bytes": 23508,
+      "sha256": "fcc5d5d511a1b024f393d86d4669c0903dc68e37bff158066d7db66c4e80958b",
+      "runtime": true
+    },
+    {
+      "path": "src/core/distribution.js",
+      "installPath": "src/core/distribution.js",
+      "bytes": 3291,
+      "sha256": "cbe680a75124db071db4831b9fefb5eab20ed1165e2a5f1fa15e0b21509f2e48",
+      "runtime": true
+    },
+    {
+      "path": "src/core/packages.js",
+      "installPath": "src/core/packages.js",
+      "bytes": 1044,
+      "sha256": "d01cf087f04b74baf7d5e091230545765422b4424e08ab094716557f4d3f8e9a",
+      "runtime": true
+    },
+    {
+      "path": "src/core/security-core.js",
+      "installPath": "src/core/security-core.js",
+      "bytes": 3250,
+      "sha256": "5640f4406a7532c8f9cf5b7ad1c187498aee2b0548aaedce94e2dc77d6e40e54",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/storage.js",
+      "installPath": "src/adapters/storage.js",
+      "bytes": 12064,
+      "sha256": "987fc3cc95be639a472b8d969febfff474c133212ea48a01d7d9f1bebaa65904",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/backup.js",
+      "installPath": "src/adapters/backup.js",
+      "bytes": 2412,
+      "sha256": "2cbc0c69c86d9b5c49289063866476dd65f474820699e8200da59a0ca7cf954e",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/person-provider.js",
+      "installPath": "src/adapters/person-provider.js",
+      "bytes": 4033,
+      "sha256": "67ea400ea526d84e013eb8ca52cfd39b49374a2b4069a175bd3cabb4dfeeac8e",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/context-providers.js",
+      "installPath": "src/adapters/context-providers.js",
+      "bytes": 1844,
+      "sha256": "01faa74d82583a54409437c31a3f27e51c5af1897da21add84d4d12a8d6cca20",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/pdf.js",
+      "installPath": "src/adapters/pdf.js",
+      "bytes": 9658,
+      "sha256": "9ff9157d4a529c2800b3d8e08784cbeeaa1a85e096c44a541acbe398a6aaa586",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/host.js",
+      "installPath": "src/adapters/host.js",
+      "bytes": 1734,
+      "sha256": "57650ed8ae5935956be2b7499d8095057719477c760f551c5ada2f14d84a3e28",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/email.js",
+      "installPath": "src/adapters/email.js",
+      "bytes": 868,
+      "sha256": "d64ad1e8eadd415bc56d43f17a357e4b45e6cff9294e839fdff03de6b63a9e6d",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/sync.js",
+      "installPath": "src/adapters/sync.js",
+      "bytes": 8426,
+      "sha256": "25d2c5918a37a877f288fa75883982fbbce9e5ec05c94a7c4fe5921ee69b51a8",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/pc-manager.js",
+      "installPath": "src/adapters/pc-manager.js",
+      "bytes": 5733,
+      "sha256": "c2552605838c722503120eb07bf2d7aa84a9ee000b06232e372bf7300e6dd1b2",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/supabase-provider.js",
+      "installPath": "src/adapters/supabase-provider.js",
+      "bytes": 18602,
+      "sha256": "20d00ae926a62f144c54cf5f9060a784b9f0b4364f373b77ca323415f4b50502",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/photo-recognition.js",
+      "installPath": "src/adapters/photo-recognition.js",
+      "bytes": 2629,
+      "sha256": "ce05997c77d0218948d30291c03cc1e538c88754651d1a0728285b5dbd71ae4c",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/timeclock-import.js",
+      "installPath": "src/adapters/timeclock-import.js",
+      "bytes": 5666,
+      "sha256": "fd65971b146c21c7ff0265e574466b7c74b013610617593e649d69ba3e4e8cc2",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/wish-import.js",
+      "installPath": "src/adapters/wish-import.js",
+      "bytes": 9401,
+      "sha256": "881fd99eabc97c51d3bfd55f678f187337597f1e57205693bdd45a9bb5d5e579",
+      "runtime": true
+    },
+    {
+      "path": "src/core/notifications.js",
+      "installPath": "src/core/notifications.js",
+      "bytes": 7525,
+      "sha256": "87eb22c8b1163c0e3f092225e8467bea74f3f03188318b158b3e5f8604a400b4",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/push.js",
+      "installPath": "src/adapters/push.js",
+      "bytes": 4245,
+      "sha256": "413e36176c4a6ca1c7b983ba23f803cb88f329af07285d97d77a385e7e43b2cd",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/device-ux.js",
+      "installPath": "src/ui/device-ux.js",
+      "bytes": 1598,
+      "sha256": "9e966f3979eb0789ac2a8614e3ca68c5006dcd2ee7a76f6e7b18676a4a8d66c6",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/wish-sprint.js",
+      "installPath": "src/ui/wish-sprint.js",
+      "bytes": 7721,
+      "sha256": "f07287dd2e3a9cf94ab384dfbafa2764d4c7316b3673cc6a00f3196c8fe60f8a",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/role-ux.js",
+      "installPath": "src/ui/role-ux.js",
+      "bytes": 67381,
+      "sha256": "6966300d3c5458e23378fec7d44973fc2b6cfb42c6aa98640b1554e97c3789ba",
+      "runtime": true
+    },
+    {
+      "path": "src/core/update-manager.js",
+      "installPath": "src/core/update-manager.js",
+      "bytes": 12419,
+      "sha256": "14811d4791b15b421ff1f673c7e09fa50e6eeb02e88c893a877d569ea7178666",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/update-ui.js",
+      "installPath": "src/ui/update-ui.js",
+      "bytes": 5522,
+      "sha256": "52181057b740b1cb3c78daad7658287a7446a079f55da7e48fa116916852d7ac",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/app.js",
+      "installPath": "src/ui/app.js",
+      "bytes": 215045,
+      "sha256": "f2c15ec4155b00d9093ea25fa2d73a4c7e33593fb174eba0c0a0534d50ccda96",
+      "runtime": true
+    },
+    {
+      "path": "manifest.webmanifest",
+      "installPath": "manifest.webmanifest",
+      "bytes": 544,
+      "sha256": "969f08536b18b58fefa638dc5b64d65844b2571e3628073d90746755dc0d4dbc",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-dp2-apple-touch-icon.png",
+      "installPath": "assets/kc-dp2-apple-touch-icon.png",
+      "bytes": 6880,
+      "sha256": "54a38378cda274664b1e4240852b0765f8e34ad2816499a962291d06a3ab9b92",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/app.css",
+      "installPath": "src/ui/app.css",
+      "bytes": 35711,
+      "sha256": "44b9e72286055533282a171237ba76a1455fcdd921ec085bca34ddd54486075e",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/role-ux.css",
+      "installPath": "src/ui/role-ux.css",
+      "bytes": 20173,
+      "sha256": "8cf02711a0128ddd3ececec390e1306fb694a27f84de0ef390c4a26819fb2187",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/update-ui.css",
+      "installPath": "src/ui/update-ui.css",
+      "bytes": 2952,
+      "sha256": "a50d1786a2a3d06c8cb1c23e173035f057d14beec7331da4e2e16a4f8403bfb5",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-logo.svg",
+      "installPath": "assets/kc-logo.svg",
+      "bytes": 598,
+      "sha256": "119836d4a698e4dbd8e1efbf852ac5c1d6fe980e92a34ac50a4cf59863a680e2",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-dp2-icon-192.png",
+      "installPath": "assets/kc-dp2-icon-192.png",
+      "bytes": 7540,
+      "sha256": "c997df019522046a8463591f38d21c0552997ac0e61f250ae22a5ea004eb108a",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-dp2-icon-512.png",
+      "installPath": "assets/kc-dp2-icon-512.png",
+      "bytes": 20350,
+      "sha256": "494e2c57686df31ffc9b33bd3c181817178cde78bfde46c71810066a1c06e0ea",
+      "runtime": true
+    },
+    {
+      "path": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
+      "installPath": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
+      "bytes": 10553,
+      "sha256": "a4a8541ab3f147014b84be60781e74d4f3be4373f7b62a80cc04ec609ef2c7a3",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-login-logo.webp",
+      "installPath": "assets/kc-login-logo.webp",
+      "bytes": 5004,
+      "sha256": "0805ed99e791c14cd78a968b310218b692bae68518cb665621427d169031bbb7",
+      "runtime": true
+    },
+    {
+      "path": "service-worker.js",
+      "installPath": "service-worker.js",
+      "bytes": 9537,
+      "sha256": "5422961760700c6a64115d7bfe38532abdfd6fd8c715a6416991e3def484988b",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-login-startbild.webp",
+      "installPath": "assets/kc-login-startbild.webp",
+      "bytes": 27362,
+      "sha256": "c2e250d35eba2a098cd27af353820c56e8da305998321573a1119579e077dee9",
+      "runtime": true
+    },
+    {
+      "path": "assets/kc-login-startbild-v01917.webp",
+      "installPath": "assets/kc-login-startbild-v01917.webp",
+      "bytes": 39926,
+      "sha256": "f85a7e0c7996a9585524ef7b3a9e233e0cb6a75008d832194b18119af31a4220",
+      "runtime": true
+    }
+  ]
+}
