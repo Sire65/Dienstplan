@@ -1,9 +1,9 @@
 {
-  "app": "KC-DP2",
-  "version": "0.19.15",
-  "mode": "incremental-persistence-performance",
-  "baseVersion": "0.19.14",
-  "previousVersion": "0.19.14",
-  "releaseScript": "release/v0.19.15/apply.py",
-  "releasedAt": "2026-08-13T05:09:00Z"
+  "app": "KC DP2",
+  "version": "0.19.17",
+  "mode": "verified-direct-site",
+  "baseVersion": "0.19.16",
+  "previousVersion": "0.19.15",
+  "releasePath": "release/v0.19.17/site",
+  "releasedAt": "2026-08-13T10:45:00+02:00"
 }
