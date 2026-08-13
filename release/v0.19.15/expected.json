@@ -1,0 +1,11 @@
+{
+  "index.html": "93229d8d09558ebcb0744bf2622fee65f328baf13f485adefc539c0a019239d3",
+  "service-worker.js": "5c0c9bce7539731f98edf94eeef2bc2564067fdd0853f729dd0873bfb47e2e0c",
+  "RELEASE.txt": "582f8f7c6fc2b5c71a8178a469b1b4874d69c36a352e2a2c5c16f8ea64963614",
+  "src/core/update-manager.js": "aadf93b505480ad89ec10462c19c5d6343060410c928d41031b98ba13f89dfde",
+  "src/core/database-diagnostics.js": "1bfc3975052f533662af93b1f1b4223c7cec43ec2b36ab4ec1ca58911f227913",
+  "src/ui/update-ui.js": "58ca2cd787bcd13aeea78b6a32cc5f9eae879e59c95cf961e9f7440001ecee8f",
+  "src/ui/app.js": "372f65d48734d252be1a61a8a738e7fd225407afc042a3523a3c5d90f292d6f0",
+  "src/ui/role-ux.js": "a00d7e972c7e63c8d218f7d60cb40a0405471df9e8ae382c7ac9bcd9247e58d3",
+  "src/adapters/storage.js": "0b1f36de635a749d0633603ef27d53df94a7ce4d4caed5c8af428361557122db"
+}
