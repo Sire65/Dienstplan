@@ -16,10 +16,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --show-error --silent --max-time 120 \
+          status=$(curl --show-error --silent --max-time 120 \
             -X POST \
             https://iddudrxuihdodnvejxcp.supabase.co/functions/v1/kc-dp-export-v01914 \
-            -o /tmp/kcdp-transfer.json
+            -o /tmp/kcdp-transfer.json \
+            -w '%{http_code}')
+          echo "HTTP status: $status"
           cat /tmp/kcdp-transfer.json
           python3 - <<'PY'
           import json
