@@ -6,7 +6,7 @@
   "src/core/recovery.js": "3c8bd011adb769cc85440fdfc95308b8fc16d35b0c9257cffb820024c17fd5c5",
   "src/core/update-manager.js": "17fdca5adbf9912938fe77a65f6c11a3b17e7a30fd199b1ff7a434f8438b4381",
   "src/adapters/sync.js": "cc05917db5c12b5de86fad9b24d4682a9cba5e4a767860538597686ea1f1f303",
-  "src/adapters/storage.js": "ef043726c8c97f288fa75883982fbbce9e5ec05c94a7c4fe5921ee69b51a8",
+  "src/adapters/storage.js": "ef043726c8c97a278f4da89dd621ab2045d7486ca47fed2cc414594f6ee7c148",
   "src/ui/role-ux.js": "304547c6e33ce4ace4d1bb238c9e63138a95c1898ae1b9814adf673867cc9304",
   "src/ui/app.js": "27a466319f8767783d2921cfbef4c572318f0c69409a7cbbcb51145b17d5082e",
   "src/ui/update-ui.js": "30353150d10313f6aff9349423bb2c6bcf38806618296f789109a4778d0a566f",
