@@ -2,7 +2,7 @@ name: KC-DP2 Verified Web Release
 
 on:
   push:
-    branches: [main, release-v01913-staging]
+    branches: [main, release-v01913-staging, kc-dp2-supabase-split-v01914]
   workflow_dispatch:
 
 permissions:
@@ -20,9 +20,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Build and verify KC-DP2 V0.19.13
-        run: python3 release/build_site.py 0.19.13
-      - name: Verify performance and security invariants
+      - name: Build and verify KC-DP2 V0.19.14
+        run: python3 release/build_site.py 0.19.14
+      - name: Verify performance, security and split invariants
         shell: bash
         run: |
           set -euo pipefail
@@ -35,6 +35,7 @@ jobs:
           sync=(root/'src/adapters/sync.js').read_text(encoding='utf-8')
           recovery=(root/'src/core/recovery.js').read_text(encoding='utf-8')
           diagnostics=(root/'src/core/database-diagnostics.js').read_text(encoding='utf-8')
+          integrations=(root/'src/core/integrations.js').read_text(encoding='utf-8')
           mgr=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
           assert 'KC_DP_LOCAL_V2' in storage
           assert '_localKeyPromise' in storage and 'ITERATIONS=310000' in storage
@@ -47,13 +48,17 @@ jobs:
           assert 'Zeiten werden übernommen' in ux and 'Sollplan wird berechnet' in ux
           assert "emit('progress'" in sync and 'Synchronisation läuft' in app
           assert 'scheduleCheckpoint' in recovery and 'K.storage?.benchmark' in diagnostics
-          assert "CURRENT_RELEASE='0.19.13'" in mgr
-          print('V0.19.13 performance/security assertions OK')
+          assert "CURRENT_RELEASE='0.19.14'" in mgr
+          assert 'https://ptblnpiroqftcvlsrhac.supabase.co' in integrations
+          assert 'KC_DP_DEDICATED_PROJECT' in integrations
+          assert 'sb_publishable_SqXIeGN-clcZ4gjmpLdSww_4DLfyy24' in integrations
+          assert 'FUTURA_SHARED_PROJECT' not in integrations
+          print('V0.19.14 performance/security/split assertions OK')
           PY
       - name: Upload verified site artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v01913
+          name: kc-dp2-verified-site-v01914
           path: build/site
           if-no-files-found: error
           retention-days: 2
@@ -67,7 +72,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/download-artifact@v4
-        with: {name: kc-dp2-verified-site-v01913, path: build/site}
+        with: {name: kc-dp2-verified-site-v01914, path: build/site}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with: {path: build/site}
