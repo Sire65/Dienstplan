@@ -1,0 +1,25 @@
+KC DP2 V0.19.24
+
+- Vorbereitung und Nachbereitung werden in der oberen Tagesbox sowie in der Tagesauswahl der Mitarbeitereingabe gestrichelt dargestellt.
+- Samstag erhält eine dezente blaue, Sonntag eine dezente warme Kennzeichnung; Kombinationen mit Vor-/Nachbereitung bleiben erkennbar.
+- Der Supabase-Verbindungstest prüft und erneuert die verschlüsselt gespeicherte Auth-Sitzung automatisch, bevor er eine erneute Anmeldung verlangt.
+- Z-Dienste bleiben separat unter `Z · EXTERN` gezählt und sind ausdrücklich von Stand gesamt, Vorne und Hinten ausgeschlossen.
+- In den persönlichen Einsatzregeln können Standard-Dienstklasse und Standardtätigkeit gespeichert werden, z. B. `Z` und `Vorbereitung zuhause`; seltene Standdienste bleiben manuell auswählbar.
+- Die Ausgangstür speichert zuerst und meldet sicher ab. Sie verändert oder entfernt keine Dienste mehr und erklärt die technische Browsergrenze beim Fensterschließen.
+- Edge-/Kennwortmanager-Autofill kann die Supabase-Projektadresse nicht mehr in die globale Live-Suche einsetzen.
+- Die Live-Suche startet zuverlässig leer und bleibt für normale Personen-, Dienst- und Wunschsuche vollständig nutzbar.
+- Die IDX-LED zeigt nur noch echte IndexedDB-/Entschlüsselungsfehler rot an; nachgelagerte Startfehler werden getrennt behandelt.
+- Ein Klick auf IDX öffnet das erweiterte IndexedDB- und Performance-Center mit Verbindungsstatus und vollständigem Schreib-/Lese-/Löschtest.
+- Veraltete lokale Supabase-Einstellungen werden beim Start automatisch auf das richtige KC-DP2-Projekt repariert.
+- Passwort-Anmeldung und Passwort-Wiederherstellung können dadurch nicht mehr unbemerkt das alte Fremdprojekt mit localhost-Weiterleitung verwenden.
+- Push-Benachrichtigungen sind jetzt im Benutzermenü sichtbar und können pro Gerät aktiviert oder deaktiviert werden.
+- Administratoren können dort eine Testnachricht an das eigene Gerät senden.
+- Excel-Wunschzeitenvorlage wird beim Download mit Name, Personen-ID und E-Mail des angemeldeten Mitarbeiters versehen.
+- Kollegenzeiten können vor der Übernahme nach Tag, Woche oder Gesamtzeitraum geprüft werden.
+- Mehrere Zeitfenster je Tag werden getrennt und übersichtlich dargestellt.
+- Einzelne Zeitfenster oder ganze Tage können nach Bestätigung übernommen werden; Dubletten werden ausgelassen.
+- Namen und Telefonnummern bleiben im zentralen Personenstamm (PC Manager, später KC Verwaltung).
+- Supabase speichert nur die sichere Zuordnung von Mitgliedschaft, Person und Push-Gerät.
+- Push-Abonnements und Versand sind mit RLS und rollenbeschränkter Edge Function vorbereitet.
+
+Hinweis: Die drei VAPID-Secrets sind serverseitig erforderlich. Danach muss jedes gewünschte Gerät Push einmal im Benutzermenü aktivieren.
