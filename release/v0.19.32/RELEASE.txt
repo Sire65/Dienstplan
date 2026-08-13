@@ -1,0 +1,65 @@
+KC DP2 V0.19.32
+
+- Tiefenkonsolidierung von Architektur, Sicherheitsgrenzen, IndexedDB, Offline-Outbox, Supabase-Sitzung, Planung, Drag-and-drop und Updateverfahren.
+- Neuer eigenständiger TÜV-/Studio-/Architektur-Prüflauf mit 40 Kontrollen; zusätzlich 78 Funktions- und 17 Z-Regressionsprüfungen.
+- Sämtliche JavaScript-Module wurden einzeln mit Node geprüft; HTML zusätzlich unabhängig mit `html-validate`, Hashwerte mit OpenSSL und Geheimnisse mit einem Musterscan.
+- 36 vom Fremdprüfer gefundene HTML-/Barrierefreiheitsmängel wurden behoben: explizite Buttontypen, gültige ARIA-Gruppe, zugänglicher Datumsknopf und normgerechter DOCTYPE.
+- Kleine schwebende Farblegende im vorhandenen Kopfbereich. Sie belegt keine neue Zeile und wird unter 1450 px automatisch vollständig ausgeblendet.
+- Doppelklick auf einen Dienstbalken öffnet zuverlässig die vollständigen Dienstdetails.
+- Doppelklick auf einen Mitarbeiternamen öffnet die persönliche Dienstübersicht mit Stunden und wichtigen Einsatzinformationen.
+- Klicks und Doppelklicks werden erst ab sechs Pixel Bewegung als Ziehen behandelt; unbeabsichtigtes Verschieben entfällt.
+- Beim Ziehen auf eine andere Person wird die Zielzeile grün bei erlaubter und rot bei unzulässiger Ablage markiert.
+- Eine abgelehnte Ablage nennt Zielperson und konkreten Grund; der Balken springt nicht mehr ohne Erklärung zurück.
+- Beim Wechsel zu einer anderen Person werden deren Stunden- und Einsatzregeln korrekt neu geprüft.
+- Reines Verschieben eines bereits vorhandenen Dienstes wird nicht mehr fälschlich durch eine schon vorher bestehende persönliche Stundenüberschreitung blockiert.
+- Gleich lange oder kürzere Dienste dürfen verschoben werden; nur eine tatsächliche zusätzliche Überschreitung bleibt gesperrt.
+- Die Meldung spricht jetzt verständlich von **persönlicher Höchstzeit** und nennt erlaubte Stunden, neue Gesamtstunden und eine konkrete Lösung.
+- Schnellplanung im Raster erzeugt beim Loslassen sofort einen echten Dienstbalken und speichert ihn verschlüsselt.
+- Nach der Personenauswahl kann in jeder freien Zeile des Zeitrasters gezogen werden; der Dienst wird trotzdem der ausgewählten Person zugeordnet.
+- Die goldene Vorschau ist jetzt gefüllt, beschriftet und deutlich vom bloßen Auswahlrahmen unterscheidbar.
+- Die Anzeige-Reserve nach dem offiziellen Tagesende wird bei der Schnellplanung korrekt berücksichtigt.
+- Fachliche Konflikte führen zu einer verständlichen Fehlermeldung; die Person bleibt für einen neuen Versuch ausgewählt.
+- Die Besetzungsmatrix besitzt jetzt eine eigene, klar ausgerichtete Uhrzeitleiste wie der obere Dienstplan.
+- Das **＋ Einplanen** bleibt auch auf schmalen Bildschirmen sichtbar; zusätzlich steht ein großes Plus direkt neben **Planprüfung**.
+- Die IDX-LED wird nur bei einem tatsächlichen IndexedDB-/Transaktionsfehler rot, nicht mehr bei einem Entschlüsselungs- oder nachgelagerten Startfehler.
+- Nach dem Programmstart läuft automatisch ein verschlüsselter Schreib-/Lese-/Löschtest; erfolgreiches lokales Speichern setzt IDX wieder grün.
+- Fünf Klicks auf die Kochmütze im Anmeldefenster öffnen den Entwicklungs-Schnellzugang.
+- Eine vorhandene, gültige und verschlüsselt gespeicherte Admin-Sitzung wird ohne erneute Passworteingabe fortgesetzt.
+- Ohne gültige Sitzung wird ein einmaliger Supabase-Sicherheitscode ausschließlich an ha-joko@web.de gesendet.
+- Nach der Codeprüfung wird zusätzlich die echte Supabase-Mitgliedschaft mit Administratorrolle verlangt.
+- Kein Passwort, Admin-Token oder geheimer Schlüssel ist im Programmcode gespeichert.
+- Die Funktion besitzt den zentralen Schalter DEV_FAST_ACCESS.enabled und kann vor dem Echtbetrieb vollständig deaktiviert werden.
+- Neuer Button **＋ Einplanen** direkt neben **✓ Prüfen**.
+- Rechte Mitarbeiterleiste mit Live-Suche, Qualifikation, geplanten Tagesstunden, Wunschstatus und Z-Standard.
+- Antippen plus Ziehen im Zeitraster als präziser Standard für PC und Tablet; alternativ direkter Schnellplanungsdialog.
+- Nicht verfügbare Mitarbeiter werden rot, bevorzugte und verfügbare Mitarbeiter getrennt gekennzeichnet.
+- Z-Dienste werden auch bei alten widersprüchlichen Angaben wie `Vorne` plus `Z · anderer Ort` automatisch als Z erkannt.
+- Z erscheint nur während seines echten Zeitfensters in der Z-Zeile und wird niemals bei Stand gesamt, Vorne oder Hinten gezählt.
+- Z-Balken sind als `Z EXTERN` deutlich braun-gold gestrichelt; die Z-Matrix zeigt zusätzlich die jeweilige Stunde.
+- Supabase-Ausfälle blockieren den lokalen Programmstart nicht mehr dauerhaft; festhängende IndexedDB-Zugriffe werden erkannt und verständlich gemeldet.
+- Der Ladebalken wird auch bei einem Entschlüsselungs- oder Datenbankfehler sicher geschlossen.
+- Jede Sync-Operation wird sofort verschlüsselt in der lokalen IndexedDB-Outbox gesichert, nicht erst beim nächsten allgemeinen Speichern.
+- Fehlgeschlagene Übertragungen bleiben mit Wiederholungszeit in der Outbox und werden nach wiederhergestellter Verbindung automatisch nachgesendet.
+- Vorbereitung und Nachbereitung werden in der oberen Tagesbox sowie in der Tagesauswahl der Mitarbeitereingabe gestrichelt dargestellt.
+- Samstag erhält eine dezente blaue, Sonntag eine dezente warme Kennzeichnung; Kombinationen mit Vor-/Nachbereitung bleiben erkennbar.
+- Der Supabase-Verbindungstest prüft und erneuert die verschlüsselt gespeicherte Auth-Sitzung automatisch, bevor er eine erneute Anmeldung verlangt.
+- Z-Dienste bleiben separat unter `Z · EXTERN` gezählt und sind ausdrücklich von Stand gesamt, Vorne und Hinten ausgeschlossen.
+- In den persönlichen Einsatzregeln können Standard-Dienstklasse und Standardtätigkeit gespeichert werden, z. B. `Z` und `Vorbereitung zuhause`; seltene Standdienste bleiben manuell auswählbar.
+- Die Ausgangstür speichert zuerst und meldet sicher ab. Sie verändert oder entfernt keine Dienste mehr und erklärt die technische Browsergrenze beim Fensterschließen.
+- Edge-/Kennwortmanager-Autofill kann die Supabase-Projektadresse nicht mehr in die globale Live-Suche einsetzen.
+- Die Live-Suche startet zuverlässig leer und bleibt für normale Personen-, Dienst- und Wunschsuche vollständig nutzbar.
+- Die IDX-LED zeigt nur noch echte IndexedDB-/Entschlüsselungsfehler rot an; nachgelagerte Startfehler werden getrennt behandelt.
+- Ein Klick auf IDX öffnet das erweiterte IndexedDB- und Performance-Center mit Verbindungsstatus und vollständigem Schreib-/Lese-/Löschtest.
+- Veraltete lokale Supabase-Einstellungen werden beim Start automatisch auf das richtige KC-DP2-Projekt repariert.
+- Passwort-Anmeldung und Passwort-Wiederherstellung können dadurch nicht mehr unbemerkt das alte Fremdprojekt mit localhost-Weiterleitung verwenden.
+- Push-Benachrichtigungen sind jetzt im Benutzermenü sichtbar und können pro Gerät aktiviert oder deaktiviert werden.
+- Administratoren können dort eine Testnachricht an das eigene Gerät senden.
+- Excel-Wunschzeitenvorlage wird beim Download mit Name, Personen-ID und E-Mail des angemeldeten Mitarbeiters versehen.
+- Kollegenzeiten können vor der Übernahme nach Tag, Woche oder Gesamtzeitraum geprüft werden.
+- Mehrere Zeitfenster je Tag werden getrennt und übersichtlich dargestellt.
+- Einzelne Zeitfenster oder ganze Tage können nach Bestätigung übernommen werden; Dubletten werden ausgelassen.
+- Namen und Telefonnummern bleiben im zentralen Personenstamm (PC Manager, später KC Verwaltung).
+- Supabase speichert nur die sichere Zuordnung von Mitgliedschaft, Person und Push-Gerät.
+- Push-Abonnements und Versand sind mit RLS und rollenbeschränkter Edge Function vorbereitet.
+
+Hinweis: Die drei VAPID-Secrets sind serverseitig erforderlich. Danach muss jedes gewünschte Gerät Push einmal im Benutzermenü aktivieren.
