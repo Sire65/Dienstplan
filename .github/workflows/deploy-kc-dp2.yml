@@ -20,6 +20,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Bootstrap dedicated KC-DP Supabase backend
+        if: github.ref == 'refs/heads/kc-dp2-supabase-split-v01914'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent --retry 3 --retry-delay 5 --max-time 240 \
+            -X POST \
+            https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/kc-dp-split-bootstrap-v01914 \
+            -o /tmp/kcdp-bootstrap.json
+          cat /tmp/kcdp-bootstrap.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/kcdp-bootstrap.json',encoding='utf-8'))
+          assert d.get('ok') is True, d
+          assert int(d.get('memberships',0)) >= 1, d
+          print('KC-DP target bootstrap OK:', {k:d.get(k) for k in ('memberships','sync_ops','entity_versions')})
+          PY
       - name: Build and verify KC-DP2 V0.19.14
         run: python3 release/build_site.py 0.19.14
       - name: Verify performance and security invariants
