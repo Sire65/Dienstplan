@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const root = path.resolve(import.meta.dirname, '..');
+const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const sql = read('supabase/nightly_plan_push_migration.sql');
+const edge = read('supabase/functions/kc-dp-push/index.ts');
+const adapter = read('site/src/adapters/push.js');
+const workflow = read('site/src/core/workflow.js');
+const ui = read('site/src/ui/role-ux.js');
+let passed = 0;
+const check = (name, condition) => {
+  assert.ok(condition, name);
+  passed += 1;
+  console.log(`✓ ${String(passed).padStart(2, '0')} ${name}`);
+};
+
+check('Cron-Erweiterung wird aktiviert', /create extension if not exists pg_cron/i.test(sql));
+check('HTTP-Erweiterung wird aktiviert', /create extension if not exists pg_net/i.test(sql));
+check('Zeitplan-Tabelle vorhanden', /create table if not exists public\.kc_dp_push_schedule_settings/i.test(sql));
+check('Minimale Vorschau-Tabelle vorhanden', /create table if not exists public\.kc_dp_daily_push_preview/i.test(sql));
+check('Idempotenz-Tabelle vorhanden', /create table if not exists public\.kc_dp_daily_push_runs/i.test(sql));
+check('Cron-Authentifizierung ist getrennt', /create table if not exists public\.kc_dp_cron_auth/i.test(sql));
+check('RLS wird für Zeitplan aktiviert', /enable row level security[\s\S]*kc_dp_push_schedule_settings/i.test(sql));
+check('RLS wird für Vorschau aktiviert', /enable row level security[\s\S]*kc_dp_daily_push_preview/i.test(sql));
+check('Vorschau ist für Clients gesperrt', /revoke all on[^;]*kc_dp_daily_push_preview[^;]*from[^;]*(anon|authenticated)/i.test(sql));
+check('Läufe sind für Clients gesperrt', /revoke all on[^;]*kc_dp_daily_push_runs[^;]*from[^;]*(anon|authenticated)/i.test(sql));
+check('Cron-Schlüssel wird in Vault gespeichert', /vault\.create_secret[\s\S]*kc_dp_nightly_push_secret/i.test(sql));
+check('Nur Hash liegt in Auth-Tabelle', /digest\([\s\S]*sha256/i.test(sql));
+check('Cron prüft alle fünf Minuten', /'\*\/5 \* \* \* \*'/i.test(sql));
+check('Standardzeit ist 20 Uhr', /'20:00(?::00)?'/i.test(sql));
+check('Zeitzone ist Europe\/Berlin', /Europe\/Berlin/i.test(sql));
+check('Standardempfänger sind Eingeteilte', /recipient_scope[\s\S]*scheduled/i.test(sql));
+check('Edge prüft Cron-Geheimnis', /cronSecret|secret_hash/i.test(edge));
+check('Edge verwendet sicheren Hashvergleich', /sha256|digest/i.test(edge));
+check('Edge berechnet den Folgetag', /tomorrow|nextDate|targetDate/i.test(edge));
+check('Edge erkennt außerhalb der Versandzeit', /not_due/i.test(edge));
+check('Edge besitzt Doppelsende-Schutz', /kc_dp_daily_push_runs/i.test(edge));
+check('Edge protokolliert Zustellungen', /kc_dp_push_deliveries/i.test(edge));
+check('Edge verarbeitet nur minimale Vorschau', /kc_dp_daily_push_preview/i.test(edge));
+check('Eingeteilte und alle Aktiven sind auswählbar', /all_active/.test(edge) && /scheduled/.test(edge));
+check('Adapter veröffentlicht Vorschau', /publishPreview\s*\(/.test(adapter));
+check('Vorschau enthält Personen-ID und Datum', /personId/.test(adapter) && /date:s\.date/.test(adapter));
+check('Vorschau überträgt kein Kennwort oder Telefon', !/password|kennwort|phone|telefon/i.test(adapter.match(/async publishPreview[\s\S]*?\n\s*}\s*,?\n/)?.[0] || ''));
+check('Veröffentlichung stößt Vorschau an', /pushAdapter\?\.publishPreview/.test(workflow));
+check('Adminoberfläche bietet Zeit und Empfänger', /type="time"/.test(ui) && /recipient_scope/.test(ui));
+check('Adminoberfläche kennzeichnet Europe\/Berlin', /Europe\/Berlin/.test(ui));
+
+assert.equal(passed, 30);
+console.log(`\nNacht-Push-Regression: ${passed}/30 Prüfungen bestanden.`);
