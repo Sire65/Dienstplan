@@ -1,5 +1,5 @@
 (function(){
- const K=window.KCDP=window.KCDP||{};let direct=null;const state={status:'offline',mode:null,lastSyncAt:null,lastError:null,lastSource:null};
+ const K=window.KCDP=window.KCDP||{};let direct=null;const state={status:'offline',mode:null,lastSyncAt:null,lastError:null,lastSource:null,lastBlock:null};
  const cleanUrl=s=>String(s||'').trim().replace(/\/$/,'');
  function config(){return K.integrationConfig?.pcManager||{};}
  function hostFn(){if(typeof window.KCDPPCManagerProvider==='function')return window.KCDPPCManagerProvider;if(typeof window.KCPCManagerProvider==='function')return window.KCPCManagerProvider;try{if(window.parent&&window.parent!==window&&typeof window.parent.KCPCManagerProvider==='function')return window.parent.KCPCManagerProvider;}catch(_){}return null;}
@@ -9,10 +9,28 @@
  function normalizeWeather(snapshot,date){const w=snapshot?.weather;if(!w)return null;if(Array.isArray(w))return w.find(x=>x.date===date)||null;if(w[date])return w[date];if(w.date===date||!w.date)return w;return null;}
  function normalizeProgram(snapshot,date){const p=snapshot?.program;if(!p)return[];if(Array.isArray(p))return p.filter(x=>!x.date||x.date===date);if(Array.isArray(p[date]))return p[date];if(Array.isArray(p.items))return p.items.filter(x=>!x.date||x.date===date);return[];}
  async function snapshot(){return request({action:'snapshot',eventId:K.eventConfig?.eventId,dateFrom:K.days?.[0]?.date,dateTo:K.days?.at?.(-1)?.date});}
- async function syncAll(){K.auth?.require?.('roster.people.sync','Sie dürfen PC-Manager-Daten nicht übernehmen.');const s=await snapshot();if(s?.contract&&s.contract!=='KC_PC_MANAGER_DP_BRIDGE_V1')throw new Error('PC-Manager-Vertrag nicht kompatibel.');if(Array.isArray(s?.people))K.personAdapter?.applySnapshot?.(s.people,{source:'pc_manager_bridge'});for(const d of K.days||[]){const w=normalizeWeather(s,d.date);if(w)d.weather={...d.weather,...w,source:w.source||s?.meta?.source||'PC Manager',fetchedAt:w.fetchedAt||new Date().toISOString()};const p=normalizeProgram(s,d.date);if(p.length)d.program=p;}if(s?.event&&K.configuration){K.configuration.updateEvent({name:s.event.name||K.eventConfig.name});for(const x of s.event.days||[]){if(K.days.some(d=>d.date===x.date))K.configuration.updateDay(x.date,x);}}state.lastSyncAt=new Date().toISOString();K.recordAudit?.('pc_manager.sync_all',{entity:'pc_manager',after:{people:Array.isArray(s?.people)?s.people.length:0,weather:!!s?.weather,program:!!s?.program,source:state.lastSource}});return s;}
+ function contextPublicationOk(s){
+   const p=s?.publication?.context||s?.meta?.contextPublication||s?.contextPublication||{};
+   return (p.published===true||p.status==='published')&&p.complete===true;
+ }
+ function applyContext(s){
+   for(const d of K.days||[]){const w=normalizeWeather(s,d.date);if(w)d.weather={...d.weather,...w,source:w.source||s?.meta?.source||'PC Manager',fetchedAt:w.fetchedAt||new Date().toISOString()};const p=normalizeProgram(s,d.date);if(p.length)d.program=p;}
+   if(s?.event&&K.configuration){K.configuration.updateEvent({name:s.event.name||K.eventConfig.name});for(const x of s.event.days||[]){if(K.days.some(d=>d.date===x.date))K.configuration.updateDay(x.date,x);}}
+ }
+ async function syncAll(){
+   K.auth?.require?.('roster.people.sync','Sie dürfen PC-Manager-Daten nicht übernehmen.');
+   const s=await snapshot();if(s?.contract&&s.contract!=='KC_PC_MANAGER_DP_BRIDGE_V1')throw new Error('PC-Manager-Vertrag nicht kompatibel.');
+   const peopleResult=K.personAdapter?.applyAuthoritativeSnapshot?.(s?.people,{source:'pc_manager_bridge',snapshot:s});
+   if(!peopleResult?.applied){state.status='blocked';state.lastBlock={at:new Date().toISOString(),code:peopleResult?.code||'PEOPLE_NOT_READY',reason:peopleResult?.reason||'PC-Manager-Personendaten sind nicht freigegeben.'};K.recordAudit?.('pc_manager.sync_blocked',{entity:'pc_manager',after:{...state.lastBlock,source:state.lastSource}});return {...s,kcDpApply:{applied:false,people:peopleResult,contextApplied:false}};}
+   const contextReady=contextPublicationOk(s);
+   if(contextReady)applyContext(s);
+   state.status=contextReady?'ready':'partial';state.lastBlock=contextReady?null:{at:new Date().toISOString(),code:'CONTEXT_NOT_PUBLISHED_COMPLETE',reason:'Wetter/Programm sind noch nicht vollständig freigegeben.'};state.lastSyncAt=new Date().toISOString();
+   K.recordAudit?.('pc_manager.sync_all',{entity:'pc_manager',after:{people:peopleResult.people.length,weather:contextReady&&!!s?.weather,program:contextReady&&!!s?.program,contextApplied:contextReady,source:state.lastSource}});
+   return {...s,kcDpApply:{applied:true,people:peopleResult,contextApplied:contextReady}};
+ }
  async function test(){const r=await request({action:'health'});return {ok:r?.ok!==false,status:state.status,source:state.lastSource,response:r};}
- function bindProviders(){const c=config(),available=!!(direct||hostFn()||(c.mode==='url'&&cleanUrl(c.endpoint))||(window.parent&&window.parent!==window));if(!available){K.personAdapter?.setProvider?.(null);K.contextProviders?.setWeatherProvider?.(null);K.contextProviders?.setProgramProvider?.(null);state.status='offline';return false;}K.personAdapter?.setProvider?.(async req=>{const r=await request(req.action==='listPeople'?{action:'people'}:req);return r?.people||r;});K.contextProviders?.setWeatherProvider?.({fetch:async({date})=>{const r=await request({action:'weather',date,eventId:K.eventConfig?.eventId});return r?.weather?.[date]||r?.weather||r;}});K.contextProviders?.setProgramProvider?.({fetch:async({date})=>{const r=await request({action:'program',date,eventId:K.eventConfig?.eventId});return r?.program?.[date]||r?.items||r?.program||r;}});state.status='configured';return true;}
+ function bindProviders(){const c=config(),available=!!(direct||hostFn()||(c.mode==='url'&&cleanUrl(c.endpoint))||(window.parent&&window.parent!==window));if(!available){K.personAdapter?.setProvider?.(null);K.contextProviders?.setWeatherProvider?.(null);K.contextProviders?.setProgramProvider?.(null);state.status='offline';return false;}K.personAdapter?.setProvider?.(async req=>{const r=await request(req.action==='listPeople'?{action:'people'}:req);return r;});K.contextProviders?.setWeatherProvider?.({fetch:async({date})=>{const r=await request({action:'weather',date,eventId:K.eventConfig?.eventId});return r?.weather?.[date]||r?.weather||r;}});K.contextProviders?.setProgramProvider?.({fetch:async({date})=>{const r=await request({action:'program',date,eventId:K.eventConfig?.eventId});return r?.program?.[date]||r?.items||r?.program||r;}});state.status='configured';return true;}
  function configure(patch={}){K.integrations?.update?.('pcManager',patch);bindProviders();state.status='configured';return {...config()};}
- K.pcManagerConnection={version:'0.16.0',contract:'KC_PC_MANAGER_DP_BRIDGE_V1',state,configure,setDirectProvider(fn){direct=typeof fn==='function'?fn:null;bindProviders();state.status=direct?'ready':'configured';},bindProviders,test,snapshot,syncAll};
+ K.pcManagerConnection={version:'0.19.42',contract:'KC_PC_MANAGER_DP_BRIDGE_V1',state,configure,setDirectProvider(fn){direct=typeof fn==='function'?fn:null;bindProviders();state.status=direct?'ready':'configured';},bindProviders,test,snapshot,syncAll,contextPublicationOk};
  bindProviders();
 })();
