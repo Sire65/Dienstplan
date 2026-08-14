@@ -49,7 +49,7 @@
    './src/ui/app.js?v=0.17.10' legacy regression marker
    './templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx'
 */
-const ENGINE='kc-dp-update-engine-v1';
+const ENGINE='kc-dp-update-engine-v1.1';
 const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const UPDATE_MANIFEST='./update-manifest.json';
@@ -60,6 +60,29 @@ async function writeMeta(meta){const c=await caches.open(META_CACHE);await c.put
 async function fetchManifest(){const r=await fetch(`${UPDATE_MANIFEST}?sw=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`Manifest HTTP ${r.status}`);const m=await r.json();if(!m?.version||!Array.isArray(m.files))throw new Error('Manifest unvollständig');return m;}
 async function cacheRelease(m){const cacheName=m.cacheName||`kc-dp-release-${m.version}`,cache=await caches.open(cacheName),files=m.files.filter(x=>x.runtime!==false);for(const f of files){const source=new URL(f.downloadPath||f.path,self.registration.scope).toString(),target=new URL(f.installPath||f.path,self.registration.scope).toString(),hit=await cache.match(target,{ignoreSearch:true});if(hit)continue;const r=await fetch(source,{cache:'no-store'});if(!r.ok)throw new Error(`${f.installPath||f.path}: HTTP ${r.status}`);await cache.put(target,r.clone());}return cacheName;}
 async function ensureInitialRelease(){let meta=await readMeta();if(meta?.activeCache)return meta;const m=await fetchManifest(),cacheName=await cacheRelease(m);return writeMeta({activeCache:cacheName,activeVersion:m.version,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,engine:ENGINE});}
+async function sha256Hex(buffer){const d=await crypto.subtle.digest('SHA-256',buffer);return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function refreshForcedRuntime(meta){
+  try{
+    if(!meta?.activeCache)return meta;
+    const m=await fetchManifest();
+    if(String(m.version)!==String(meta.activeVersion))return meta;
+    const forced=m.files.filter(x=>x.runtime!==false&&x.forceRefresh===true);
+    if(!forced.length)return meta;
+    const cache=await caches.open(meta.activeCache);
+    for(const f of forced){
+      const source=new URL(f.downloadPath||f.path,self.registration.scope),target=new URL(f.installPath||f.path,self.registration.scope).toString();
+      source.searchParams.set('kc_sw_refresh',Date.now().toString());
+      const r=await fetch(source.toString(),{cache:'no-store'});if(!r.ok)throw new Error(`${f.installPath||f.path}: HTTP ${r.status}`);
+      const buffer=await r.arrayBuffer();
+      if(Number(f.bytes||0)>0&&Math.abs(buffer.byteLength-Number(f.bytes))>4)throw new Error(`${f.installPath||f.path}: Dateigröße stimmt nicht`);
+      if(f.sha256){const h=await sha256Hex(buffer);if(h.toLowerCase()!==String(f.sha256).toLowerCase())throw new Error(`${f.installPath||f.path}: SHA-256 stimmt nicht`);}
+      const headers=new Headers(r.headers);headers.set('X-KC-DP-Release',String(m.version));headers.set('X-KC-DP-Forced-Refresh','1');
+      await cache.put(target,new Response(buffer,{status:200,headers}));
+    }
+    meta={...meta,forcedRefreshAt:new Date().toISOString(),engine:ENGINE};await writeMeta(meta);
+  }catch(_){}
+  return meta;
+}
 async function pruneCaches(meta){const keys=(await caches.keys()).filter(k=>k.startsWith('kc-dp-release-'));const keep=new Set([meta?.activeCache,meta?.previousCache].filter(Boolean));for(const k of keys)if(!keep.has(k))await caches.delete(k);}
 async function maybeRollback(meta){if(!meta?.pendingBoot||!meta.previousCache)return meta;const age=Date.now()-Number(meta.switchedAt||0);if(age<120000)return meta;const old=await caches.open(meta.previousCache),ok=await old.match(new URL(FALLBACK,self.registration.scope).toString(),{ignoreSearch:true});if(!ok)return meta;const reverted={...meta,activeCache:meta.previousCache,activeVersion:meta.previousVersion||'previous',previousCache:meta.activeCache,previousVersion:meta.activeVersion,pendingBoot:false,rolledBackAt:new Date().toISOString(),rollbackReason:'BOOT_NOT_CONFIRMED'};await writeMeta(reverted);return reverted;}
 async function normalizeRecoveryCache(meta){
@@ -82,7 +105,7 @@ async function activeMeta(){return maybeRollback((await readMeta())||await ensur
 async function tellClients(payload){const list=await clients.matchAll({type:'window',includeUncontrolled:true});for(const c of list)c.postMessage(payload);}
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{await ensureInitialRelease();await self.skipWaiting();})()));
-self.addEventListener('activate',event=>event.waitUntil((async()=>{let meta=await ensureInitialRelease();meta=await normalizeRecoveryCache(meta);await pruneCaches(meta);await self.clients.claim();})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{let meta=await ensureInitialRelease();meta=await refreshForcedRuntime(meta);meta=await normalizeRecoveryCache(meta);await pruneCaches(meta);await self.clients.claim();})()));
 self.addEventListener('message',event=>{
   const d=event.data||{};
   if(d.type==='KC_DP_SWITCH_RELEASE')event.waitUntil((async()=>{try{
