@@ -44,7 +44,8 @@ const exactAcademyRef='iddudrxuihdodnvejxcp';
 for(const file of textFiles()){
   const r=rel(file),txt=fs.readFileSync(file,'utf8');
   if(txt.includes(exactAcademyRef)) requireRule(r==='src/core/integrations.js',`Academy-Projektref nur im Legacy-Migrator: ${r}`);
-  requireRule(!txt.includes('sb_secret_'),`Kein Supabase Secret-Key im Browserpaket: ${r}`);
+  // Die Zeichenfolge sb_secret_ darf in einer Validierungs-/Sperrregex vorkommen. Verboten ist ein tatsächlich eingebetteter Secret-Key.
+  requireRule(!/sb_secret_[A-Za-z0-9_-]{12,}/.test(txt),`Kein eingebetteter Supabase Secret-Key im Browserpaket: ${r}`);
   requireRule(!txt.includes('SUPABASE_SERVICE_ROLE_KEY'),`Kein Service-Role-Environment-Key im Browserpaket: ${r}`);
   requireRule(!txt.includes('JH0H43SSkAid-18zimrYp_Rh1t6sCm6KxU4wBk5nzEk'),`Kein temporäres Reset-Bearer im Browserpaket: ${r}`);
   const jwts=txt.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g)||[];
@@ -55,6 +56,9 @@ for(const file of textFiles()){
     }catch(_){/* kein decodierbarer JWT */}
   }
 }
+
+const supabaseProvider=read('src/adapters/supabase-provider.js');
+requireRule(supabaseProvider.includes("/^sb_secret_/i.test(key)")&&supabaseProvider.includes("decodeJwtRole(key)==='service_role'"),'Browser-Provider blockiert Secret- und service_role-Schlüssel aktiv');
 
 const session=read('src/core/session.js');
 requireRule(session.includes("if(state.provider==='supabase')return false"),'Supabase-Sitzung wird nicht lokal nach 10 Minuten beendet');
