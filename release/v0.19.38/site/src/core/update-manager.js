@@ -1,6 +1,6 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
-  const CURRENT_RELEASE='0.19.37';
+  const CURRENT_RELEASE='0.19.38';
   const MANIFEST_URL='update-manifest.json';
   const SNOOZE_MS=12*60*60*1000;
   const REPORT_QUEUE_KEY='kc_dp_pending_update_reports_v1';
@@ -29,7 +29,6 @@
     if(!m||!m.version||!Array.isArray(m.files))throw new Error('Update-Manifest ist unvollständig.');
     return m;
   }
-
   async function check({manual=false}={}){
     state.status='checking';state.lastCheckAt=new Date().toISOString();state.lastError=null;
     try{
@@ -39,14 +38,18 @@
         if(manual||!snoozed(m.version))window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_AVAILABLE',{detail:m}));
         return {available:true,manifest:m};
       }
-      state.status='current';if(manual)window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_CURRENT',{detail:{version:CURRENT_RELEASE}}));
+      state.status='current';
+      if(manual)window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_CURRENT',{detail:{version:CURRENT_RELEASE}}));
       return {available:false,manifest:m};
-    }catch(e){state.status='error';state.lastError=e.message;if(manual)window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_CHECK_ERROR',{detail:{message:e.message}}));return {available:false,error:e};}
+    }catch(e){
+      state.status='error';state.lastError=e.message;
+      if(manual)window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_CHECK_ERROR',{detail:{message:e.message}}));
+      return {available:false,error:e};
+    }
   }
 
   function downloadPath(file){return cleanPath(file?.downloadPath||file?.path);}
   function installPath(file){return cleanPath(file?.installPath||file?.path);}
-
   async function fetchFile(file,onChunk){
     const source=downloadPath(file),url=sameOriginUrl(source,true),r=await fetch(url,{cache:'no-store',headers:{'X-KC-DP-Update':'1'}});
     if(!r.ok)throw new Error(`${installPath(file)}: HTTP ${r.status}`);
@@ -54,51 +57,41 @@
     if(r.body?.getReader){
       const reader=r.body.getReader();
       for(;;){const {done,value}=await reader.read();if(done)break;if(value){chunks.push(value);loaded+=value.byteLength;onChunk(value.byteLength);}}
-      const out=new Uint8Array(loaded);let off=0;for(const c of chunks){out.set(c,off);off+=c.byteLength;}return {buffer:out.buffer,type:r.headers.get('content-type')||'application/octet-stream'};
+      const out=new Uint8Array(loaded);let off=0;for(const c of chunks){out.set(c,off);off+=c.byteLength;}
+      return {buffer:out.buffer,type:r.headers.get('content-type')||'application/octet-stream'};
     }
     const buffer=await r.arrayBuffer();onChunk(buffer.byteLength);return {buffer,type:r.headers.get('content-type')||'application/octet-stream'};
   }
-
   async function stage(manifest){
-    if(!('caches' in window)||!('serviceWorker' in navigator)||!window.crypto?.subtle)throw new Error('Dieses Gerät unterstützt die sichere Update-Installation nicht vollständig.');
-    const files=manifest.files.filter(f=>f&&f.path&&f.runtime!==false);
-    const total=files.reduce((s,f)=>s+Number(f.bytes||0),0);
-    const cacheName=manifest.cacheName||`kc-dp-release-${manifest.version}`;
-    const cache=await caches.open(cacheName);
-    const started=performance.now();state.status='installing';state.phase='download';state.downloadedBytes=0;state.totalBytes=total;
+    if(!('caches'in window)||!('serviceWorker'in navigator)||!window.crypto?.subtle)throw new Error('Dieses Gerät unterstützt die sichere Update-Installation nicht vollständig.');
+    const files=manifest.files.filter(f=>f&&f.path&&f.runtime!==false),total=files.reduce((s,f)=>s+Number(f.bytes||0),0),cacheName=manifest.cacheName||`kc-dp-release-${manifest.version}`,cache=await caches.open(cacheName),started=performance.now();
+    state.status='installing';state.phase='download';state.downloadedBytes=0;state.totalBytes=total;
     for(let i=0;i<files.length;i++){
       const file=files[i];
-      const onChunk=n=>{
-        state.downloadedBytes+=n;
-        const elapsed=Math.max(.1,(performance.now()-started)/1000),rate=state.downloadedBytes/elapsed,remaining=Math.max(0,total-state.downloadedBytes),eta=rate>0?remaining/rate:Infinity;
-        window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_PROGRESS',{detail:{phase:'download',file:installPath(file),index:i+1,count:files.length,downloaded:state.downloadedBytes,total,percent:total?Math.min(99,Math.round(state.downloadedBytes/total*100)):0,rate,eta}}));
-      };
+      const onChunk=n=>{state.downloadedBytes+=n;const elapsed=Math.max(.1,(performance.now()-started)/1000),rate=state.downloadedBytes/elapsed,remaining=Math.max(0,total-state.downloadedBytes),eta=rate>0?remaining/rate:Infinity;window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_PROGRESS',{detail:{phase:'download',file:installPath(file),index:i+1,count:files.length,downloaded:state.downloadedBytes,total,percent:total?Math.min(99,Math.round(state.downloadedBytes/total*100)):0,rate,eta}}));};
       const {buffer,type}=await fetchFile(file,onChunk);
       if(Number(file.bytes||0)>0&&Math.abs(buffer.byteLength-Number(file.bytes))>4)throw new Error(`${installPath(file)}: Dateigröße stimmt nicht mit dem Release überein.`);
-      if(file.sha256){
-        state.phase='verify';window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_PROGRESS',{detail:{phase:'verify',file:installPath(file),index:i+1,count:files.length,downloaded:state.downloadedBytes,total,percent:total?Math.min(99,Math.round(state.downloadedBytes/total*100)):0,eta:0}}));
-        const hash=await sha256(buffer);if(hash.toLowerCase()!==String(file.sha256).toLowerCase())throw new Error(`${installPath(file)}: SHA-256-Integritätsprüfung fehlgeschlagen (ist ${hash.slice(0,12)}…, erwartet ${String(file.sha256).slice(0,12)}…).`);
-      }
-      const cacheUrl=sameOriginUrl(installPath(file),false);
-      await cache.put(cacheUrl,new Response(buffer,{status:200,headers:{'Content-Type':type,'Content-Length':String(buffer.byteLength),'X-KC-DP-Release':manifest.version,'X-KC-DP-SHA256':file.sha256||''}}));
+      if(file.sha256){state.phase='verify';window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_PROGRESS',{detail:{phase:'verify',file:installPath(file),index:i+1,count:files.length,downloaded:state.downloadedBytes,total,percent:total?Math.min(99,Math.round(state.downloadedBytes/total*100)):0,eta:0}}));const hash=await sha256(buffer);if(hash.toLowerCase()!==String(file.sha256).toLowerCase())throw new Error(`${installPath(file)}: SHA-256-Integritätsprüfung fehlgeschlagen (ist ${hash.slice(0,12)}…, erwartet ${String(file.sha256).slice(0,12)}…).`);}
+      await cache.put(sameOriginUrl(installPath(file),false),new Response(buffer,{status:200,headers:{'Content-Type':type,'Content-Length':String(buffer.byteLength),'X-KC-DP-Release':manifest.version,'X-KC-DP-SHA256':file.sha256||''}}));
     }
     safeStoreSet('kc_dp_staged_release',{version:manifest.version,cacheName,at:Date.now()});
     window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_PROGRESS',{detail:{phase:'activate',downloaded:total,total,percent:100,eta:0}}));
     return {cacheName,total};
   }
-
   async function activate(manifest){
     state.phase='activate';
     let reg=await navigator.serviceWorker.getRegistration('./');
-    if(!reg)reg=await navigator.serviceWorker.register('service-worker.js?v=0.19.37-engine',{updateViaCache:'none'});
+    if(!reg)reg=await navigator.serviceWorker.register('service-worker.js?v=0.19.38-engine',{updateViaCache:'none'});
     await navigator.serviceWorker.ready;
     const controller=navigator.serviceWorker.controller||reg.active;
     if(!controller)throw new Error('Der KC-DP2 Update-Dienst ist noch nicht aktiv. Bitte die Seite einmal neu laden und erneut versuchen.');
-    const cacheName=manifest.cacheName||`kc-dp-release-${manifest.version}`;
-    const expectedFiles=manifest.files.filter(f=>f.runtime!==false).map(f=>installPath(f));
+    const cacheName=manifest.cacheName||`kc-dp-release-${manifest.version}`,expectedFiles=manifest.files.filter(f=>f.runtime!==false).map(f=>installPath(f));
     await new Promise((resolve,reject)=>{
       const timeout=setTimeout(()=>{navigator.serviceWorker.removeEventListener('message',handler);reject(new Error('Die neue Version konnte nicht aktiviert werden.'));},10000);
-      function handler(e){if(e.data?.type==='KC_DP_UPDATE_ACTIVATED'&&e.data?.version===manifest.version){clearTimeout(timeout);navigator.serviceWorker.removeEventListener('message',handler);resolve();}else if(e.data?.type==='KC_DP_UPDATE_ACTIVATION_FAILED'&&e.data?.version===manifest.version){clearTimeout(timeout);navigator.serviceWorker.removeEventListener('message',handler);reject(new Error(e.data?.message||'Aktivierung fehlgeschlagen.'));}}
+      function handler(e){
+        if(e.data?.type==='KC_DP_UPDATE_ACTIVATED'&&e.data?.version===manifest.version){clearTimeout(timeout);navigator.serviceWorker.removeEventListener('message',handler);resolve();}
+        else if(e.data?.type==='KC_DP_UPDATE_ACTIVATION_FAILED'&&e.data?.version===manifest.version){clearTimeout(timeout);navigator.serviceWorker.removeEventListener('message',handler);reject(new Error(e.data?.message||'Aktivierung fehlgeschlagen.'));}
+      }
       navigator.serviceWorker.addEventListener('message',handler);
       controller.postMessage({type:'KC_DP_SWITCH_RELEASE',version:manifest.version,cacheName,expectedFiles});
     });
@@ -109,35 +102,19 @@
     const nav=navigator||{};
     return {reportId:reportId(),type:'update_failure',at:new Date().toISOString(),appRelease:CURRENT_RELEASE,targetRelease:target?.version||null,phase:phase||state.phase||'unknown',message:error?.message||String(error),stack:String(error?.stack||'').slice(0,5000),online:nav.onLine,userAgent:String(nav.userAgent||'').slice(0,1000),language:nav.language||null,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio||1},page:{origin:location.origin,path:location.pathname},serviceWorker:{supported:'serviceWorker'in nav,controller:!!nav.serviceWorker?.controller},cacheNames:[],role:K.currentUser?.role||null};
   }
-
-  async function sendReport(report){
-    try{report.cacheNames='caches'in window?await caches.keys():[];}catch(_){report.cacheNames=[];}
-    if(!K.supabaseConnection?.sendClientReport)throw new Error('Supabase-Fehlerbericht ist noch nicht eingerichtet.');
-    return K.supabaseConnection.sendClientReport(report);
-  }
-  async function flushQueuedReports(){
-    const q=safeStoreGet(REPORT_QUEUE_KEY,[]);if(!q.length||!navigator.onLine||!K.supabaseConnection?.hasAccessToken?.())return {sent:0};
-    const left=[];let sent=0;for(const r of q){try{await sendReport(r);sent++;}catch(_){left.push(r);}}safeStoreSet(REPORT_QUEUE_KEY,left);return {sent};
-  }
-
+  async function sendReport(report){try{report.cacheNames='caches'in window?await caches.keys():[];}catch(_){report.cacheNames=[];}if(!K.supabaseConnection?.sendClientReport)throw new Error('Supabase-Fehlerbericht ist noch nicht eingerichtet.');return K.supabaseConnection.sendClientReport(report);}
+  async function flushQueuedReports(){const q=safeStoreGet(REPORT_QUEUE_KEY,[]);if(!q.length||!navigator.onLine||!K.supabaseConnection?.hasAccessToken?.())return {sent:0};const left=[];let sent=0;for(const r of q){try{await sendReport(r);sent++;}catch(_){left.push(r);}}safeStoreSet(REPORT_QUEUE_KEY,left);return {sent};}
   async function install(manifest=state.manifest){
     if(!manifest)throw new Error('Kein Update ausgewählt.');
-    try{
-      await stage(manifest);await activate(manifest);state.status='installed';state.phase='done';window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_SUCCESS',{detail:{version:manifest.version}}));return {ok:true,version:manifest.version};
-    }catch(error){
-      state.status='failed';state.lastError=error.message;const report=makeErrorReport(error,manifest,state.phase);state.lastReport=report;window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_FAILED',{detail:{error,report,version:manifest.version}}));return {ok:false,error,report};
-    }
+    try{await stage(manifest);await activate(manifest);state.status='installed';state.phase='done';window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_SUCCESS',{detail:{version:manifest.version}}));return {ok:true,version:manifest.version};}
+    catch(error){state.status='failed';state.lastError=error.message;const report=makeErrorReport(error,manifest,state.phase);state.lastReport=report;window.dispatchEvent(new CustomEvent('KC_DP_UPDATE_FAILED',{detail:{error,report,version:manifest.version}}));return {ok:false,error,report};}
   }
-
-  async function reportFailure(report){
-    try{const result=await sendReport(report);return {ok:true,result};}
-    catch(error){queueReport(report);return {ok:false,queued:true,error};}
-  }
+  async function reportFailure(report){try{const result=await sendReport(report);return {ok:true,result};}catch(error){queueReport(report);return {ok:false,queued:true,error};}}
   function downloadReport(report){const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`KC_DP2_Updatefehler_${report.reportId}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
-  async function ensureEngine(){if(!('serviceWorker' in navigator)||!/^https?:$/.test(location.protocol))return null;try{return await navigator.serviceWorker.register('service-worker.js?v=0.19.37-engine',{updateViaCache:'none'});}catch(_){return null;}}
+  async function ensureEngine(){if(!('serviceWorker'in navigator)||!/^https?:$/.test(location.protocol))return null;try{return await navigator.serviceWorker.register('service-worker.js?v=0.19.38-engine',{updateViaCache:'none'});}catch(_){return null;}}
   function confirmBoot(){try{const c=navigator.serviceWorker?.controller;if(c)c.postMessage({type:'KC_DP_BOOT_OK',version:CURRENT_RELEASE});}catch(_){}}
   function schedule(){ensureEngine();setTimeout(confirmBoot,5000);setTimeout(()=>{flushQueuedReports();check();},1500);setInterval(()=>flushQueuedReports(),15*60*1000);setInterval(()=>check(),30*60*1000);window.addEventListener('online',()=>{flushQueuedReports();check();});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const last=Date.parse(state.lastCheckAt||0)||0;if(Date.now()-last>60000)check();}});}
 
-  K.updateManager={version:'0.19.37',CURRENT_RELEASE,state,check,install,snooze,reportFailure,downloadReport,flushQueuedReports,bytesText,etaText};
+  K.updateManager={version:'0.19.38',CURRENT_RELEASE,state,check,install,snooze,reportFailure,downloadReport,flushQueuedReports,bytesText,etaText};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();
