@@ -1,11 +1,11 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
   const MODE_KEY='kcDp.phoneDayMode';
-  let applying=false, queued=false, observer=null, pendingPerson=null;
+  let applying=false,queued=false,observer=null,pendingPerson=null,bootObserver=null,listenersInstalled=false;
 
   const isPhone=()=>K.deviceUX?.isPhone?.()===true && window.matchMedia('(max-width:600px)').matches;
   const currentDay=()=>K.day?.()||K.days?.[K.state?.dateIndex||0]||null;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const getMode=()=>{try{return localStorage.getItem(MODE_KEY)==='bars'?'bars':'list';}catch(_){return'list';}};
   const setMode=m=>{try{localStorage.setItem(MODE_KEY,m);}catch(_){}};
 
@@ -206,19 +206,40 @@
     queued=true;
     requestAnimationFrame(apply);
   }
-  function start(){
-    const main=document.getElementById('mainView');
-    if(!main)return;
-    observer=new MutationObserver(()=>{if(!applying)queueApply();});
-    observer.observe(main,{childList:true,subtree:false});
+  function installListeners(){
+    if(listenersInstalled)return;
+    listenersInstalled=true;
     window.addEventListener('resize',queueApply,{passive:true});
     window.addEventListener('orientationchange',queueApply,{passive:true});
     document.addEventListener('click',e=>{
       if(e.target.closest('#viewTabs,#layerTabs,#dateBtn,#prevDayBtn,#nextDayBtn'))setTimeout(queueApply,0);
     },true);
+  }
+  function waitForMain(){
+    if(bootObserver||document.getElementById('mainView'))return;
+    const root=document.body||document.documentElement;
+    if(!root)return;
+    bootObserver=new MutationObserver(()=>{
+      if(!document.getElementById('mainView'))return;
+      bootObserver.disconnect();bootObserver=null;start();
+    });
+    bootObserver.observe(root,{childList:true,subtree:true});
+  }
+  function start(){
+    installListeners();
+    const main=document.getElementById('mainView');
+    if(!main){waitForMain();return false;}
+    if(bootObserver){bootObserver.disconnect();bootObserver=null;}
+    if(observer&&observer._kcMain!==main){observer.disconnect();observer=null;}
+    if(!observer){
+      observer=new MutationObserver(()=>{if(!applying)queueApply();});
+      observer._kcMain=main;
+      observer.observe(main,{childList:true,subtree:false});
+    }
     queueApply();
+    return true;
   }
 
-  K.phoneDayUx={version:'0.19.38',apply:queueApply,getMode,setMode,firstName};
+  K.phoneDayUx={version:'0.19.40',start,refresh:queueApply,apply:queueApply,getMode,setMode,firstName};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
