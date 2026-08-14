@@ -1,0 +1,97 @@
+name: KC DP2 V0.19.41 Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/dedicated-supabase-v01941
+    paths:
+      - 'release/v0.19.41/**'
+      - 'tests/dedicated-supabase-e2e.js'
+      - '.github/workflows/v01941-staging.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kc-dp2-v01941-staging
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Static architecture and syntax checks
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('release/v0.19.41/site')
+          integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
+          push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
+          assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
+          assert "profile:'KC_DP_DEDICATED_PROJECT'" in integ
+          assert "version:'0.19.41'" in integ
+          assert "LEGACY_REFS=['iddudrxuihdodnvejxcp'" in integ
+          assert "version:'0.19.41'" in push
+          assert 'reconcileExisting' in push
+          assert 'sameApplicationServerKey' in push
+          assert "service-worker.js?v=0.19.41" in push
+          start=push.index('async function reconcileExisting')
+          end=push.index('function hasSubscription',start)
+          assert 'Notification.requestPermission' not in push[start:end], 'Auto-Reconcile darf keine Berechtigungsabfrage auslösen'
+          sub_start=push.index('async function subscribe')
+          sub_end=push.index('async function reconcileExisting',sub_start)
+          assert 'Notification.requestPermission' in push[sub_start:sub_end], 'Manuelle Aktivierung muss Berechtigung weiterhin anfordern'
+          print('V0.19.41 Architektur und Push-Sicherheitsregeln: PASS')
+          PY
+          node --check release/v0.19.41/site/src/core/integrations.js
+          node --check release/v0.19.41/site/src/adapters/push.js
+          node --check tests/dedicated-supabase-e2e.js
+
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start isolated V0.19.41 server
+        shell: bash
+        run: |
+          cd release/v0.19.41/site
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/kcdp-v01941.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-v01941.log
+          exit 1
+
+      - name: Dedicated Supabase browser regression
+        run: node tests/dedicated-supabase-e2e.js
+
+      - name: Inherited smartphone regression
+        run: node tests/mobile-smoke.js
+
+      - name: Inherited Wunsch Soll Ist regression
+        run: node tests/workflow-e2e.js
+
+      - name: Inherited documents regression
+        run: node tests/documents-e2e.js
+
+      - name: Inherited photo pipeline regression
+        run: node tests/photo-pipeline-e2e.js
+
+      - name: Inherited roles regression
+        run: node tests/roles-e2e.js
+
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/kcdp-v01941.log || true
