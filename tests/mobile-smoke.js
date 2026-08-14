@@ -32,7 +32,7 @@ const assert = require('assert');
   await page.waitForFunction(()=>window.KCDP?.roleUx && window.KCDP?.memberAccess && window.KCDP?.startChoice,{timeout:20000});
 
   // Echter lokaler Loginpfad: ensureLogin -> lokaler Prüfzugang -> Geräteschlüssel -> Daten laden -> render -> afterDataLoaded -> Startauswahl.
-  await page.waitForSelector('#uxLocalTest',{timeout:20000});
+  await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
   const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
   if(await details.count()) await details.locator('summary').click();
   await page.locator('#uxTestRole').selectOption('admin');
