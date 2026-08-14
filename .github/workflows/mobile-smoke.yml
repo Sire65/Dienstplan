@@ -1,0 +1,40 @@
+name: KC DP2 Mobile Smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'release/**/site/**'
+      - 'tests/mobile-smoke.js'
+      - '.github/workflows/mobile-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start KC DP2 locally
+        run: |
+          cd release/v0.19.39/site
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-http.log 2>&1 &
+          echo $! > /tmp/kcdp-http.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-http.log
+          exit 1
+      - name: Run 390x844 smartphone smoke test
+        run: node tests/mobile-smoke.js
