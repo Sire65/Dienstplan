@@ -83,15 +83,21 @@ jobs:
           assert manifest['totalRuntimeBytes']==24308
           files={x['path']:x for x in manifest['files'] if x.get('runtime') is not False}
           assert set(files)==set(expected), f'Unerwartete Manifest-Dateien: {sorted(files)}'
+
+          actuals={}
+          for rel in expected:
+            data=(root/rel).read_bytes()
+            actuals[rel]=(len(data),hashlib.sha256(data).hexdigest())
+            print(f'KC_META {rel} bytes={len(data)} sha256={actuals[rel][1]}')
+          errors=[]
           for rel,(size,sha) in expected.items():
-            p=root/rel
-            data=p.read_bytes()
-            actual=hashlib.sha256(data).hexdigest()
-            assert len(data)==size, f'{rel}: {len(data)} != {size}'
-            assert actual==sha, f'{rel}: SHA {actual} != {sha}'
-            assert files[rel]['bytes']==size
-            assert files[rel]['sha256']==sha
-            assert files[rel]['installPath']==rel
+            actual_size,actual_sha=actuals[rel]
+            if actual_size!=size: errors.append(f'{rel}: bytes {actual_size} != {size}')
+            if actual_sha!=sha: errors.append(f'{rel}: SHA {actual_sha} != {sha}')
+            if files[rel]['bytes']!=size: errors.append(f'{rel}: Manifest bytes {files[rel]["bytes"]} != {size}')
+            if files[rel]['sha256']!=sha: errors.append(f'{rel}: Manifest SHA {files[rel]["sha256"]} != {sha}')
+            if files[rel]['installPath']!=rel: errors.append(f'{rel}: installPath falsch')
+          if errors: raise AssertionError('\n'.join(errors))
 
           base_files={p.relative_to(base).as_posix() for p in base.rglob('*') if p.is_file()}
           new_files={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
