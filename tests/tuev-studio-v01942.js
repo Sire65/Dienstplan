@@ -60,6 +60,13 @@ for(const file of textFiles()){
 const supabaseProvider=read('src/adapters/supabase-provider.js');
 requireRule(supabaseProvider.includes("/^sb_secret_/i.test(key)")&&supabaseProvider.includes("decodeJwtRole(key)==='service_role'"),'Browser-Provider blockiert Secret- und service_role-Schlüssel aktiv');
 
+const appShell=read('src/ui/app.js');
+requireRule(!appShell.includes(exactAcademyRef),'App-Shell enthält keinen Academy-Projektref mehr');
+requireRule(!appShell.includes('FUTURA_SHARED_PROJECT'),'App-Shell enthält kein altes Futura-Runtimeprofil mehr');
+requireRule(!appShell.includes('dbFuturaPreset'),'App-Shell enthält keinen alten Futura-Preset-Button mehr');
+requireRule(!/Futura/i.test(appShell),'App-Shell enthält keine irreführende Futura-Konfigurationsanweisung mehr');
+requireRule(appShell.includes("KC_DP_DEDICATED_PROJECT")&&appShell.includes('KC DP2 · dediziertes Supabase-Projekt'),'Datenbankdialog weist das dedizierte KC-DP2-Projekt eindeutig aus');
+
 const session=read('src/core/session.js');
 requireRule(session.includes("if(state.provider==='supabase')return false"),'Supabase-Sitzung wird nicht lokal nach 10 Minuten beendet');
 
