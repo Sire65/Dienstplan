@@ -37,6 +37,7 @@ jobs:
           integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
           push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
           upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
+          session=(root/'src/core/session.js').read_text(encoding='utf-8')
           assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
           assert "profile:'KC_DP_DEDICATED_PROJECT'" in integ
           assert "version:'0.19.41'" in integ
@@ -54,11 +55,14 @@ jobs:
           assert "CURRENT_RELEASE='0.19.41'" in upd
           assert "version:'0.19.41'" in upd
           assert 'service-worker.js?v=0.19.41-engine' in upd
-          print('V0.19.41 Architektur, Push-Sicherheit und Releasekennung: PASS')
+          assert "version:'0.18.1'" in session
+          assert "if(state.provider==='supabase')return false;" in session
+          print('V0.19.41 Architektur, Push-Sicherheit, Supabase-Session und Releasekennung: PASS')
           PY
           node --check release/v0.19.41/site/src/core/integrations.js
           node --check release/v0.19.41/site/src/adapters/push.js
           node --check release/v0.19.41/site/src/core/update-manager.js
+          node --check release/v0.19.41/site/src/core/session.js
           node --check tests/dedicated-supabase-e2e.js
 
       - name: Verify V0.19.41 manifest and byte baseline
@@ -75,12 +79,13 @@ jobs:
             'src/core/integrations.js': (2653,'303a43ce771bbe4275cd3774fc380829f0b5dfff0f3efca00a3b78be8998b2c2'),
             'src/adapters/push.js': (9385,'d6c8cd72b50071de744939ff09d633bc41bbe4f47b3e4582c09916a5dfb8056f'),
             'src/core/update-manager.js': (12270,'3fa40ccf962f10c0fc177a7f7a3ff4f7b75e6c70faeac170421e6ddcfe26d477'),
+            'src/core/session.js': (2590,'1402a8021f24fb0ae38c0acb42bf8cf4802c64b0946f9aec98f9d44c56954dff'),
           }
           assert manifest['schema']=='KC_DP_UPDATE_MANIFEST_V1'
           assert manifest['app']=='KC DP2'
           assert manifest['version']=='0.19.41'
           assert manifest['cacheName']=='kc-dp-release-0.19.41'
-          assert manifest['totalRuntimeBytes']==24308
+          assert manifest['totalRuntimeBytes']==26898
           files={x['path']:x for x in manifest['files'] if x.get('runtime') is not False}
           assert set(files)==set(expected), f'Unerwartete Manifest-Dateien: {sorted(files)}'
 
