@@ -9,9 +9,11 @@ on:
       - 'release/v0.19.41/site/src/adapters/person-provider.js'
       - 'release/v0.19.41/site/src/adapters/pc-manager.js'
       - 'release/v0.19.41/site/src/core/planner-engine.js'
+      - 'release/v0.19.41/site/src/core/planner-recommendations.js'
       - 'release/v0.19.41/site/src/core/planner-application-guard.js'
       - 'tests/manager-leading-source-e2e.js'
       - 'tests/planner-engine-v01942-e2e.js'
+      - 'tests/planner-recommendations-v01942-e2e.js'
       - 'tests/planner-runtime-wiring-v01942-e2e.js'
       - 'tests/planner-application-guard-v01942-e2e.js'
       - 'tests/mobile-smoke.js'
@@ -38,9 +40,11 @@ jobs:
           node --check release/v0.19.41/site/src/adapters/person-provider.js
           node --check release/v0.19.41/site/src/adapters/pc-manager.js
           node --check release/v0.19.41/site/src/core/planner-engine.js
+          node --check release/v0.19.41/site/src/core/planner-recommendations.js
           node --check release/v0.19.41/site/src/core/planner-application-guard.js
           node --check tests/manager-leading-source-e2e.js
           node --check tests/planner-engine-v01942-e2e.js
+          node --check tests/planner-recommendations-v01942-e2e.js
           node --check tests/planner-runtime-wiring-v01942-e2e.js
           node --check tests/planner-application-guard-v01942-e2e.js
           node --check tests/mobile-smoke.js
@@ -71,6 +75,8 @@ jobs:
         run: node tests/manager-leading-source-e2e.js
       - name: Run rule-bound planner acceptance
         run: node tests/planner-engine-v01942-e2e.js
+      - name: Run shared planner recommendation acceptance
+        run: node tests/planner-recommendations-v01942-e2e.js
       - name: Run planner runtime wiring acceptance
         run: node tests/planner-runtime-wiring-v01942-e2e.js
       - name: Run planner application guard acceptance
