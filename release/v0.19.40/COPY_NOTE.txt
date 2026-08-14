@@ -1,1 +1,0 @@
-V0.19.40 site tree is cloned byte-for-byte from V0.19.39 before targeted smartphone lifecycle changes.
