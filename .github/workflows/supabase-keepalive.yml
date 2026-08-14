@@ -2,7 +2,7 @@ name: KC Supabase Keepalive
 
 on:
   schedule:
-    # Three lightweight API requests per day. GitHub cron uses UTC.
+    # Three lightweight database requests per day. GitHub cron uses UTC.
     - cron: '17 5,13,21 * * *'
   workflow_dispatch:
   push:
@@ -17,13 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Send lightweight Supabase API activity
+      - name: Send lightweight Supabase database activity
         shell: bash
         env:
           KC_CORE_URL: https://ptblnpiroqftcvlsrhac.supabase.co
           KC_CORE_KEY: sb_publishable_SqXIeGN-clcZ4gjmpLdSww_4DLfyy24
+          KC_CORE_PATH: kc_core_club_memberships
           FUTURA_URL: https://iddudrxuihdodnvejxcp.supabase.co
           FUTURA_KEY: sb_publishable_DWLycZijZEBvakXVncI5IQ_38LZCQxW
+          FUTURA_PATH: academy_participants
         run: |
           set -euo pipefail
 
@@ -31,6 +33,7 @@ jobs:
             local name="$1"
             local url="$2"
             local key="$3"
+            local table="$4"
             local body status
             body="$(mktemp)"
 
@@ -42,8 +45,8 @@ jobs:
               -o "$body" \
               -w '%{http_code}' \
               -H "apikey: $key" \
-              -H 'Accept: application/openapi+json' \
-              "$url/rest/v1/")"
+              -H 'Accept: application/json' \
+              "$url/rest/v1/$table?select=*&limit=0")"
 
             if [[ "$status" -lt 200 || "$status" -ge 400 ]]; then
               echo "::error::$name Supabase keepalive failed with HTTP $status"
@@ -52,9 +55,9 @@ jobs:
               exit 1
             fi
 
-            echo "$name Supabase keepalive OK (HTTP $status)"
+            echo "$name Supabase database keepalive OK (HTTP $status)"
             rm -f "$body"
           }
 
-          ping_supabase "KC-DP2" "$KC_CORE_URL" "$KC_CORE_KEY"
-          ping_supabase "Future Academy" "$FUTURA_URL" "$FUTURA_KEY"
+          ping_supabase "KC-DP2" "$KC_CORE_URL" "$KC_CORE_KEY" "$KC_CORE_PATH"
+          ping_supabase "Future Academy" "$FUTURA_URL" "$FUTURA_KEY" "$FUTURA_PATH"
