@@ -29,10 +29,15 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Install Playwright Chromium
+      - name: Prepare Playwright browser
         run: |
           npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
       - name: Start current KC DP2 release locally
         run: |
           SITE="$(python3 - <<'PY'
