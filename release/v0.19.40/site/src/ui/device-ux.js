@@ -10,24 +10,30 @@
     if(startChoiceStarted)return;
     startChoiceStarted=true;
     if(!document.querySelector('link[data-kc-start-choice]')){
-      const link=document.createElement('link');link.rel='stylesheet';link.href='src/ui/start-choice.css?v=0.19.39';link.dataset.kcStartChoice='1';document.head.appendChild(link);
+      const link=document.createElement('link');link.rel='stylesheet';link.href='src/ui/start-choice.css?v=0.19.40';link.dataset.kcStartChoice='1';document.head.appendChild(link);
     }
     if(!document.querySelector('script[data-kc-start-choice]')){
-      const script=document.createElement('script');script.src='src/ui/start-choice.js?v=0.19.39';script.dataset.kcStartChoice='1';script.async=false;document.head.appendChild(script);
+      const script=document.createElement('script');script.src='src/ui/start-choice.js?v=0.19.40';script.dataset.kcStartChoice='1';script.async=false;document.head.appendChild(script);
     }
   }
   function loadPhoneDayAssets(){
-    if(!isPhone()||phoneAssetsStarted)return;
+    if(!isPhone())return Promise.resolve(false);
+    if(phoneAssetsStarted){K.phoneDayUx?.start?.();K.phoneDayUx?.refresh?.();return Promise.resolve(true);}
     phoneAssetsStarted=true;
     if(!document.querySelector('link[data-kc-phone-day]')){
-      const link=document.createElement('link');link.rel='stylesheet';link.href='src/ui/mobile-day.css?v=0.19.38';link.dataset.kcPhoneDay='1';document.head.appendChild(link);
+      const link=document.createElement('link');link.rel='stylesheet';link.href='src/ui/mobile-day.css?v=0.19.40';link.dataset.kcPhoneDay='1';document.head.appendChild(link);
     }
-    if(!document.querySelector('script[data-kc-phone-day]')){
-      const script=document.createElement('script');script.src='src/ui/mobile-day.js?v=0.19.38';script.dataset.kcPhoneDay='1';script.async=false;document.head.appendChild(script);
-    }
+    let script=document.querySelector('script[data-kc-phone-day]');
+    if(script){K.phoneDayUx?.start?.();K.phoneDayUx?.refresh?.();return Promise.resolve(true);}
+    return new Promise(resolve=>{
+      script=document.createElement('script');script.src='src/ui/mobile-day.js?v=0.19.40';script.dataset.kcPhoneDay='1';script.async=false;
+      script.addEventListener('load',()=>{K.phoneDayUx?.start?.();K.phoneDayUx?.refresh?.();resolve(true);},{once:true});
+      script.addEventListener('error',()=>{phoneAssetsStarted=false;resolve(false);},{once:true});
+      document.head.appendChild(script);
+    });
   }
-  function watchPhone(){loadPhoneDayAssets();window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(loadPhoneDayAssets,120);},{passive:true});window.addEventListener('orientationchange',loadPhoneDayAssets,{passive:true});}
-  K.deviceUX={version:'0.19.39',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets};
+  function watchPhone(){loadPhoneDayAssets();window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},120);},{passive:true});window.addEventListener('orientationchange',()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},{passive:true});}
+  K.deviceUX={version:'0.19.40',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets};
   loadStartChoiceAssets();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchPhone,{once:true});else watchPhone();
 })();
