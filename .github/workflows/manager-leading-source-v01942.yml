@@ -38,6 +38,10 @@ on:
       - 'tests/photo-pipeline-e2e.js'
       - '.github/workflows/manager-leading-source-v01942.yml'
 
+concurrency:
+  group: kc-dp2-v01942-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
