@@ -1,0 +1,26 @@
+name: KC DP2 V0.19.40 Hash Probe
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  hashes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Calculate V0.19.40 runtime integrity
+        run: |
+          for f in \
+            release/v0.19.40/site/src/ui/device-ux.js \
+            release/v0.19.40/site/src/ui/mobile-day.js \
+            release/v0.19.40/site/src/ui/start-choice.js \
+            release/v0.19.40/site/src/core/update-manager.js; do
+            echo "FILE=$f"
+            echo "BYTES=$(wc -c < "$f" | tr -d ' ')"
+            echo "SHA256=$(sha256sum "$f" | awk '{print $1}')"
+          done
+          node --check release/v0.19.40/site/src/ui/device-ux.js
+          node --check release/v0.19.40/site/src/ui/mobile-day.js
+          node --check release/v0.19.40/site/src/ui/start-choice.js
+          node --check release/v0.19.40/site/src/core/update-manager.js
