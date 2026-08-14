@@ -10,8 +10,13 @@
   }
   function logout(reason='manuell'){const before={...K.currentUser};K.currentUser=monitorUser();state.mode='monitor';touch();K.recordAudit?.('session.logout',{entity:'session',entityId:before.personId,before,after:K.currentUser,reason});return K.currentUser;}
   function touch(){state.lastActivityAt=new Date().toISOString();}
-  function expired(){return state.mode==='authenticated'&&(Date.now()-new Date(state.lastActivityAt).getTime())>state.timeoutMinutes*60000;}
+  function expired(){
+    // Eine echte Supabase-Sitzung verwaltet ihre Gültigkeit über Access-/Refresh-Token.
+    // Der lokale Demo-/Monitor-Timeout darf diese Cloud-Sitzung nicht nach 10 Minuten künstlich abmelden.
+    if(state.provider==='supabase')return false;
+    return state.mode==='authenticated'&&(Date.now()-new Date(state.lastActivityAt).getTime())>state.timeoutMinutes*60000;
+  }
   function check(){if(expired())logout('Inaktivität');return state.mode;}
   function adoptAuthenticatedUser({personId,role='employee',displayName='',provider:providerName='trusted'}={}){const p=K.person(personId);if(!p)throw new Error('Person nicht gefunden.');K.auth.setCurrentUser({personId,role,displayName:displayName||p.name});state.mode='authenticated';state.provider=providerName||!!provider;touch();K.recordAudit?.('session.login',{entity:'session',entityId:personId,after:{role,provider:providerName||'trusted'}});return K.currentUser;}
-  K.session={version:'0.18.0',state,login,logout,adoptAuthenticatedUser,touch,check,isMonitor:()=>state.mode==='monitor',setProvider(fn){provider=typeof fn==='function'?fn:null;state.provider=!!provider;},setTimeoutMinutes(v){state.timeoutMinutes=Math.max(1,Number(v||10));}};
+  K.session={version:'0.18.1',state,login,logout,adoptAuthenticatedUser,touch,check,isMonitor:()=>state.mode==='monitor',setProvider(fn){provider=typeof fn==='function'?fn:null;state.provider=!!provider;},setTimeoutMinutes(v){state.timeoutMinutes=Math.max(1,Number(v||10));}};
 })();
