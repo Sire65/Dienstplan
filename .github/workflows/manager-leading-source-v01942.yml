@@ -25,6 +25,7 @@ on:
       - 'release/v0.19.41/site/src/ui/planner-audit-ui.css'
       - 'release/v0.19.41/site/src/ui/source-health-ui.js'
       - 'release/v0.19.41/site/src/ui/source-health-ui.css'
+      - 'docs/KC-DP2-ENGINEERING-RULES.md'
       - 'tests/manager-leading-source-e2e.js'
       - 'tests/manager-auto-sync-v01942-e2e.js'
       - 'tests/planner-engine-v01942-e2e.js'
@@ -43,6 +44,7 @@ on:
       - 'tests/documents-e2e.js'
       - 'tests/photo-pipeline-e2e.js'
       - '.github/workflows/manager-leading-source-v01942.yml'
+      - '.github/workflows/v01942-oneoff-dedicated-ui-fix.yml'
 
 concurrency:
   group: kc-dp2-v01942-${{ github.ref }}
