@@ -81,6 +81,9 @@ jobs:
       - name: Dienstplan Foto Pipeline Praxisabnahme
         run: node tests/photo-pipeline-e2e.js
 
+      - name: Rollen und Berechtigungen Praxisabnahme
+        run: node tests/roles-e2e.js
+
       - name: Testserver log on failure
         if: failure()
         run: cat /tmp/kcdp-e2e-server.log || true
