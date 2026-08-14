@@ -5,11 +5,13 @@ on:
   push:
     branches: [feature/pc-manager-leading-source-v01942]
     paths:
+      - 'release/v0.19.41/site/index.html'
       - 'release/v0.19.41/site/src/adapters/person-provider.js'
       - 'release/v0.19.41/site/src/adapters/pc-manager.js'
       - 'release/v0.19.41/site/src/core/planner-engine.js'
       - 'tests/manager-leading-source-e2e.js'
       - 'tests/planner-engine-v01942-e2e.js'
+      - 'tests/planner-runtime-wiring-v01942-e2e.js'
       - '.github/workflows/manager-leading-source-v01942.yml'
 
 permissions:
@@ -31,6 +33,7 @@ jobs:
           node --check release/v0.19.41/site/src/core/planner-engine.js
           node --check tests/manager-leading-source-e2e.js
           node --check tests/planner-engine-v01942-e2e.js
+          node --check tests/planner-runtime-wiring-v01942-e2e.js
       - name: Prepare Playwright browser
         run: |
           npm install --no-save playwright@1.55.0
@@ -54,3 +57,5 @@ jobs:
         run: node tests/manager-leading-source-e2e.js
       - name: Run rule-bound planner acceptance
         run: node tests/planner-engine-v01942-e2e.js
+      - name: Run planner runtime wiring acceptance
+        run: node tests/planner-runtime-wiring-v01942-e2e.js
