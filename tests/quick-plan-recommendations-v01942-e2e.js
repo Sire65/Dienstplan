@@ -15,11 +15,17 @@ let browser;
   await page.locator('#uxTestRole').selectOption('admin');await page.locator('#uxTestLogin').click();await page.waitForSelector('#unlockSecret',{timeout:10000});await page.locator('#unlockSecret').fill('KC-DP2-Quick-Plan-Recommendations-E2E-2026!');await page.locator('#unlockBtn').click();await page.waitForSelector('#kcChoiceView',{timeout:20000});await page.locator('#kcChoiceEdit').click();await page.waitForSelector('[data-inspector-add]',{timeout:20000});
 
   const ids=await page.evaluate(()=>{
-    const K=window.KCDP,d=K.days[K.state.dateIndex],active=K.people.filter(p=>p.active&&p.personType!=='helper');if(active.length<3)throw new Error('Zu wenige aktive Personen');const [preferred,manual,blocked]=active,zone=d.type==='market'?'front':'neutral';
+    const K=window.KCDP,d=K.days[K.state.dateIndex],active=K.people.filter(p=>p.active&&p.personType!=='helper');if(active.length<3)throw new Error('Zu wenige aktive Personen');const [preferred,manual,blocked]=active,ids=new Set([preferred.personId,manual.personId,blocked.personId]),zone=d.type==='market'?'front':'neutral';
     preferred.skills='Flex Vorne Hinten';manual.skills='Flex Vorne Hinten';blocked.skills='Flex Vorne Hinten';
     const openRules={allowedZones:[],allowedAreas:[],enforceAllowedAreas:false,forbiddenDates:[],earliestStart:null,latestEnd:null,maxDailyHours:24,maxEventHours:999,minRestHours:0};
     K.staffing.setRules?.(preferred.personId,openRules);K.staffing.setRules?.(manual.personId,openRules);K.staffing.setRules?.(blocked.personId,{...openRules,allowedZones:[zone==='front'?'back':'front']});
-    K.wishes=(K.wishes||[]).filter(w=>!String(w.id||'').startsWith('W-QPR-'));K.wishes.push({id:'W-QPR-PREF',personId:preferred.personId,date:d.date,start:d.start,end:Math.min(d.end,d.start+2),wishType:'preferred',status:'confirmed'});K.wishes.push({id:'W-QPR-MAN',personId:manual.personId,date:d.date,start:d.start,end:d.end,wishType:'unavailable',status:'confirmed'});
+    // Testpersonen für den geprüften Tag vollständig isolieren: vorhandene Dienste,
+    // Abwesenheiten und Wünsche dürfen die gezielt gesetzten Testfälle nicht verfälschen.
+    K.shifts=(K.shifts||[]).filter(s=>!(s.date===d.date&&ids.has(s.personId)));
+    K.absences=(K.absences||[]).filter(a=>!(a.date===d.date&&ids.has(a.personId)));
+    K.wishes=(K.wishes||[]).filter(w=>!(w.date===d.date&&ids.has(w.personId))&&!String(w.id||'').startsWith('W-QPR-'));
+    K.wishes.push({id:'W-QPR-PREF',personId:preferred.personId,date:d.date,start:d.start,end:Math.min(d.end,d.start+2),wishType:'preferred',status:'confirmed'});
+    K.wishes.push({id:'W-QPR-MAN',personId:manual.personId,date:d.date,start:d.start,end:d.end,wishType:'unavailable',status:'confirmed'});
     K.state.inspectorHour=d.start;K.quickPlanRecommendationsUi.refresh();return {preferred:preferred.personId,manual:manual.personId,blocked:blocked.personId,date:d.date};
   });
 
