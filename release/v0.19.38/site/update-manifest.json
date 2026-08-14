@@ -1,0 +1,44 @@
+{
+  "schema": "KC_DP_UPDATE_MANIFEST_V1",
+  "app": "KC DP2",
+  "version": "0.19.38",
+  "cacheName": "kc-dp-release-0.19.38",
+  "releaseNotes": [
+    "Handy-Tagesansicht mit schmaler Vornamen-Spalte ohne Stunden",
+    "Vereinfachte Tagesliste mit großen Vor-/Zurück-Tasten und Liste/Balken-Umschalter",
+    "Wichtige Hinweise wie Besetzungslücken, Z-Sonderdienst, Bereitschaft und Aushilfe bleiben sichtbar",
+    "Tablet und Desktop bleiben unverändert"
+  ],
+  "generatedAt": "2026-08-14T07:48:00+02:00",
+  "totalRuntimeBytes": 33649,
+  "files": [
+    {
+      "path": "src/ui/device-ux.js",
+      "installPath": "src/ui/device-ux.js",
+      "bytes": 2657,
+      "sha256": "f480d419a8074e7ae944e1a2c6fd82a34de382b07a0145e0e0d869ab97ba5e79",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/mobile-day.css",
+      "installPath": "src/ui/mobile-day.css",
+      "bytes": 7260,
+      "sha256": "efc16501160198facedcb7cf5f5be1f101f704f8653fe16d266f587a2fe9c1d2",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/mobile-day.js",
+      "installPath": "src/ui/mobile-day.js",
+      "bytes": 11462,
+      "sha256": "bf937b61ee1a352ceaa04524ffd609e71630d1c884c5eba40f8aec71bc9a14a3",
+      "runtime": true
+    },
+    {
+      "path": "src/core/update-manager.js",
+      "installPath": "src/core/update-manager.js",
+      "bytes": 12270,
+      "sha256": "c28d777a97927b4d20d28c17fe0de8444336481d076f910fd279c1c24f78a527",
+      "runtime": true
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+KC DP2 V0.19.38
+Release-Datum: 14.08.2026
+
+SCHWERPUNKT
+Smartphone-Tagesansicht, ohne Änderungen an Tablet oder Desktop.
+
+NEU
+- Smartphone bis 600 px: schmale, feststehende Vornamen-Spalte.
+- Stunden-Spalte wird auf dem Smartphone ausgeblendet.
+- Zeitbalken beginnen direkt neben dem Vornamen.
+- Zusätzliche vereinfachte Tagesliste mit großen Vor-/Zurück-Tasten.
+- Umschalter „Liste | Balken“, letzte Auswahl wird lokal gespeichert.
+- Listenansicht zeigt nur Personen mit Einsatz/Bereitschaft und deren Zeiten.
+- Wichtige Hinweise bleiben sichtbar: kritische Besetzungslücken, Z-Sonderdienst,
+  Bereitschaft, Aushilfe und Ausfall.
+- Antippen einer Person in der Liste wechselt zur Balkenansicht und springt zur Person.
+- Hans-Joachim wird in der schmalen Smartphone-Spalte als „Hans“ dargestellt.
+
+SICHERHEIT / REGRESSION
+- Kein Eingriff in Datenbank, Supabase-Sync, Dienst-Datenmodell oder Drag-&-Drop-Core.
+- Tablet und Desktop laden die neue Smartphone-Schicht nicht.
+- Smartphone-Schicht wird ausschließlich bei <= 600 px geladen.
+- Bestehende V0.19.37-Dateien werden unverändert übernommen, ausgenommen die
+  ausdrücklich gelisteten Release-Dateien.
+- JavaScript-Syntaxprüfung und Release-Integritätsprüfung laufen vor GitHub-Pages-Deployment.

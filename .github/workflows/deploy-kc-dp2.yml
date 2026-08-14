@@ -3,6 +3,8 @@ name: KC DP2 Verified Web Release
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -19,23 +21,77 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Verify KC DP2 V0.19.37
+      - name: Verify KC DP2 V0.19.38
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import hashlib, json
-          root=Path('release/v0.19.37/site')
+
+          old=Path('release/v0.19.37/site')
+          root=Path('release/v0.19.38/site')
           manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert manifest['version']=='0.19.37'
-          assert len(manifest['files'])==60
+
+          assert manifest['version']=='0.19.38'
+          assert manifest['cacheName']=='kc-dp-release-0.19.38'
+          assert len(manifest['files'])==4
+          changed={item['path'] for item in manifest['files']}
+          expected_changed={
+              'src/ui/device-ux.js',
+              'src/ui/mobile-day.css',
+              'src/ui/mobile-day.js',
+              'src/core/update-manager.js',
+          }
+          assert changed==expected_changed
+
           for item in manifest['files']:
               target=root/item['path']
               assert target.is_file(), target
               data=target.read_bytes()
               assert len(data)==item['bytes'], target
               assert hashlib.sha256(data).hexdigest()==item['sha256'], target
+
+          # Alle nicht ausdrücklich geänderten Laufzeitdateien müssen bytegleich
+          # aus dem zuvor freigegebenen Release übernommen worden sein.
+          for src in old.rglob('*'):
+              if not src.is_file():
+                  continue
+              rel=src.relative_to(old).as_posix()
+              if rel in changed or rel=='update-manifest.json':
+                  continue
+              dst=root/rel
+              assert dst.is_file(), f'Fehlt im neuen Release: {rel}'
+              assert src.read_bytes()==dst.read_bytes(), f'Unerwartete Regression/Änderung: {rel}'
+
+          css=(root/'src/ui/mobile-day.css').read_text(encoding='utf-8')
+          js=(root/'src/ui/mobile-day.js').read_text(encoding='utf-8')
+          dux=(root/'src/ui/device-ux.js').read_text(encoding='utf-8')
+          upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
+
+          assert '@media (max-width:600px)' in css
+          assert '--hours-w:0px' in css
+          assert 'body.kc-phone-day-active' in css
+          assert 'kc-phone-list-mode' in css
+          assert 'max-width:760px' not in css
+
+          assert "const MODE_KEY='kcDp.phoneDayMode'" in js
+          assert "data-kc-phone-mode=\"list\"" in js
+          assert "data-kc-phone-mode=\"bars\"" in js
+          assert 'data-kc-phone-nav="-1"' in js
+          assert 'data-kc-phone-nav="1"' in js
+          assert 'K.evaluateDay' in js
+          assert 'K.standbyFor' in js
+          assert "first=first.split('-')[0]" in js
+
+          assert 'innerWidth<=600' in dux
+          assert 'mobile-day.css?v=0.19.38' in dux
+          assert 'mobile-day.js?v=0.19.38' in dux
+
+          assert "CURRENT_RELEASE='0.19.38'" in upd
+          assert "version:'0.19.38'" in upd
+          assert 'KC_DP_BOOT_OK' in upd
+
+          # Bestehende Kern-Regressionen aus V0.19.37 bleiben erhalten.
           assert 'kc-login-startbild-v01917.webp' in (root/'src/ui/role-ux.css').read_text(encoding='utf-8')
-          assert "CURRENT_RELEASE='0.19.37'" in (root/'src/core/update-manager.js').read_text(encoding='utf-8')
           assert 'E-Mail-Adresse oder Passwort ist falsch.' in (root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
           assert 'Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.' in (root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
           assert 'ptblnpiroqftcvlsrhac' in (root/'src/core/integrations.js').read_text(encoding='utf-8')
@@ -63,16 +119,23 @@ jobs:
           assert '.drop-target.drop-valid' in (root/'src/ui/app.css').read_text(encoding='utf-8')
           assert 'colorLegendBtn' in (root/'index.html').read_text(encoding='utf-8')
           assert '.color-legend-popover{position:fixed' in (root/'src/ui/app.css').read_text(encoding='utf-8')
-          print('KC DP2 V0.19.37: 60/60 Runtime-Dateien verifiziert')
+
+          print('KC DP2 V0.19.38: Smartphone-Layer + V0.19.37 Regressionen verifiziert')
           PY
+          node --check release/v0.19.38/site/src/ui/device-ux.js
+          node --check release/v0.19.38/site/src/ui/mobile-day.js
+          node --check release/v0.19.38/site/src/core/update-manager.js
+
       - uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v01937
-          path: release/v0.19.37/site
+          name: kc-dp2-verified-site-v01938
+          path: release/v0.19.38/site
           if-no-files-found: error
           retention-days: 2
           include-hidden-files: true
+
   deploy:
+    if: github.event_name != 'pull_request'
     needs: verify
     runs-on: ubuntu-latest
     environment:
@@ -80,7 +143,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/download-artifact@v4
-        with: {name: kc-dp2-verified-site-v01937, path: build/site}
+        with: {name: kc-dp2-verified-site-v01938, path: build/site}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with: {path: build/site}
