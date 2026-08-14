@@ -64,12 +64,20 @@
     if(plannedBtn&&!plannedBtn.classList.contains('active'))plannedBtn.click();
     K.roleUx?.refreshLegacy?.();
   }
+  function refreshPhoneDay(){
+    if(!K.deviceUX?.isPhone?.())return;
+    Promise.resolve(K.deviceUX?.loadPhoneDayAssets?.()).catch(()=>false).finally(()=>{
+      K.phoneDayUx?.start?.();
+      K.phoneDayUx?.refresh?.();
+    });
+  }
   function openLegacy(mode){
     if(mode==='edit'&&!canEdit()){showLauncher();return;}
     launcherVisible=false;selectedArea=mode;K.state&&(K.state.readOnlyMode=mode==='view');
     document.body.classList.toggle('kc-readonly-mode',mode==='view');setUxMode('legacy');legacyReturn();planModeBadge(mode);
     if(K.state){K.state.view='day';K.state.layer='planned';K.state.mobileMode=false;}
-    syncLegacyView();setTimeout(syncLegacyView,40);
+    syncLegacyView();refreshPhoneDay();
+    setTimeout(()=>{syncLegacyView();refreshPhoneDay();},40);
   }
 
   function openPersonal(kind){
@@ -119,7 +127,7 @@
       if(!deepLink)setTimeout(showLauncher,0);
       return out;
     };
-    K.startChoice={version:'0.19.39',show:showLauncher,openView:()=>openLegacy('view'),openEdit:()=>openLegacy('edit'),openMine:()=>openPersonal('plan'),openWish:()=>openPersonal('wish'),isReadonly};
+    K.startChoice={version:'0.19.40',show:showLauncher,openView:()=>openLegacy('view'),openEdit:()=>openLegacy('edit'),openMine:()=>openPersonal('plan'),openWish:()=>openPersonal('wish'),isReadonly};
     const root=roleRoot();
     if(root){roleObserver=new MutationObserver(()=>ensureChoiceReturn());roleObserver.observe(root,{childList:true,subtree:false});}
     lastBodyMode=bodyMode();
