@@ -2,7 +2,9 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 
 (async()=>{
-  const browser = await chromium.launch({headless:true});
+  const launchOptions={headless:true};
+  if(process.env.KC_PLAYWRIGHT_CHANNEL)launchOptions.channel=process.env.KC_PLAYWRIGHT_CHANNEL;
+  const browser = await chromium.launch(launchOptions);
   const context = await browser.newContext({
     viewport:{width:390,height:844},
     isMobile:true,
@@ -14,17 +16,31 @@ const assert = require('assert');
   page.on('console',msg=>{ if(msg.type()==='error') console.error('BROWSER:',msg.text()); });
   page.on('pageerror',err=>console.error('PAGEERROR:',err.message));
 
+  // Nur im lokalen CI-Browser: Auth-Konfiguration als "noch nicht eingerichtet" simulieren,
+  // damit der bereits vorhandene, localhost-beschränkte Prüfzugang den echten init()/Loginpfad durchläuft.
+  await page.route('**/src/core/member-access.js*',async route=>{
+    const response=await route.fetch();
+    let body=await response.text();
+    const marker="function configured(){const c=publicConfig();return /^https:\\/\\//.test(c.url)&&String(c.publishableKey||'').trim().length>20;}";
+    if(!body.includes(marker))throw new Error('member-access configured()-Marker nicht gefunden');
+    body=body.replace(marker,'function configured(){return false;}');
+    await route.fulfill({response,body,headers:{...response.headers(),'content-type':'application/javascript; charset=utf-8'}});
+  });
+
   const base='http://127.0.0.1:4173/';
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.KCDP?.roleUx && window.KCDP?.memberAccess && window.KCDP?.startChoice,{timeout:20000});
 
-  await page.evaluate(()=>{
-    const K=window.KCDP;
-    const p=K.people.find(x=>x.active && x.personType==='member') || K.people[0];
-    if(!p) throw new Error('Keine Testperson gefunden');
-    K.memberAccess.localTestLogin({personId:p.personId,role:'admin'});
-    K.startChoice.show();
-  });
+  // Echter lokaler Loginpfad: ensureLogin -> lokaler Prüfzugang -> Geräteschlüssel -> Daten laden -> render -> afterDataLoaded -> Startauswahl.
+  await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
+  const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
+  if(await details.count()) await details.locator('summary').click();
+  await page.locator('#uxTestRole').selectOption('admin');
+  await page.locator('#uxTestLogin').click();
+  await page.waitForSelector('#unlockSecret',{timeout:10000});
+  await page.locator('#unlockSecret').fill('KC-DP2-Mobile-Smoke-2026!');
+  await page.locator('#unlockBtn').click();
+  await page.waitForSelector('#kcChoiceView',{timeout:20000});
 
   const visible=async sel=>await page.locator(sel).isVisible();
   assert(await visible('#kcChoiceView'),'Dienstplan ansehen fehlt');
@@ -32,11 +48,26 @@ const assert = require('assert');
   assert(await visible('#kcChoiceMine'),'Meine Dienste fehlt');
   assert(await visible('#kcChoiceWish'),'Wunschplan fehlt');
 
+  // Der echte Start muss bereits einen gerenderten Tagesplan besitzen.
+  const boot=await page.evaluate(()=>({
+    view:window.KCDP?.state?.view,
+    mobileMode:window.KCDP?.state?.mobileMode,
+    main:!!document.getElementById('mainView'),
+    planner:!!document.querySelector('#mainView .planner-wrap'),
+    phone:window.KCDP?.deviceUX?.isPhone?.(),
+    phoneUx:window.KCDP?.phoneDayUx?.version||null
+  }));
+  assert(boot.main,'mainView fehlt nach echtem Programmstart');
+  assert(boot.planner,'Tagesplan wurde nach echtem Programmstart nicht gerendert');
+  assert.strictEqual(boot.phone,true,'390px wurde nicht als Smartphone erkannt');
+
   // Nur-Lese-Modus + Smartphone-Tagesansicht
   await page.locator('#kcChoiceView').click();
   await page.waitForSelector('body.kc-readonly-mode');
   assert((await page.locator('#kcPlanModeBadge').innerText()).includes('Nur ansehen'),'Nur-Lese-Badge fehlt');
-  await page.waitForSelector('.kc-phone-day-shell',{timeout:10000});
+  await page.waitForSelector('.kc-phone-day-shell',{state:'attached',timeout:10000});
+  await page.waitForFunction(()=>document.body.classList.contains('kc-phone-day-active'));
+  assert(await visible('.kc-phone-day-shell'),'Smartphone-Tagesansicht ist nicht sichtbar');
   assert(await visible('[data-kc-phone-mode="list"]'),'Listenmodus fehlt');
   assert(await visible('[data-kc-phone-mode="bars"]'),'Balkenmodus fehlt');
   assert(!(await page.locator('#quickPlanBtn').isVisible()),'Schnellplanung ist im Nur-Lese-Modus sichtbar');
@@ -72,13 +103,15 @@ const assert = require('assert');
   assert(wishText.includes('Meine Zeiten'),'Wunschplan öffnet nicht Meine Zeiten');
   assert(await visible('#kcStartChoiceReturn'),'Zurück-zur-Auswahl fehlt im Wunschplan');
 
-  // Bearbeiten muss wieder editierbar sein
+  // Bearbeiten muss wieder editierbar sein und auf dem Smartphone denselben stabilen Handylayer erhalten.
   await page.locator('#kcStartChoiceReturn').click();
   await page.waitForSelector('#kcChoiceEdit');
   await page.locator('#kcChoiceEdit').click();
   await page.waitForFunction(()=>document.body.classList.contains('ux-legacy'));
   assert(!(await page.locator('body').evaluate(b=>b.classList.contains('kc-readonly-mode'))),'Bearbeiten bleibt fälschlich schreibgeschützt');
   assert((await page.locator('#kcPlanModeBadge').innerText()).includes('Bearbeiten'),'Bearbeiten-Badge fehlt');
+  await page.waitForSelector('.kc-phone-day-shell',{state:'attached',timeout:10000});
+  assert(await visible('.kc-phone-day-shell'),'Handyansicht fehlt im Bearbeitungsmodus');
 
   console.log('KC DP2 mobile smoke: PASS');
   await browser.close();

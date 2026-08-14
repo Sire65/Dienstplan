@@ -1,0 +1,15 @@
+KC DP2 V0.19.40 – Smartphone-Startpfad stabilisiert
+
+Basis: KC DP2 V0.19.39
+
+Ziel dieses Releases:
+- die vereinfachte Smartphone-Tagesansicht startet zuverlässig auch dann, wenn sie dynamisch geladen wird, bevor #mainView bereitsteht;
+- beim Wechsel aus der neuen Startauswahl in „Dienstplan ansehen“ oder „Dienstplan bearbeiten“ wird der Smartphone-Layer gezielt initialisiert/aktualisiert;
+- Tablet und Desktop bleiben unverändert;
+- Supabase, Datenmodell, Synchronisation, Planungskern und bestehende Rollenlogik werden nicht verändert.
+
+Qualität:
+- vollständiger V0.19.39-Site-Baum als unveränderte Basis;
+- nur gezielte Runtime-Dateien dürfen gegenüber V0.19.39 abweichen;
+- echter Playwright-Smoke-Test mit Android-ähnlichem Viewport 390×844;
+- Release erst nach erfolgreicher Regression und GitHub-Pages-Prüfung.

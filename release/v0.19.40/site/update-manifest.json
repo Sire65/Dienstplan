@@ -1,0 +1,44 @@
+{
+  "schema": "KC_DP_UPDATE_MANIFEST_V1",
+  "app": "KC DP2",
+  "version": "0.19.40",
+  "cacheName": "kc-dp-release-0.19.40",
+  "releaseNotes": [
+    "Smartphone-Tagesansicht startet nach der Startauswahl jetzt zuverlässig",
+    "Dynamisch geladener Handylayer wartet robust auf die eigentliche Dienstplanansicht",
+    "Dienstplan ansehen und bearbeiten stoßen auf Smartphones einen gezielten Refresh an",
+    "Tablet, Desktop, Supabase, Datenmodell und Planungskern bleiben unverändert"
+  ],
+  "generatedAt": "2026-08-14T12:54:00+02:00",
+  "totalRuntimeBytes": 38196,
+  "files": [
+    {
+      "path": "src/ui/device-ux.js",
+      "installPath": "src/ui/device-ux.js",
+      "bytes": 3880,
+      "sha256": "21331f5c7ea09ff2f710cdc108c1deb8a6cf2fecab255ac029faea8c9ca0d3ff",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/mobile-day.js",
+      "installPath": "src/ui/mobile-day.js",
+      "bytes": 12292,
+      "sha256": "76a236e703fb67f0c70bd7e8ec2712aaee43a1d3b72ca513742b6e2867d67d9f",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/start-choice.js",
+      "installPath": "src/ui/start-choice.js",
+      "bytes": 9754,
+      "sha256": "40c0eaddc520025a55b6b482e16d716ab98eb80979f9fa9596edd6d8a7f933bd",
+      "runtime": true
+    },
+    {
+      "path": "src/core/update-manager.js",
+      "installPath": "src/core/update-manager.js",
+      "bytes": 12270,
+      "sha256": "43812ba56f2d85c594462b7059f344e6bede6a408ce9d94437ac955d2dde0cd4",
+      "runtime": true
+    }
+  ]
+}
