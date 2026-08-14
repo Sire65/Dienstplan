@@ -1,43 +1,43 @@
 {
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
-  "version": "0.19.39",
-  "cacheName": "kc-dp-release-0.19.39",
+  "version": "0.19.40",
+  "cacheName": "kc-dp-release-0.19.40",
   "releaseNotes": [
-    "Startauswahl nach der Anmeldung: Dienstplan ansehen, bearbeiten, Meine Dienste oder Wunschplan",
-    "Dienstplan ansehen ist als echter Nur-Lese-Modus gegen versehentliche Änderungen abgesichert",
-    "Dienstplan bearbeiten wird nur bei vorhandener Planer-Berechtigung angeboten",
-    "Bestehende Handy-, Tablet-, Supabase- und Dienstplanlogik bleibt unverändert"
+    "Smartphone-Tagesansicht startet nach der Startauswahl jetzt zuverlässig",
+    "Dynamisch geladener Handylayer wartet robust auf die eigentliche Dienstplanansicht",
+    "Dienstplan ansehen und bearbeiten stoßen auf Smartphones einen gezielten Refresh an",
+    "Tablet, Desktop, Supabase, Datenmodell und Planungskern bleiben unverändert"
   ],
-  "generatedAt": "2026-08-14T12:15:00+02:00",
-  "totalRuntimeBytes": 29805,
+  "generatedAt": "2026-08-14T12:54:00+02:00",
+  "totalRuntimeBytes": 38195,
   "files": [
     {
       "path": "src/ui/device-ux.js",
       "installPath": "src/ui/device-ux.js",
-      "bytes": 3339,
-      "sha256": "4f75ca6f2b1e522b5124f781657e4bc98f25331157b5189180d84b39ea8e385d",
+      "bytes": 3880,
+      "sha256": "21331f5c7ea09ff2f710cdc108c1deb8a6cf2fecab255ac029faea8c9ca0d3ff",
       "runtime": true
     },
     {
-      "path": "src/ui/start-choice.css",
-      "installPath": "src/ui/start-choice.css",
-      "bytes": 4725,
-      "sha256": "82430556b9db99db441a1c17c013dd30638b222cdc889ff7ec6a24de29772fda",
+      "path": "src/ui/mobile-day.js",
+      "installPath": "src/ui/mobile-day.js",
+      "bytes": 12291,
+      "sha256": "6c88b3e9343ed56e8e43243c73c4ad88de02d3cf97dd70685af3a64c911f774d",
       "runtime": true
     },
     {
       "path": "src/ui/start-choice.js",
       "installPath": "src/ui/start-choice.js",
-      "bytes": 9471,
-      "sha256": "d2d9c8f7470b96e85f04136eca5d34c40648f60b583d60c40756376327afce79",
+      "bytes": 9754,
+      "sha256": "40c0eaddc520025a55b6b482e16d716ab98eb80979f9fa9596edd6d8a7f933bd",
       "runtime": true
     },
     {
       "path": "src/core/update-manager.js",
       "installPath": "src/core/update-manager.js",
       "bytes": 12270,
-      "sha256": "c2ea6e5a7a1070b840772970de0d40e6ed0509a1cf70b57d1616dd8468777865",
+      "sha256": "43812ba56f2d85c594462b7059f344e6bede6a408ce9d94437ac955d2dde0cd4",
       "runtime": true
     }
   ]
