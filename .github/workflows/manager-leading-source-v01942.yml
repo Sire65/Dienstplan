@@ -35,6 +35,7 @@ on:
       - 'tests/source-health-v01942-e2e.js'
       - 'tests/planner-runtime-wiring-v01942-e2e.js'
       - 'tests/planner-application-guard-v01942-e2e.js'
+      - 'tests/tuev-studio-v01942.js'
       - 'tests/mobile-smoke.js'
       - 'tests/workflow-e2e.js'
       - 'tests/roles-e2e.js'
@@ -85,11 +86,14 @@ jobs:
           node --check tests/source-health-v01942-e2e.js
           node --check tests/planner-runtime-wiring-v01942-e2e.js
           node --check tests/planner-application-guard-v01942-e2e.js
+          node --check tests/tuev-studio-v01942.js
           node --check tests/mobile-smoke.js
           node --check tests/workflow-e2e.js
           node --check tests/roles-e2e.js
           node --check tests/documents-e2e.js
           node --check tests/photo-pipeline-e2e.js
+      - name: TÜV Studio – release, security, architecture, rules
+        run: node tests/tuev-studio-v01942.js
       - name: Prepare Playwright browser
         run: |
           npm install --no-save playwright@1.55.0
