@@ -16,21 +16,21 @@
       "path": "src/core/integrations.js",
       "installPath": "src/core/integrations.js",
       "bytes": 2653,
-      "sha256": "88f207434220527578faa372afffe1a3e28de2bcc1e09126b166b066e89f196b",
+      "sha256": "303a43ce771bbe4275cd3774fc380829f0b5dfff0f3efca00a3b78be8998b2c2",
       "runtime": true
     },
     {
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
       "bytes": 9385,
-      "sha256": "54f4bd65421bc373bc2276e80300529262229c6cde97f921a040090398143633",
+      "sha256": "d6c8cd72b50071de744939ff09d633bc41bbe4f47b3e4582c09916a5dfb8056f",
       "runtime": true
     },
     {
       "path": "src/core/update-manager.js",
       "installPath": "src/core/update-manager.js",
       "bytes": 12270,
-      "sha256": "c20344b845bd768fa948cc5f4b042211b91f9e2a10dccf050efd5dd35383ea4f",
+      "sha256": "3fa40ccf962f10c0fc177a7f7a3ff4f7b75e6c70faeac170421e6ddcfe26d477",
       "runtime": true
     }
   ]
