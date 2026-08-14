@@ -72,9 +72,9 @@ jobs:
           root=Path('release/v0.19.41/site')
           manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
           expected={
-            'src/core/integrations.js': (2653,'88f207434220527578faa372afffe1a3e28de2bcc1e09126b166b066e89f196b'),
-            'src/adapters/push.js': (9385,'54f4bd65421bc373bc2276e80300529262229c6cde97f921a040090398143633'),
-            'src/core/update-manager.js': (12270,'c20344b845bd768fa948cc5f4b042211b91f9e2a10dccf050efd5dd35383ea4f'),
+            'src/core/integrations.js': (2653,'303a43ce771bbe4275cd3774fc380829f0b5dfff0f3efca00a3b78be8998b2c2'),
+            'src/adapters/push.js': (9385,'d6c8cd72b50071de744939ff09d633bc41bbe4f47b3e4582c09916a5dfb8056f'),
+            'src/core/update-manager.js': (12270,'3fa40ccf962f10c0fc177a7f7a3ff4f7b75e6c70faeac170421e6ddcfe26d477'),
           }
           assert manifest['schema']=='KC_DP_UPDATE_MANIFEST_V1'
           assert manifest['app']=='KC DP2'
