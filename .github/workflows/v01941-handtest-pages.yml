@@ -1,0 +1,55 @@
+name: KC DP2 V0.19.41 Handtest Pages
+
+on:
+  push:
+    branches:
+      - feature/dedicated-supabase-v01941
+    paths:
+      - '.github/workflows/v01941-handtest-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kc-dp2-pages-handtest-v01941
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify handtest release
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('release/v0.19.41/site')
+          m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          assert m['version']=='0.19.41'
+          integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
+          push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
+          assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
+          assert "version:'0.19.41'" in push
+          assert 'reconcileExisting' in push
+          print('V0.19.41 Handtest-Baseline: PASS')
+          PY
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: release/v0.19.41/site
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy V0.19.41 handtest
+        id: deployment
+        uses: actions/deploy-pages@v4
