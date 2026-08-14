@@ -5,12 +5,15 @@ on:
   push:
     branches: [main]
     paths:
+      - 'release/**/site/**'
+      - 'release/current.json'
       - 'tests/mobile-smoke.js'
       - '.github/workflows/mobile-smoke.yml'
   pull_request:
     branches: [main]
     paths:
       - 'release/**/site/**'
+      - 'release/current.json'
       - 'tests/mobile-smoke.js'
       - '.github/workflows/mobile-smoke.yml'
 
@@ -30,9 +33,16 @@ jobs:
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Start KC DP2 locally
+      - name: Start current KC DP2 release locally
         run: |
-          cd release/v0.19.39/site
+          SITE="$(python3 - <<'PY'
+          import json
+          print(json.load(open('release/current.json',encoding='utf-8'))['releasePath'])
+          PY
+          )"
+          test -f "$SITE/index.html"
+          echo "Testing $SITE"
+          cd "$SITE"
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-http.log 2>&1 &
           echo $! > /tmp/kcdp-http.pid
           for i in {1..30}; do
