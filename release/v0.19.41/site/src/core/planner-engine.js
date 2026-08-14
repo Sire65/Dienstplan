@@ -5,7 +5,6 @@
   const clone=v=>JSON.parse(JSON.stringify(v));
   const round4=v=>Math.round(Number(v)*10000)/10000;
   const toMinutes=h=>Math.round(Number(h)*60);
-  const fromMinutes=m=>Number((Number(m)/60).toFixed(4));
   const dateMs=(date,h)=>new Date(`${date}T00:00:00`).getTime()+Number(h)*3600000;
 
   function grossHours(s){return Math.max(0,Number(s.end)-Number(s.start));}
@@ -14,7 +13,6 @@
   function validationStep(){return .25;}
 
   function activePeople(){return (K.people||[]).filter(p=>p&&p.active);}
-  function currentDayShifts(date){return (K.shifts||[]).filter(s=>s.layer==='planned'&&ACTIVE(s)&&s.date===date);}
   function otherDayShifts(date){return (K.shifts||[]).filter(s=>s.layer==='planned'&&ACTIVE(s)&&s.date!==date);}
   function eventHoursExcludingDay(personId,date){return otherDayShifts(date).filter(s=>s.personId===personId).reduce((n,s)=>n+countedHours(s),0);}
   function proposalHours(proposal,personId){return proposal.filter(s=>s.personId===personId).reduce((n,s)=>n+grossHours(s),0);}
@@ -162,7 +160,8 @@
     if(!day||!day.date)throw new Error('Planungstag fehlt.');
     const proposal=[],step=plannerStep();
     for(let start=day.start;start<day.end-EPS;start+=step){
-      const end=Math.min(day.end,start+step),req=K.requirementFor(day,start),needs=day.type==='market'?[['front',Number(req.front||0)],['back',Number(req.back||0)]],[['neutral',Number(req.total||0)]];
+      const end=Math.min(day.end,start+step),req=K.requirementFor(day,start);
+      const needs=day.type==='market'?[['front',Number(req.front||0)],['back',Number(req.back||0)]]:[['neutral',Number(req.total||0)]];
       for(const [zone,need] of needs)assignNeed({day,start,end,zone,need,proposal});
     }
     const repaired=repair(day,proposal,3),shifts=repaired.shifts.sort((a,b)=>String(a.personId).localeCompare(String(b.personId))||a.start-b.start||String(a.zone).localeCompare(String(b.zone)));
