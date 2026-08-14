@@ -5,7 +5,7 @@
 
   const isPhone=()=>K.deviceUX?.isPhone?.()===true && window.matchMedia('(max-width:600px)').matches;
   const currentDay=()=>K.day?.()||K.days?.[K.state?.dateIndex||0]||null;
-  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const getMode=()=>{try{return localStorage.getItem(MODE_KEY)==='bars'?'bars':'list';}catch(_){return'list';}};
   const setMode=m=>{try{localStorage.setItem(MODE_KEY,m);}catch(_){}};
 
