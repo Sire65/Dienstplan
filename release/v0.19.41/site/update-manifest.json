@@ -7,10 +7,11 @@
     "KC DP2 nutzt wieder ausschließlich das dedizierte Supabase-Projekt",
     "Gespeicherte ältere Academy-Konfigurationen werden automatisch auf das KC-DP2-Projekt korrigiert",
     "Bestehende Push-Geräte werden bei geändertem VAPID-Schlüssel automatisch und ohne neue Berechtigungsabfrage neu registriert, sofern Push bereits freigegeben ist",
+    "Supabase-Anmeldungen werden nicht mehr durch den lokalen 10-Minuten-Demo-Timeout künstlich abgemeldet; die Cloud-Sitzung nutzt ihren Access-/Refresh-Token-Lebenszyklus",
     "Planung, Smartphone-Ansicht, Dokumente, Foto-Pipeline und Rollenmodell bleiben unverändert und wurden regressionsgeprüft"
   ],
-  "generatedAt": "2026-08-14T14:24:00+02:00",
-  "totalRuntimeBytes": 24308,
+  "generatedAt": "2026-08-14T18:50:00+02:00",
+  "totalRuntimeBytes": 26898,
   "files": [
     {
       "path": "src/core/integrations.js",
@@ -31,6 +32,13 @@
       "installPath": "src/core/update-manager.js",
       "bytes": 12270,
       "sha256": "3fa40ccf962f10c0fc177a7f7a3ff4f7b75e6c70faeac170421e6ddcfe26d477",
+      "runtime": true
+    },
+    {
+      "path": "src/core/session.js",
+      "installPath": "src/core/session.js",
+      "bytes": 2590,
+      "sha256": "1402a8021f24fb0ae38c0acb42bf8cf4802c64b0946f9aec98f9d44c56954dff",
       "runtime": true
     }
   ]
