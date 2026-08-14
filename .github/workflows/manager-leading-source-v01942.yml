@@ -14,6 +14,7 @@ on:
       - 'release/v0.19.41/site/src/core/day-availability.js'
       - 'release/v0.19.41/site/src/core/planner-audit.js'
       - 'release/v0.19.41/site/src/core/source-health.js'
+      - 'release/v0.19.41/site/src/core/manager-auto-sync.js'
       - 'release/v0.19.41/site/src/core/planner-application-guard.js'
       - 'release/v0.19.41/site/src/ui/day-availability-filter.js'
       - 'release/v0.19.41/site/src/ui/day-availability-filter.css'
@@ -24,6 +25,7 @@ on:
       - 'release/v0.19.41/site/src/ui/source-health-ui.js'
       - 'release/v0.19.41/site/src/ui/source-health-ui.css'
       - 'tests/manager-leading-source-e2e.js'
+      - 'tests/manager-auto-sync-v01942-e2e.js'
       - 'tests/planner-engine-v01942-e2e.js'
       - 'tests/planner-recommendations-v01942-e2e.js'
       - 'tests/replacement-recommendations-v01942-e2e.js'
@@ -66,12 +68,14 @@ jobs:
           node --check release/v0.19.41/site/src/core/day-availability.js
           node --check release/v0.19.41/site/src/core/planner-audit.js
           node --check release/v0.19.41/site/src/core/source-health.js
+          node --check release/v0.19.41/site/src/core/manager-auto-sync.js
           node --check release/v0.19.41/site/src/core/planner-application-guard.js
           node --check release/v0.19.41/site/src/ui/day-availability-filter.js
           node --check release/v0.19.41/site/src/ui/quick-plan-recommendations.js
           node --check release/v0.19.41/site/src/ui/planner-audit-ui.js
           node --check release/v0.19.41/site/src/ui/source-health-ui.js
           node --check tests/manager-leading-source-e2e.js
+          node --check tests/manager-auto-sync-v01942-e2e.js
           node --check tests/planner-engine-v01942-e2e.js
           node --check tests/planner-recommendations-v01942-e2e.js
           node --check tests/replacement-recommendations-v01942-e2e.js
@@ -107,6 +111,8 @@ jobs:
           exit 1
       - name: Run manager leading-source safety acceptance
         run: node tests/manager-leading-source-e2e.js
+      - name: Run permission-aware Manager auto-sync acceptance
+        run: node tests/manager-auto-sync-v01942-e2e.js
       - name: Run rule-bound planner acceptance
         run: node tests/planner-engine-v01942-e2e.js
       - name: Run shared planner recommendation acceptance
