@@ -9,7 +9,7 @@ const assert = require('assert');
   const page=await context.newPage();
   await page.route('https://*.supabase.co/**',route=>route.abort());
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.KCDP?.personAdapter?.applyAuthoritativeSnapshot&&window.KCDP?.pcManagerConnection,{timeout:20000});
+  await page.waitForFunction(()=>window.KCDP?.personAdapter?.applyAuthoritativeSnapshot&&window.KCDP?.pcManagerConnection?.supabaseSnapshot,{timeout:20000});
 
   const out=await page.evaluate(()=>{
     const K=window.KCDP;
@@ -55,6 +55,26 @@ const assert = require('assert');
     };
   });
 
+  const source=await page.evaluate(async()=>{
+    const K=window.KCDP,oldFetch=window.fetch,oldSb=K.supabaseConnection,oldCfg=K.integrationConfig.supabase;
+    K.integrationConfig.supabase={...oldCfg,url:'https://example.supabase.co',publishableKey:'sb_publishable_test',orgId:'KC_WERNE'};
+    K.supabaseConnection={ensureSession:async()=>true,sessionSnapshot:()=>({access_token:'test-access-token'})};
+    window.fetch=async url=>{
+      const u=String(url);
+      if(u.includes('kc_core_operational_directory'))return new Response(JSON.stringify([{person_id:'KC-P-001',display_name:'Frank Core',preferred_name:'Frank',active:true}]),{status:200,headers:{'Content-Type':'application/json'}});
+      if(u.includes('kc_manager_state_sections'))return new Response(JSON.stringify([
+        {section_key:'dienstplan_people',payload:{items:[{personId:'KC-P-001',skills:'Vorne · Flex',maxHours:8}]},version:3},
+        {section_key:'dienstplan_context',payload:{weather:{'2026-12-04':{temp:4,factor:1.2}},program:{'2026-12-04':[{title:'Test',start:18,end:19,impact:'+'}]}},version:4},
+        {section_key:'dienstplan_publication',payload:{people:{status:'published',complete:true,version:3},context:{status:'published',complete:true,version:4}},version:5}
+      ]),{status:200,headers:{'Content-Type':'application/json'}});
+      return new Response('not found',{status:404});
+    };
+    try{
+      const s=await K.pcManagerConnection.supabaseSnapshot();
+      return {contract:s.contract,source:s.meta.source,peopleRows:s.meta.peopleRows,managerSections:s.meta.managerSections,person:s.people[0],peoplePublished:s.publication.people.status,contextComplete:s.publication.context.complete,weatherTemp:s.weather['2026-12-04'].temp,programTitle:s.program['2026-12-04'][0].title};
+    }finally{window.fetch=oldFetch;K.supabaseConnection=oldSb;K.integrationConfig.supabase=oldCfg;}
+  });
+
   assert.strictEqual(out.personAdapterVersion,'0.19.42');
   assert.strictEqual(out.managerVersion,'0.19.42');
   assert(out.count>0,'Baseline hat keine Personen');
@@ -75,6 +95,18 @@ const assert = require('assert');
   assert.strictEqual(out.contextDraft,false);
   assert.strictEqual(out.contextReady,true);
 
-  console.log('KC DP2 V0.19.42 Manager Leading Source Safety Gate: PASS');
+  assert.strictEqual(source.contract,'KC_PC_MANAGER_DP_BRIDGE_V1');
+  assert.strictEqual(source.source,'supabase_core_manager');
+  assert.strictEqual(source.peopleRows,1);
+  assert.strictEqual(source.managerSections,3);
+  assert.strictEqual(source.person.personId,'KC-P-001');
+  assert.strictEqual(source.person.displayName,'Frank');
+  assert.strictEqual(source.person.skills,'Vorne · Flex');
+  assert.strictEqual(source.peoplePublished,'published');
+  assert.strictEqual(source.contextComplete,true);
+  assert.strictEqual(source.weatherTemp,4);
+  assert.strictEqual(source.programTitle,'Test');
+
+  console.log('KC DP2 V0.19.42 Manager Leading Source + Supabase Core/Manager Read: PASS');
   await browser.close();
 })().catch(err=>{console.error(err);process.exitCode=1;});
