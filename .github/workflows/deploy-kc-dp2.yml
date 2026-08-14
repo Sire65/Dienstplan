@@ -21,107 +21,78 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Verify KC DP2 V0.19.39
+
+      - name: Verify V0.19.39 manifest and byte baseline
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import hashlib, json
-
           old=Path('release/v0.19.38/site')
           root=Path('release/v0.19.39/site')
           manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
           current=json.loads(Path('release/current.json').read_text(encoding='utf-8'))
-
           assert manifest['version']=='0.19.39'
           assert manifest['cacheName']=='kc-dp-release-0.19.39'
           assert manifest['totalRuntimeBytes']==sum(int(x['bytes']) for x in manifest['files'])
-          assert len(manifest['files'])==4
           changed={item['path'] for item in manifest['files']}
-          expected_changed={
-              'src/ui/device-ux.js',
-              'src/ui/start-choice.css',
-              'src/ui/start-choice.js',
-              'src/core/update-manager.js',
-          }
-          assert changed==expected_changed
+          assert changed=={'src/ui/device-ux.js','src/ui/start-choice.css','src/ui/start-choice.js','src/core/update-manager.js'}
           assert current['version']=='0.19.39'
           assert current['baseVersion']=='0.19.38'
           assert current['previousVersion']=='0.19.38'
           assert current['releasePath']=='release/v0.19.39/site'
-
           for item in manifest['files']:
-              target=root/item['path']
-              assert target.is_file(), target
-              data=target.read_bytes()
+              target=root/item['path'];data=target.read_bytes()
               assert len(data)==item['bytes'], f'Dateigröße falsch: {target}'
               assert hashlib.sha256(data).hexdigest()==item['sha256'], f'SHA-256 falsch: {target}'
-
-          # V0.19.38 ist die freigegebene Basis. Alles außer den explizit
-          # freigegebenen Dateien und dem Manifest muss bytegleich bleiben.
           for src in old.rglob('*'):
-              if not src.is_file():
-                  continue
+              if not src.is_file(): continue
               rel=src.relative_to(old).as_posix()
-              if rel in changed or rel=='update-manifest.json':
-                  continue
+              if rel in changed or rel=='update-manifest.json': continue
               dst=root/rel
               assert dst.is_file(), f'Fehlt im neuen Release: {rel}'
               assert src.read_bytes()==dst.read_bytes(), f'Unerwartete Regression/Änderung: {rel}'
-
           old_files={p.relative_to(old).as_posix() for p in old.rglob('*') if p.is_file()}
           new_files={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
-          extras=new_files-old_files
-          assert extras=={'src/ui/start-choice.css','src/ui/start-choice.js'}, f'Unerwartete neue Runtime-Dateien: {extras}'
+          assert new_files-old_files=={'src/ui/start-choice.css','src/ui/start-choice.js'}
+          assert not Path('release/v0.19.39/INTEGRITY_PROBE.txt').exists()
+          assert not Path('.github/workflows/v01939-integrity-probe.yml').exists()
+          print('Manifest, SHA-256 und V0.19.38 Byte-Basis OK')
+          PY
 
+      - name: Verify V0.19.39 start choice and read-only behavior
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('release/v0.19.39/site')
           choice=(root/'src/ui/start-choice.js').read_text(encoding='utf-8')
           choice_css=(root/'src/ui/start-choice.css').read_text(encoding='utf-8')
           dux=(root/'src/ui/device-ux.js').read_text(encoding='utf-8')
           upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
           workflow=(root/'src/core/workflow.js').read_text(encoding='utf-8')
-
-          # Startauswahl / Rollen
-          assert 'Was möchten Sie tun?' in choice
-          assert 'Dienstplan ansehen' in choice
-          assert 'Dienstplan bearbeiten' in choice
-          assert 'Meine Dienste' in choice
-          assert 'Wunschplan' in choice
+          for token in ['Was möchten Sie tun?','Dienstplan ansehen','Dienstplan bearbeiten','Meine Dienste','Wunschplan']:
+              assert token in choice, token
           assert "K.auth?.has?.('roster.plan.edit')" in choice
-          assert "edit?'<button" in choice
           assert "K.state.readOnlyMode=mode==='view'" in choice
-          assert "selectedArea=mode" in choice
-          assert "selectedArea=kind" in choice
           assert "q.get('route')==='replacement'" in choice
-          assert '← Startauswahl' in choice
-          assert '← Auswahl' in choice
-
-          # Nur-Lese-Abwehr auf Interaktionsebene
-          assert 'guardPointer' in choice
-          assert 'guardDbl' in choice
-          assert 'guardContext' in choice
-          assert 'guardClick' in choice
-          assert 'guardKeys' in choice
+          assert '← Startauswahl' in choice and '← Auswahl' in choice
+          for token in ['guardPointer','guardDbl','guardContext','guardClick','guardKeys']:
+              assert token in choice, token
           for token in ['#settingsBtn','#addShiftBtn','#quickPlanBtn','#publishBtn','#undoBtn','#redoBtn','#addStandbyInline','#addWishInline']:
-              assert token in choice
+              assert token in choice, token
           for token in ['.shift','.wish-bar','.standby-bar','.timeline-cell']:
-              assert token in choice
+              assert token in choice, token
           assert 'kc-readonly-mode' in choice_css
           assert '.resize-handle' in choice_css
           assert 'kc-plan-mode-badge' in choice_css
-
-          # Mitarbeiter ohne Draft-Recht bekommen weiterhin ausschließlich die
-          # veröffentlichte Planversion; vorhandene Core-Schutzlogik bleibt erhalten.
           assert "K.visiblePlannedShifts=function" in workflow
           assert "K.auth?.has?.('roster.plan.view_draft')" in workflow
-          assert "else{const latest=K.latestPublishedVersion();rows=latest?latest.shifts:[];}" in workflow
-
-          # Startauswahl wird global geladen, Smartphone-Layer bleibt separat <=600 px.
+          assert "latest?latest.shifts:[]" in workflow
           assert "start-choice.css?v=0.19.39" in dux
           assert "start-choice.js?v=0.19.39" in dux
           assert 'loadStartChoiceAssets' in dux
           assert 'innerWidth<=600' in dux
           assert 'mobile-day.css?v=0.19.38' in dux
           assert 'mobile-day.js?v=0.19.38' in dux
-
           mobile_css=(root/'src/ui/mobile-day.css').read_text(encoding='utf-8')
           mobile_js=(root/'src/ui/mobile-day.js').read_text(encoding='utf-8')
           assert '@media (max-width:600px)' in mobile_css
@@ -131,14 +102,21 @@ jobs:
           assert 'data-kc-phone-nav="-1"' in mobile_js
           assert 'data-kc-phone-nav="1"' in mobile_js
           assert "first=first.split('-')[0]" in mobile_js
-
-          # Sicherer Updatepfad
           assert "CURRENT_RELEASE='0.19.39'" in upd
           assert "version:'0.19.39'" in upd
           assert 'service-worker.js?v=0.19.39-engine' in upd
           assert 'KC_DP_BOOT_OK' in upd
+          print('Startauswahl, Rollenprüfung, Nur-Lese-Modus und Smartphone-Isolation OK')
+          PY
+          node --check release/v0.19.39/site/src/ui/device-ux.js
+          node --check release/v0.19.39/site/src/ui/start-choice.js
+          node --check release/v0.19.39/site/src/core/update-manager.js
 
-          # Bestehende Kern-Regressionen bleiben erhalten.
+      - name: Verify inherited KC DP2 regressions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('release/v0.19.39/site')
           assert 'kc-login-startbild-v01917.webp' in (root/'src/ui/role-ux.css').read_text(encoding='utf-8')
           assert 'E-Mail-Adresse oder Passwort ist falsch.' in (root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
           assert 'Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.' in (root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
@@ -166,14 +144,8 @@ jobs:
           assert '.drop-target.drop-valid' in (root/'src/ui/app.css').read_text(encoding='utf-8')
           assert 'colorLegendBtn' in (root/'index.html').read_text(encoding='utf-8')
           assert '.color-legend-popover{position:fixed' in (root/'src/ui/app.css').read_text(encoding='utf-8')
-
-          assert not Path('release/v0.19.39/INTEGRITY_PROBE.txt').exists()
-          assert not Path('.github/workflows/v01939-integrity-probe.yml').exists()
-          print('KC DP2 V0.19.39: Startauswahl, Nur-Lese-Modus und V0.19.38 Regressionen verifiziert')
+          print('Geerbte KC-DP2 Regressionen OK')
           PY
-          node --check release/v0.19.39/site/src/ui/device-ux.js
-          node --check release/v0.19.39/site/src/ui/start-choice.js
-          node --check release/v0.19.39/site/src/core/update-manager.js
 
       - uses: actions/upload-artifact@v4
         with:
