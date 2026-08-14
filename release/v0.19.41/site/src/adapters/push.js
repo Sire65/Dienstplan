@@ -1,14 +1,45 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
   K.pushSubscriptions=K.pushSubscriptions||{};
-  const state={vapidPublicKey:null,provider:null,status:'not_configured',lastError:null,lastSendAt:null,edgeFunction:'kc-dp-push'};
+  const state={vapidPublicKey:null,provider:null,status:'not_configured',lastError:null,lastSendAt:null,lastReconcileAt:null,edgeFunction:'kc-dp-push'};
   function base64UrlToUint8Array(s){const pad='='.repeat((4-s.length%4)%4),b=(s+pad).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(b),a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);return a;}
+  function bytes(v){if(!v)return null;if(v instanceof Uint8Array)return v;if(v instanceof ArrayBuffer)return new Uint8Array(v);if(ArrayBuffer.isView(v))return new Uint8Array(v.buffer,v.byteOffset,v.byteLength);return null;}
+  function sameApplicationServerKey(sub,key){const a=bytes(sub?.options?.applicationServerKey),b=key?base64UrlToUint8Array(key):null;if(!a||!b||a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true;}
   function supported(){return typeof navigator!=='undefined'&&'serviceWorker'in navigator&&typeof PushManager!=='undefined'&&typeof Notification!=='undefined';}
   function configure({vapidPublicKey,provider}={}){state.vapidPublicKey=vapidPublicKey||state.vapidPublicKey;if(provider&&typeof provider.send!=='function')throw new Error('Push-Provider benötigt send(job).');if(provider)state.provider=provider;state.status=(state.vapidPublicKey&&state.provider)?'ready':'partial';}
   async function edge(action,payload={}){const c=K.supabaseConnection?.validateConfig?.(),token=K.supabaseConnection?.sessionSnapshot?.()?.access_token;if(!c||!token)throw new Error('Für Push ist eine gültige Anmeldung erforderlich.');const r=await fetch(`${c.url}/functions/v1/${state.edgeFunction}`,{method:action==='config'?'GET':'POST',headers:{apikey:c.publishableKey,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:action==='config'?undefined:JSON.stringify({action,orgId:c.orgId,projectId:c.projectId,...payload})}),data=await r.json();if(!r.ok)throw new Error(data.error||`Push HTTP ${r.status}`);return data;}
-  async function subscribe(personId=K.currentUser?.personId){if(!supported())throw new Error('Web Push wird auf diesem Gerät/Browser nicht unterstützt.');if(!state.vapidPublicKey){const c=await edge('config');state.vapidPublicKey=c.vapidPublicKey;}if(!state.vapidPublicKey)throw new Error('Push ist serverseitig noch nicht vollständig freigeschaltet.');if(!personId)throw new Error('Keine personId für Push-Subscription.');const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();if(permission!=='granted')throw new Error('Push-Berechtigung wurde nicht erteilt.');const reg=await navigator.serviceWorker.register('service-worker.js?v=0.19.37',{updateViaCache:'none'});await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(state.vapidPublicKey)});const value=sub.toJSON?sub.toJSON():JSON.parse(JSON.stringify(sub));await edge('subscribe',{subscription:value,userAgent:navigator.userAgent});K.pushSubscriptions[personId]=value;state.status='ready';return value;}
+  async function serverKey(){const c=await edge('config');state.vapidPublicKey=c.vapidPublicKey||null;if(!state.vapidPublicKey)throw new Error('Push ist serverseitig noch nicht vollständig freigeschaltet.');return state.vapidPublicKey;}
+  async function swRegistration(){let reg=await navigator.serviceWorker.getRegistration();if(!reg)reg=await navigator.serviceWorker.register('service-worker.js?v=0.19.41',{updateViaCache:'none'});await navigator.serviceWorker.ready;return reg;}
+  const subscriptionValue=sub=>sub.toJSON?sub.toJSON():JSON.parse(JSON.stringify(sub));
+  async function storeSubscription(personId,sub){const value=subscriptionValue(sub);await edge('subscribe',{subscription:value,userAgent:navigator.userAgent});K.pushSubscriptions[personId]=value;state.status='ready';state.lastError=null;return value;}
+  async function subscribe(personId=K.currentUser?.personId){
+    if(!supported())throw new Error('Web Push wird auf diesem Gerät/Browser nicht unterstützt.');
+    if(!personId)throw new Error('Keine personId für Push-Subscription.');
+    const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+    if(permission!=='granted')throw new Error('Push-Berechtigung wurde nicht erteilt.');
+    const key=await serverKey(),reg=await swRegistration();
+    let sub=await reg.pushManager.getSubscription();
+    if(sub&&!sameApplicationServerKey(sub,key)){await sub.unsubscribe();sub=null;}
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(key)});
+    return storeSubscription(personId,sub);
+  }
+  async function reconcileExisting(personId=K.currentUser?.personId){
+    if(!supported()||Notification.permission!=='granted'||!personId)return{status:'skipped'};
+    try{
+      const key=await serverKey(),reg=await swRegistration();
+      let sub=await reg.pushManager.getSubscription();
+      const remembered=!!K.pushSubscriptions?.[personId];
+      if(!sub&&!remembered)return{status:'not_enabled'};
+      let renewed=false;
+      if(sub&&!sameApplicationServerKey(sub,key)){await sub.unsubscribe();sub=null;renewed=true;}
+      if(!sub){sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(key)});renewed=true;}
+      await storeSubscription(personId,sub);
+      state.lastReconcileAt=new Date().toISOString();
+      return{status:renewed?'renewed':'refreshed'};
+    }catch(e){state.lastError=e.message;state.status='deferred';console.warn('Push-Neuregistrierung wird später erneut versucht:',e.message);return{status:'deferred',error:e.message};}
+  }
   function hasSubscription(personId=K.currentUser?.personId){return !!K.pushSubscriptions?.[personId];}
-  async function unsubscribe(personId=K.currentUser?.personId){if(supported()){const reg=await navigator.serviceWorker.getRegistration(),sub=await reg?.pushManager.getSubscription();if(sub){await edge('unsubscribe',{endpoint:sub.endpoint});await sub.unsubscribe();}}delete K.pushSubscriptions[personId];return true;}
+  async function unsubscribe(personId=K.currentUser?.personId){if(supported()){const reg=await navigator.serviceWorker.getRegistration(),sub=await reg?.pushManager.getSubscription();if(sub){try{await edge('unsubscribe',{endpoint:sub.endpoint});}finally{await sub.unsubscribe();}}}delete K.pushSubscriptions[personId];return true;}
   async function send(notification,personId){state.status='sending';try{const out=await edge('send',{personIds:[personId],payload:{title:notification.title,body:notification.body,data:{...notification.data,notificationId:notification.id}}});state.status='ready';state.lastSendAt=new Date().toISOString();return {status:out.sent?'sent':'no_subscription',result:out};}catch(e){state.status='error';state.lastError=e.message;throw e;}}
   async function sendMany(notification,personIds){const ids=[...new Set((personIds||[]).map(String).filter(Boolean))];if(!ids.length)throw new Error('Keine Empfänger ausgewählt.');state.status='sending';try{const out=await edge('send',{personIds:ids,payload:{title:notification.title,body:notification.body,data:{...notification.data,notificationId:notification.id}}});state.status='ready';state.lastSendAt=new Date().toISOString();return {status:out.sent?'sent':'no_subscription',recipients:ids.length,result:out};}catch(e){state.status='error';state.lastError=e.message;throw e;}}
   async function acknowledge(notificationId){if(!notificationId)return false;await edge('acknowledge',{notificationId});return true;}
@@ -20,6 +51,8 @@
   async function respondReplacement(requestId,accept){return (await edge('replacementRespond',{requestId,accept})).result;}
   async function replacementAssignments(){return (await edge('replacementAssignments')).assignments||[];}
   async function replacementSynced(requestId){return edge('replacementSynced',{requestId});}
-  async function localTest(){if(!supported())throw new Error('Benachrichtigungen werden nicht unterstützt.');if(Notification.permission!=='granted')throw new Error('Push-Berechtigung ist nicht freigegeben.');const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('service-worker.js?v=0.17.7',{updateViaCache:'none'});await reg.showNotification('KC DP Test',{body:'Lokale Testnachricht. Dies bestätigt die Geräteanzeige, nicht den Server-Push.',data:{route:'notifications'}});return true;}
-  K.pushAdapter={version:'0.19.37',state,configure,supported,subscribe,unsubscribe,hasSubscription,send,sendMany,acknowledge,deliveryStatus,scheduleSettings,publishPreview,createReplacement,getReplacement,respondReplacement,replacementAssignments,replacementSynced,localTest,edge};
+  async function localTest(){if(!supported())throw new Error('Benachrichtigungen werden nicht unterstützt.');if(Notification.permission!=='granted')throw new Error('Push-Berechtigung ist nicht freigegeben.');const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('service-worker.js?v=0.19.41',{updateViaCache:'none'});await reg.showNotification('KC DP Test',{body:'Lokale Testnachricht. Dies bestätigt die Geräteanzeige, nicht den Server-Push.',data:{route:'notifications'}});return true;}
+  function installReconcileHook(){let tries=0;const timer=setInterval(()=>{tries++;if(K.roleUx?.afterDataLoaded&&!K.roleUx.__pushReconcileV01941){const base=K.roleUx.afterDataLoaded;K.roleUx.afterDataLoaded=function(...args){const out=base.apply(this,args);Promise.resolve(out).finally(()=>setTimeout(()=>reconcileExisting(),0));return out;};K.roleUx.__pushReconcileV01941=true;clearInterval(timer);if(K.currentUser?.personId)setTimeout(()=>reconcileExisting(),0);}else if(tries>1500)clearInterval(timer);},20);}
+  K.pushAdapter={version:'0.19.41',state,configure,supported,subscribe,reconcileExisting,unsubscribe,hasSubscription,send,sendMany,acknowledge,deliveryStatus,scheduleSettings,publishPreview,createReplacement,getReplacement,respondReplacement,replacementAssignments,replacementSynced,localTest,edge,sameApplicationServerKey};
+  installReconcileHook();
 })();
