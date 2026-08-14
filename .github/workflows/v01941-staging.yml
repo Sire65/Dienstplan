@@ -61,18 +61,48 @@ jobs:
           node --check release/v0.19.41/site/src/core/update-manager.js
           node --check tests/dedicated-supabase-e2e.js
 
-      - name: Print changed runtime integrity
+      - name: Verify V0.19.41 manifest and byte baseline
         shell: bash
         run: |
-          for f in \
-            release/v0.19.41/site/src/core/integrations.js \
-            release/v0.19.41/site/src/adapters/push.js \
-            release/v0.19.41/site/src/core/update-manager.js; do
-            printf 'KC_META %s bytes=' "$f"
-            wc -c < "$f" | tr -d ' \n'
-            printf ' sha256='
-            sha256sum "$f" | awk '{print $1}'
-          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          base=Path('release/v0.19.40/site')
+          root=Path('release/v0.19.41/site')
+          manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          expected={
+            'src/core/integrations.js': (2653,'88f207434220527578faa372afffe1a3e28de2bcc1e09126b166b066e89f196b'),
+            'src/adapters/push.js': (9385,'54f4bd65421bc373bc2276e80300529262229c6cde97f921a040090398143633'),
+            'src/core/update-manager.js': (12270,'c20344b845bd768fa948cc5f4b042211b91f9e2a10dccf050efd5dd35383ea4f'),
+          }
+          assert manifest['schema']=='KC_DP_UPDATE_MANIFEST_V1'
+          assert manifest['app']=='KC DP2'
+          assert manifest['version']=='0.19.41'
+          assert manifest['cacheName']=='kc-dp-release-0.19.41'
+          assert manifest['totalRuntimeBytes']==24308
+          files={x['path']:x for x in manifest['files'] if x.get('runtime') is not False}
+          assert set(files)==set(expected), f'Unerwartete Manifest-Dateien: {sorted(files)}'
+          for rel,(size,sha) in expected.items():
+            p=root/rel
+            data=p.read_bytes()
+            actual=hashlib.sha256(data).hexdigest()
+            assert len(data)==size, f'{rel}: {len(data)} != {size}'
+            assert actual==sha, f'{rel}: SHA {actual} != {sha}'
+            assert files[rel]['bytes']==size
+            assert files[rel]['sha256']==sha
+            assert files[rel]['installPath']==rel
+
+          base_files={p.relative_to(base).as_posix() for p in base.rglob('*') if p.is_file()}
+          new_files={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
+          assert base_files==new_files, 'V0.19.41 darf keine unerwarteten Site-Dateien hinzufügen/entfernen'
+          allowed=set(expected)|{'update-manifest.json'}
+          changed=[]
+          for rel in sorted(base_files):
+            if (base/rel).read_bytes()!=(root/rel).read_bytes(): changed.append(rel)
+          assert set(changed)==allowed, f'Unerwartete Abweichungen zu V0.19.40: {changed}'
+          print('V0.19.41 Manifest, Hashes und Byte-Baseline: PASS')
+          PY
 
       - name: Install Playwright
         run: |
