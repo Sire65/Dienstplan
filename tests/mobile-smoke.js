@@ -18,12 +18,11 @@ const assert = require('assert');
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.KCDP?.roleUx && window.KCDP?.memberAccess && window.KCDP?.startChoice,{timeout:20000});
 
-  await page.evaluate(async()=>{
+  await page.evaluate(()=>{
     const K=window.KCDP;
     const p=K.people.find(x=>x.active && x.personType==='member') || K.people[0];
     if(!p) throw new Error('Keine Testperson gefunden');
     K.memberAccess.localTestLogin({personId:p.personId,role:'admin'});
-    await K.persistAll?.();
     K.startChoice.show();
   });
 
