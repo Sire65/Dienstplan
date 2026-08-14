@@ -14,7 +14,7 @@
   }
   function classifyBlocked(blocked=[]){
     const codes=blocked.map(x=>x.code),absolute=codes.filter(c=>hardCodes.has(c)),manualOnly=codes.filter(c=>manualOverrideCodes.has(c));
-    return {codes,absolute,manualOnly,autoEligible:codes.length===0,manualAllowed:absolute.length===0};
+    return {codes,absolute,manualOnly,autoEligible:codes.length===0,manualAllowed:absolute.length===0&&manualOnly.length>0};
   }
   function recommendSlot(input={}){
     requireEngine();const context=normalizeContext(input),rows=[];
@@ -22,17 +22,7 @@
       const gate=K.plannerEngine.eligibility(person,context),classification=classifyBlocked(gate.blocked||[]);
       let score=null,reasons=[];
       if(gate.eligible){const ranked=K.plannerEngine.scoreCandidate(person,context);score=ranked.score;reasons=ranked.reasons||[];}
-      else if(classification.manualAllowed){
-        // Eine bewusste manuelle Abweichung (derzeit nur bestätigter „nicht verfügbar“-Wunsch)
-        // wird nicht zum Auto-Kandidaten, bleibt aber transparent auswählbar.
-        const originalWish=K.wishCoverage;
-        try{
-          if(classification.manualOnly.length&&typeof originalWish==='function'){
-            K.wishCoverage=(personId,date,start,end)=>{const w=originalWish(personId,date,start,end);return personId===person.personId?{...w,unavailable:false}:w;};
-            const manualRank=K.plannerEngine.scoreCandidate(person,context);if(manualRank.eligible){score=manualRank.score-100;reasons=['manuelle Abweichung erforderlich',...(manualRank.reasons||[])];}
-          }
-        }finally{K.wishCoverage=originalWish;}
-      }
+      else if(classification.manualAllowed){reasons=['bewusste manuelle Abweichung erforderlich'];}
       rows.push({personId:person.personId,name:person.name,personType:person.personType,skills:person.skills||'',score,autoEligible:classification.autoEligible,manualAllowed:classification.manualAllowed,blocked:gate.blocked||[],reasons});
     }
     rows.sort((a,b)=>{
@@ -41,7 +31,7 @@
       const as=Number.isFinite(a.score)?a.score:-Infinity,bs=Number.isFinite(b.score)?b.score:-Infinity;
       return bs-as||String(a.name||'').localeCompare(String(b.name||''),'de')||String(a.personId).localeCompare(String(b.personId));
     });
-    return {context:{date:context.day.date,start:context.start,end:context.end,zone:context.zone,area:context.area},recommended:rows.filter(x=>x.autoEligible),manualOverride:rows.filter(x=>!x.autoEligible&&x.manualAllowed),blocked:rows.filter(x=>!x.manualAllowed),all:rows};
+    return {context:{date:context.day.date,start:context.start,end:context.end,zone:context.zone,area:context.area},recommended:rows.filter(x=>x.autoEligible),manualOverride:rows.filter(x=>!x.autoEligible&&x.manualAllowed),blocked:rows.filter(x=>!x.autoEligible&&!x.manualAllowed),all:rows};
   }
   function explain(row){
     if(row.autoEligible)return row.reasons.length?row.reasons.join(' · '):'automatisch geeignet';
