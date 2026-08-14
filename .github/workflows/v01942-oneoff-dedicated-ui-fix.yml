@@ -1,0 +1,111 @@
+name: KC DP2 V0.19.42 One-off Dedicated UI Fix
+
+on:
+  push:
+    branches: [feature/pc-manager-leading-source-v01942]
+    paths:
+      - '.github/workflows/v01942-oneoff-dedicated-ui-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-app-shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/pc-manager-leading-source-v01942
+      - name: Replace stale Futura database UI with dedicated KC-DP2 UI
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p=Path('release/v0.19.41/site/src/ui/app.js')
+          s=p.read_text(encoding='utf-8')
+
+          def one(old,new,label):
+              global s
+              n=s.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected exactly 1 occurrence, found {n}')
+              s=s.replace(old,new,1)
+              print('OK',label)
+
+          one("sb.profile==='FUTURA_SHARED_PROJECT'?'Futura-Projektprofil':'KC-DP Profil'",
+              "sb.profile==='KC_DP_DEDICATED_PROJECT'?'KC-DP2 dediziert':'KC-DP Profil'",
+              'cloud profile label')
+          one("sb.profile==='FUTURA_SHARED_PROJECT'?'ok':'wait'",
+              "sb.profile==='KC_DP_DEDICATED_PROJECT'?'ok':'wait'",
+              'database profile state')
+          one("sb.profile==='FUTURA_SHARED_PROJECT'?'Futura-Projekt erkannt':'KC-DP Profil'",
+              "sb.profile==='KC_DP_DEDICATED_PROJECT'?'KC-DP2 Projekt erkannt':'KC-DP Profil'",
+              'database profile badge')
+          one('<small>Projekt</small><b>Futura Academy / KC DP</b>',
+              '<small>Projekt</small><b>KC DP2 · dediziertes Supabase-Projekt</b>',
+              'database project label')
+          one('Bitte den Key exakt aus Futura Academy kopieren.',
+              'Bitte den Publishable Key des dedizierten KC-DP2-Projekts prüfen.',
+              'key review guidance')
+          one('placeholder="Publishable Key exakt aus Futura Academy einfügen"',
+              'placeholder="Publishable Key des KC-DP2-Projekts einfügen"',
+              'database key placeholder')
+          one('<button class="secondary" id="dbFuturaPreset">Futura-Profil übernehmen</button>',
+              '',
+              'remove legacy Futura preset button')
+          one("supabaseProjectRef:'iddudrxuihdodnvejxcp',region:'Frankfurt',profile:'FUTURA_SHARED_PROJECT',",
+              '',
+              'remove hard-coded Academy routing')
+
+          pattern=r"\$\('dbFuturaPreset'\)\.onclick=\(\)=>\{\$\('dbSbUrl'\)\.value='https://iddudrxuihdodnvejxcp\.supabase\.co';.*?\};\n"
+          s,n=re.subn(pattern,'',s,count=1,flags=re.S)
+          if n != 1:
+              raise SystemExit(f'remove legacy preset handler: expected 1 occurrence, found {n}')
+          print('OK remove legacy preset handler')
+
+          one('Bitte den Publishable Key exakt aus der funktionierenden Futura Academy kopieren und danach erneut testen.',
+              'Bitte den Publishable Key des dedizierten KC-DP2-Projekts eintragen und danach erneut testen.',
+              'missing key guidance')
+          one('placeholder="EXAKT aus Futura kopieren · sb_publishable_…"',
+              'placeholder="KC-DP2 Publishable Key · sb_publishable_…"',
+              'integration key placeholder')
+          one('Bitte exakt aus Futura kopieren.',
+              'Bitte den KC-DP2 Publishable Key prüfen.',
+              'integration key review guidance')
+          one('KC DP V0.17.10 – Supabase-Diagnose und Futura-Projektprofil bereit.',
+              'KC DP V0.17.10 – Supabase-Diagnose und dediziertes KC-DP2-Projektprofil bereit.',
+              'startup message')
+
+          s=s.replace("sb.region||'Frankfurt'","sb.region||'London'")
+          s=s.replace("K.integrationConfig?.supabase?.region||'Frankfurt'","K.integrationConfig?.supabase?.region||'London'")
+
+          forbidden={
+              'Academy project ref':'iddudrxuihdodnvejxcp',
+              'shared Futura profile':'FUTURA_SHARED_PROJECT',
+              'legacy preset id':'dbFuturaPreset',
+              'legacy Futura wording':'Futura',
+          }
+          for label,needle in forbidden.items():
+              if needle in s:
+                  raise SystemExit(f'{label} still present after patch')
+          if "KC_DP_DEDICATED_PROJECT" not in s:
+              raise SystemExit('dedicated profile marker missing after patch')
+          if 'KC DP2 · dediziertes Supabase-Projekt' not in s:
+              raise SystemExit('dedicated UI label missing after patch')
+
+          p.write_text(s,encoding='utf-8')
+          print('KC DP2 V0.19.42 dedicated database UI cleanup PASS')
+          PY
+          node --check release/v0.19.41/site/src/ui/app.js
+      - name: Commit repaired app shell
+        run: |
+          if git diff --quiet -- release/v0.19.41/site/src/ui/app.js; then
+            echo 'No app.js change produced; refusing silent no-op.' >&2
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.41/site/src/ui/app.js
+          git commit -m 'fix: remove stale Futura routing from KC-DP2 database UI'
+          git push origin HEAD:feature/pc-manager-leading-source-v01942
