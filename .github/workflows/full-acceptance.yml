@@ -1,0 +1,86 @@
+name: KC DP2 Full Acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/**'
+      - 'release/current.json'
+      - 'release/v*/site/**'
+      - '.github/workflows/full-acceptance.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kc-dp2-full-acceptance
+  cancel-in-progress: true
+
+jobs:
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Resolve current verified release
+        id: release
+        shell: bash
+        run: |
+          RELEASE_PATH="$(python3 - <<'PY'
+          import json
+          print(json.load(open('release/current.json', encoding='utf-8'))['releasePath'])
+          PY
+          )"
+          VERSION="$(python3 - <<'PY'
+          import json
+          print(json.load(open('release/current.json', encoding='utf-8'))['version'])
+          PY
+          )"
+          test -f "$RELEASE_PATH/index.html"
+          echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Prüfe KC DP2 V$VERSION aus $RELEASE_PATH"
+
+      - name: Start isolated local test server
+        shell: bash
+        run: |
+          cd "${{ steps.release.outputs.path }}"
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-e2e-server.log 2>&1 &
+          echo $! > /tmp/kcdp-e2e-server.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              echo 'Lokaler KC-DP2-Testserver bereit'
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/kcdp-e2e-server.log
+          exit 1
+
+      - name: Smartphone Praxisabnahme
+        run: node tests/mobile-smoke.js
+
+      - name: Wunsch Soll Ist Praxisabnahme
+        run: node tests/workflow-e2e.js
+
+      - name: Dokumente Druck Export Praxisabnahme
+        run: node tests/documents-e2e.js
+
+      - name: Dienstplan Foto Pipeline Praxisabnahme
+        run: node tests/photo-pipeline-e2e.js
+
+      - name: Testserver log on failure
+        if: failure()
+        run: cat /tmp/kcdp-e2e-server.log || true
