@@ -1,53 +1,13 @@
-name: KC DP2 V0.19.41 Real Device Handtest
+name: KC DP2 V0.19.41 Real Device Handtest (retired)
 
 on:
-  workflow_run:
-    workflows:
-      - KC DP2 Verified Web Release
-    types:
-      - completed
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: kc-dp2-pages-main
-  cancel-in-progress: false
 
 jobs:
-  deploy-handtest:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_commit.message == 'test: arm V0.19.41 real-device handtest'
+  retired:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: feature/dedicated-supabase-v01941
-      - name: Verify V0.19.41 handtest payload
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-          root=Path('release/v0.19.41/site')
-          m=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert m['version']=='0.19.41'
-          integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
-          push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
-          assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
-          assert "version:'0.19.41'" in push
-          assert 'reconcileExisting' in push
-          print('V0.19.41 real-device handtest payload: PASS')
-          PY
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: release/v0.19.41/site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: echo "Retired handtest helper. Standard verified deploy workflow is authoritative."
