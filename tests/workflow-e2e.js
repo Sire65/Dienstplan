@@ -10,7 +10,6 @@ const assert = require('assert');
   page.on('console',msg=>{if(msg.type()==='error')console.error('BROWSER:',msg.text());});
   page.on('pageerror',err=>console.error('PAGEERROR:',err.message));
 
-  // CI-only: vorhandenen localhost-Prüfzugang verwenden, niemals die Release-Datei verändern.
   await page.route('**/src/core/member-access.js*',async route=>{
     const response=await route.fetch();
     let body=await response.text();
@@ -19,8 +18,6 @@ const assert = require('assert');
     body=body.replace(marker,'function configured(){return false;}');
     await route.fulfill({response,body,headers:{...response.headers(),'content-type':'application/javascript; charset=utf-8'}});
   });
-
-  // Kein Test darf einen echten externen Supabase-/Push-Aufruf ausführen.
   await page.route('https://*.supabase.co/**',route=>route.abort());
 
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
@@ -38,58 +35,41 @@ const assert = require('assert');
   const result=await page.evaluate(()=>{
     const K=window.KCDP;
     const clone=v=>JSON.parse(JSON.stringify(v));
-    const before={
+    K.__workflowE2ESnapshot={
       currentUser:clone(K.currentUser),shifts:clone(K.shifts),wishes:clone(K.wishes),standby:clone(K.standby),
       planVersions:clone(K.planVersions),acknowledgements:clone(K.acknowledgements),actualShifts:clone(K.actualShifts),
-      actualWorkflow:clone(K.actualWorkflow),workflow:clone(K.workflow),breakConfig:clone(K.breakConfig)
+      actualWorkflow:clone(K.actualWorkflow),workflow:clone(K.workflow),breakConfig:clone(K.breakConfig),state:clone(K.state)
     };
-    // Test bleibt vollständig lokal/in-memory.
     if(K.sync)K.sync.enqueue=()=>({queued:true,test:true});
     if(K.pushAdapter)K.pushAdapter.publishPreview=async()=>({ok:true,test:true});
-    if(K.notifications){
-      K.notifications.onPlanPublished=()=>{};
-      K.notifications.onAudit=()=>{};
-    }
+    if(K.notifications){K.notifications.onPlanPublished=()=>{};K.notifications.onAudit=()=>{};}
 
     const active=K.people.filter(p=>p.active&&p.personType!=='helper');
     if(!active.length)throw new Error('Keine aktive Testperson gefunden');
     const person=active[0];
     const day=K.days.find(d=>d.type==='market')||K.days[0];
     if(!day)throw new Error('Kein Planungstag vorhanden');
-
-    // Freies 60-Minuten-Fenster für die Testperson suchen.
     let start=null;
     for(let t=day.start;t+1<=day.end;t+=0.5){
       const overlap=K.shifts.some(s=>s.personId===person.personId&&s.date===day.date&&s.layer==='planned'&&!['deleted','cancelled','absent','failed'].includes(s.status)&&Math.max(s.start,t)<Math.min(s.end,t+1));
       if(!overlap){start=t;break;}
     }
     if(start==null)throw new Error('Kein freies Testzeitfenster gefunden');
-    const end=start+1;
-    const zone=day.type==='market'?'front':'neutral';
-    const area=day.type==='market'?'Verkauf':'Vor-/Nachbereitung';
+    const end=start+1,zone=day.type==='market'?'front':'neutral',area=day.type==='market'?'Verkauf':'Vor-/Nachbereitung';
 
-    // 1. Mitglied trägt eigenen Wunsch ein.
     K.auth.setCurrentUser({personId:person.personId,role:'employee',displayName:person.name});
-    const wishOut=K.mutations.saveWish({
-      id:'',personId:person.personId,date:day.date,start,end,wishType:'preferred',source:'self_service',comment:'E2E Workflow',confidence:1,status:'confirmed'
-    },{reason:'E2E Wunsch'});
+    const wishOut=K.mutations.saveWish({id:'',personId:person.personId,date:day.date,start,end,wishType:'preferred',source:'self_service',comment:'E2E Workflow',confidence:1,status:'confirmed'},{reason:'E2E Wunsch'});
     if(!K.wishesFor(day.date).some(w=>w.id===wishOut.record.id))throw new Error('Wunsch wurde nicht gespeichert');
     if(!K.wishCoverage(person.personId,day.date,start,end).preferred)throw new Error('Wunschabdeckung erkennt bevorzugten Wunsch nicht');
 
-    // 2. Planer legt passenden Soll-Entwurf an.
     K.auth.setCurrentUser({personId:person.personId,role:'admin',displayName:'E2E Admin'});
-    const shiftOut=K.mutations.saveShift({
-      id:'',personId:person.personId,date:day.date,start,end,zone,area,layer:'planned',breakMinutes:0,breakSegments:[],status:'draft'
-    },{reason:'E2E Soll-Entwurf'});
+    const shiftOut=K.mutations.saveShift({id:'',personId:person.personId,date:day.date,start,end,zone,area,layer:'planned',breakMinutes:0,breakSegments:[],status:'draft'},{reason:'E2E Soll-Entwurf'});
     const shiftId=shiftOut.record.id;
     if(!K.shifts.some(s=>s.id===shiftId))throw new Error('Soll-Entwurf wurde nicht gespeichert');
 
-    // 3. Vor Veröffentlichung darf das normale Mitglied den neuen Entwurf nicht sehen.
     K.auth.setCurrentUser({personId:person.personId,role:'employee',displayName:person.name});
-    const beforePublishVisible=K.visiblePlannedShifts(day.date).some(s=>s.id===shiftId);
-    if(beforePublishVisible)throw new Error('Unveröffentlichter Soll-Entwurf ist für Mitglied sichtbar');
+    if(K.visiblePlannedShifts(day.date).some(s=>s.id===shiftId))throw new Error('Unveröffentlichter Soll-Entwurf ist für Mitglied sichtbar');
 
-    // 4. Planer veröffentlicht. Testbegründung erlaubt bekannte Besetzungslücken; Pausenprüfung wird nur im Test temporär deaktiviert.
     K.auth.setCurrentUser({personId:person.personId,role:'admin',displayName:'E2E Admin'});
     K.breakConfig.enabled=false;
     const previousVersion=K.latestPublishedVersion()?.version||0;
@@ -97,18 +77,13 @@ const assert = require('assert');
     if(publication.version!==previousVersion+1)throw new Error('Planversion wurde nicht erhöht');
     if(!publication.shifts.some(s=>s.id===shiftId))throw new Error('Veröffentlichte Version enthält den Testdienst nicht');
 
-    // 5. Mitglied sieht genau den veröffentlichten Stand und bestätigt Gesehen.
     K.auth.setCurrentUser({personId:person.personId,role:'employee',displayName:person.name});
-    const afterPublish=K.visiblePlannedShifts(day.date);
-    if(!afterPublish.some(s=>s.id===shiftId))throw new Error('Veröffentlichter Soll-Dienst ist für Mitglied nicht sichtbar');
+    if(!K.visiblePlannedShifts(day.date).some(s=>s.id===shiftId))throw new Error('Veröffentlichter Soll-Dienst ist für Mitglied nicht sichtbar');
     const ack=K.markPlanSeen(person.personId);
     if(ack.version!==publication.version)throw new Error('Gesehen-Bestätigung verweist auf falsche Planversion');
 
-    // 6. Zeitprüfer erfasst eine reale Abweichung: +15 Min Start, +30 Min Ende => Status deviation.
     K.auth.setCurrentUser({personId:person.personId,role:'admin',displayName:'E2E Admin'});
-    const actualOut=K.actual.saveActual({
-      id:'',personId:person.personId,date:day.date,start:start+0.25,end:end+0.5,breakMinutes:0,status:'recorded'
-    },{reason:'E2E Istzeit',source:'manual_correction'});
+    const actualOut=K.actual.saveActual({id:'',personId:person.personId,date:day.date,start:start+0.25,end:end+0.5,breakMinutes:0,status:'recorded'},{reason:'E2E Istzeit',source:'manual_correction'});
     if(actualOut.record.linkedShiftId!==shiftId)throw new Error('Istzeit wurde nicht mit dem Test-Solldienst verknüpft');
     if(actualOut.comparison.status!=='deviation')throw new Error(`Falscher Soll/Ist-Status: ${actualOut.comparison.status}`);
     const stats=K.actual.dayStats(day.date);
@@ -116,32 +91,30 @@ const assert = require('assert');
     const coverage=K.actual.coverageAt(day,start+0.5);
     if(!coverage.active.some(a=>a.id===actualOut.record.id))throw new Error('Ist-Besetzung erscheint nicht in der Ist-Matrix');
 
-    // 7. Vergleichsebene rendern und prüfen, dass Soll und Ist gemeinsam dargestellt werden.
     K.state.dateIndex=K.days.findIndex(d=>d.date===day.date);
-    K.state.view='day';K.state.layer='compare';K.state.mobileMode=false;
-    K.render?.();
-    const matrixTitle=document.querySelector('.matrix-title')?.textContent||'';
-    const actualBar=!!document.querySelector(`.shift[data-actual="${actualOut.record.id}"]`);
-    if(!matrixTitle.includes('SOLL-/IST-MATRIX'))throw new Error('Vergleichsmatrix wurde nicht gerendert');
-    if(!actualBar)throw new Error('Ist-Balken fehlt in der Vergleichsansicht');
+    return {person:person.name,date:day.date,start,end,wishId:wishOut.record.id,shiftId,actualId:actualOut.record.id,version:publication.version,comparison:actualOut.comparison.status,matched:stats.matched,deviations:stats.deviations};
+  });
 
-    const out={
-      person:person.name,date:day.date,start,end,wishId:wishOut.record.id,shiftId,actualId:actualOut.record.id,
-      version:publication.version,comparison:actualOut.comparison.status,matched:stats.matched,deviations:stats.deviations,
-      matrixTitle
-    };
+  // Echter UI-Pfad: Startauswahl -> Bearbeiten -> Vergleich. Dieser Klick löst den gekapselten app.js-render() aus.
+  await page.evaluate(()=>window.KCDP.startChoice.openEdit());
+  await page.waitForSelector('body.ux-legacy',{timeout:10000});
+  await page.locator('#layerTabs button[data-layer="compare"]').click();
+  await page.waitForFunction(()=>document.querySelector('.matrix-title')?.textContent.includes('SOLL-/IST-MATRIX'),{timeout:10000});
+  const matrixTitle=(await page.locator('.matrix-title').innerText()).trim();
+  assert(matrixTitle.includes('SOLL-/IST-MATRIX'),'Vergleichsmatrix wurde nicht gerendert');
+  assert(await page.locator(`.shift[data-actual="${result.actualId}"]`).count()>0,'Ist-Balken fehlt in der Vergleichsansicht');
 
-    // Zustand im Testbrowser zurücksetzen, damit der Test keine Seiteneffekte hinterlässt.
-    K.shifts=before.shifts;K.wishes=before.wishes;K.standby=before.standby;K.planVersions=before.planVersions;
-    K.acknowledgements=before.acknowledgements;K.actualShifts=before.actualShifts;K.actualWorkflow=before.actualWorkflow;
-    K.workflow=before.workflow;K.breakConfig=before.breakConfig;K.currentUser=before.currentUser;
-    return out;
+  await page.evaluate(()=>{
+    const K=window.KCDP,b=K.__workflowE2ESnapshot;if(!b)return;
+    K.shifts=b.shifts;K.wishes=b.wishes;K.standby=b.standby;K.planVersions=b.planVersions;K.acknowledgements=b.acknowledgements;
+    K.actualShifts=b.actualShifts;K.actualWorkflow=b.actualWorkflow;K.workflow=b.workflow;K.breakConfig=b.breakConfig;K.currentUser=b.currentUser;K.state=b.state;
+    delete K.__workflowE2ESnapshot;
   });
 
   assert.strictEqual(result.comparison,'deviation');
   assert(result.version>=1);
   console.log('KC DP2 workflow E2E: PASS');
-  console.log(JSON.stringify(result));
+  console.log(JSON.stringify({...result,matrixTitle}));
   await browser.close();
 })().catch(err=>{
   console.error('KC DP2 workflow E2E: FAIL');
