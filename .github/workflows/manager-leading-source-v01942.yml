@@ -7,7 +7,9 @@ on:
     paths:
       - 'release/v0.19.41/site/src/adapters/person-provider.js'
       - 'release/v0.19.41/site/src/adapters/pc-manager.js'
+      - 'release/v0.19.41/site/src/core/planner-engine.js'
       - 'tests/manager-leading-source-e2e.js'
+      - 'tests/planner-engine-v01942-e2e.js'
       - '.github/workflows/manager-leading-source-v01942.yml'
 
 permissions:
@@ -22,11 +24,13 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Syntax check changed adapters
+      - name: Syntax check V0.19.42 delta
         run: |
           node --check release/v0.19.41/site/src/adapters/person-provider.js
           node --check release/v0.19.41/site/src/adapters/pc-manager.js
+          node --check release/v0.19.41/site/src/core/planner-engine.js
           node --check tests/manager-leading-source-e2e.js
+          node --check tests/planner-engine-v01942-e2e.js
       - name: Prepare Playwright browser
         run: |
           npm install --no-save playwright@1.55.0
@@ -48,3 +52,5 @@ jobs:
           exit 1
       - name: Run manager leading-source safety acceptance
         run: node tests/manager-leading-source-e2e.js
+      - name: Run rule-bound planner acceptance
+        run: node tests/planner-engine-v01942-e2e.js
