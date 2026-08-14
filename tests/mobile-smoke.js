@@ -16,6 +16,17 @@ const assert = require('assert');
   page.on('console',msg=>{ if(msg.type()==='error') console.error('BROWSER:',msg.text()); });
   page.on('pageerror',err=>console.error('PAGEERROR:',err.message));
 
+  // Nur im lokalen CI-Browser: Auth-Konfiguration als "noch nicht eingerichtet" simulieren,
+  // damit der bereits vorhandene, localhost-beschränkte Prüfzugang den echten init()/Loginpfad durchläuft.
+  await page.route('**/src/core/member-access.js*',async route=>{
+    const response=await route.fetch();
+    let body=await response.text();
+    const marker="function configured(){const c=publicConfig();return /^https:\\/\\//.test(c.url)&&String(c.publishableKey||'').trim().length>20;}";
+    if(!body.includes(marker))throw new Error('member-access configured()-Marker nicht gefunden');
+    body=body.replace(marker,'function configured(){return false;}');
+    await route.fulfill({response,body,headers:{...response.headers(),'content-type':'application/javascript; charset=utf-8'}});
+  });
+
   const base='http://127.0.0.1:4173/';
   await page.goto(base,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.KCDP?.roleUx && window.KCDP?.memberAccess && window.KCDP?.startChoice,{timeout:20000});
