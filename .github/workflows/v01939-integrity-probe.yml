@@ -3,22 +3,33 @@ on:
   pull_request:
     branches: [main]
 permissions:
-  contents: read
+  contents: write
 jobs:
   hashes:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Print V0.19.39 runtime integrity
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Persist V0.19.39 runtime integrity probe
         run: |
+          OUT=release/v0.19.39/INTEGRITY_PROBE.txt
+          : > "$OUT"
           for f in \
             release/v0.19.39/site/src/ui/device-ux.js \
             release/v0.19.39/site/src/ui/start-choice.css \
             release/v0.19.39/site/src/ui/start-choice.js \
             release/v0.19.39/site/src/core/update-manager.js
           do
-            printf 'KC_HASH %s bytes=' "$f"
-            wc -c < "$f" | tr -d '\n'
-            printf ' sha256='
-            sha256sum "$f" | awk '{print $1}'
+            bytes=$(wc -c < "$f" | tr -d ' ')
+            hash=$(sha256sum "$f" | awk '{print $1}')
+            printf '%s|%s|%s\n' "$f" "$bytes" "$hash" >> "$OUT"
           done
+          cat "$OUT"
+          git config user.name "KC DP2 Release Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add "$OUT"
+          if ! git diff --cached --quiet; then
+            git commit -m "KC DP2 V0.19.39 – Integritätsprobe festhalten"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
