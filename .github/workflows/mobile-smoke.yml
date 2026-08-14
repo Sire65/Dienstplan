@@ -2,6 +2,11 @@ name: KC DP2 Mobile Smoke
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/mobile-smoke.js'
+      - '.github/workflows/mobile-smoke.yml'
   pull_request:
     branches: [main]
     paths:
