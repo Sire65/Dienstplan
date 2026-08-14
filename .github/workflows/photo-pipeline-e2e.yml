@@ -1,0 +1,60 @@
+name: KC DP2 Photo Pipeline E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'release/**/site/**'
+      - 'release/current.json'
+      - 'tests/photo-pipeline-e2e.js'
+      - '.github/workflows/photo-pipeline-e2e.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'release/**/site/**'
+      - 'release/current.json'
+      - 'tests/photo-pipeline-e2e.js'
+      - '.github/workflows/photo-pipeline-e2e.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  photo-pipeline-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Prepare Playwright browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Start current KC DP2 release locally
+        run: |
+          SITE="$(python3 - <<'PY'
+          import json
+          print(json.load(open('release/current.json',encoding='utf-8'))['releasePath'])
+          PY
+          )"
+          test -f "$SITE/index.html"
+          echo "Testing $SITE"
+          cd "$SITE"
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-http.log 2>&1 &
+          echo $! > /tmp/kcdp-http.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-http.log
+          exit 1
+      - name: Run Planfoto pipeline test
+        run: node tests/photo-pipeline-e2e.js
