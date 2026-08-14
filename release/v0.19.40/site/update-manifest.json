@@ -1,0 +1,44 @@
+{
+  "schema": "KC_DP_UPDATE_MANIFEST_V1",
+  "app": "KC DP2",
+  "version": "0.19.39",
+  "cacheName": "kc-dp-release-0.19.39",
+  "releaseNotes": [
+    "Startauswahl nach der Anmeldung: Dienstplan ansehen, bearbeiten, Meine Dienste oder Wunschplan",
+    "Dienstplan ansehen ist als echter Nur-Lese-Modus gegen versehentliche Änderungen abgesichert",
+    "Dienstplan bearbeiten wird nur bei vorhandener Planer-Berechtigung angeboten",
+    "Bestehende Handy-, Tablet-, Supabase- und Dienstplanlogik bleibt unverändert"
+  ],
+  "generatedAt": "2026-08-14T12:15:00+02:00",
+  "totalRuntimeBytes": 29805,
+  "files": [
+    {
+      "path": "src/ui/device-ux.js",
+      "installPath": "src/ui/device-ux.js",
+      "bytes": 3339,
+      "sha256": "4f75ca6f2b1e522b5124f781657e4bc98f25331157b5189180d84b39ea8e385d",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/start-choice.css",
+      "installPath": "src/ui/start-choice.css",
+      "bytes": 4725,
+      "sha256": "82430556b9db99db441a1c17c013dd30638b222cdc889ff7ec6a24de29772fda",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/start-choice.js",
+      "installPath": "src/ui/start-choice.js",
+      "bytes": 9471,
+      "sha256": "d2d9c8f7470b96e85f04136eca5d34c40648f60b583d60c40756376327afce79",
+      "runtime": true
+    },
+    {
+      "path": "src/core/update-manager.js",
+      "installPath": "src/core/update-manager.js",
+      "bytes": 12270,
+      "sha256": "c2ea6e5a7a1070b840772970de0d40e6ed0509a1cf70b57d1616dd8468777865",
+      "runtime": true
+    }
+  ]
+}
