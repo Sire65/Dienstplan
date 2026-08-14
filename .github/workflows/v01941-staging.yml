@@ -38,6 +38,7 @@ jobs:
           push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
           upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
           session=(root/'src/core/session.js').read_text(encoding='utf-8')
+          sw=(root/'service-worker.js').read_text(encoding='utf-8')
           assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
           assert "profile:'KC_DP_DEDICATED_PROJECT'" in integ
           assert "version:'0.19.41'" in integ
@@ -57,12 +58,18 @@ jobs:
           assert 'service-worker.js?v=0.19.41-engine' in upd
           assert "version:'0.18.1'" in session
           assert "if(state.provider==='supabase')return false;" in session
-          print('V0.19.41 Architektur, Push-Sicherheit, Supabase-Session und Releasekennung: PASS')
+          assert "const ENGINE='kc-dp-update-engine-v1.1'" in sw
+          assert 'async function refreshForcedRuntime' in sw
+          assert 'x.forceRefresh===true' in sw
+          assert 'await sha256Hex(buffer)' in sw
+          assert 'meta=await refreshForcedRuntime(meta)' in sw
+          print('V0.19.41 Architektur, Push-Sicherheit, Supabase-Session und Cache-Hotfix: PASS')
           PY
           node --check release/v0.19.41/site/src/core/integrations.js
           node --check release/v0.19.41/site/src/adapters/push.js
           node --check release/v0.19.41/site/src/core/update-manager.js
           node --check release/v0.19.41/site/src/core/session.js
+          node --check release/v0.19.41/site/service-worker.js
           node --check tests/dedicated-supabase-e2e.js
 
       - name: Verify V0.19.41 manifest and byte baseline
@@ -88,6 +95,7 @@ jobs:
           assert manifest['totalRuntimeBytes']==26898
           files={x['path']:x for x in manifest['files'] if x.get('runtime') is not False}
           assert set(files)==set(expected), f'Unerwartete Manifest-Dateien: {sorted(files)}'
+          assert files['src/core/session.js'].get('forceRefresh') is True, 'Session-Hotfix muss Cache-Refresh erzwingen'
 
           actuals={}
           for rel in expected:
@@ -107,12 +115,12 @@ jobs:
           base_files={p.relative_to(base).as_posix() for p in base.rglob('*') if p.is_file()}
           new_files={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
           assert base_files==new_files, 'V0.19.41 darf keine unerwarteten Site-Dateien hinzufügen/entfernen'
-          allowed=set(expected)|{'update-manifest.json'}
+          allowed=set(expected)|{'update-manifest.json','service-worker.js'}
           changed=[]
           for rel in sorted(base_files):
             if (base/rel).read_bytes()!=(root/rel).read_bytes(): changed.append(rel)
           assert set(changed)==allowed, f'Unerwartete Abweichungen zu V0.19.40: {changed}'
-          print('V0.19.41 Manifest, Hashes und Byte-Baseline: PASS')
+          print('V0.19.41 Manifest, Hashes, Byte-Baseline und Cache-Hotfix: PASS')
           PY
 
       - name: Install Playwright
