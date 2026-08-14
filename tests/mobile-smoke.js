@@ -2,7 +2,9 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 
 (async()=>{
-  const browser = await chromium.launch({headless:true});
+  const launchOptions={headless:true};
+  if(process.env.KC_PLAYWRIGHT_CHANNEL)launchOptions.channel=process.env.KC_PLAYWRIGHT_CHANNEL;
+  const browser = await chromium.launch(launchOptions);
   const context = await browser.newContext({
     viewport:{width:390,height:844},
     isMobile:true,
