@@ -10,7 +10,7 @@
     "Tablet, Desktop, Supabase, Datenmodell und Planungskern bleiben unverändert"
   ],
   "generatedAt": "2026-08-14T12:54:00+02:00",
-  "totalRuntimeBytes": 38195,
+  "totalRuntimeBytes": 38196,
   "files": [
     {
       "path": "src/ui/device-ux.js",
@@ -22,8 +22,8 @@
     {
       "path": "src/ui/mobile-day.js",
       "installPath": "src/ui/mobile-day.js",
-      "bytes": 12291,
-      "sha256": "6c88b3e9343ed56e8e43243c73c4ad88de02d3cf97dd70685af3a64c911f774d",
+      "bytes": 12292,
+      "sha256": "76a236e703fb67f0c70bd7e8ec2712aaee43a1d3b72ca513742b6e2867d67d9f",
       "runtime": true
     },
     {
