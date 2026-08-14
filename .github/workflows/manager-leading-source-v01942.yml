@@ -22,7 +22,7 @@ permissions:
 jobs:
   manager-leading-source:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v5
@@ -65,3 +65,13 @@ jobs:
         run: node tests/planner-runtime-wiring-v01942-e2e.js
       - name: Run planner application guard acceptance
         run: node tests/planner-application-guard-v01942-e2e.js
+      - name: Regression – smartphone
+        run: node tests/mobile-smoke.js
+      - name: Regression – Wunsch to Soll to Ist
+        run: node tests/workflow-e2e.js
+      - name: Regression – roles and permissions
+        run: node tests/roles-e2e.js
+      - name: Regression – documents PDF email
+        run: node tests/documents-e2e.js
+      - name: Regression – photo pipeline
+        run: node tests/photo-pipeline-e2e.js
