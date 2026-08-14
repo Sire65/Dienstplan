@@ -1,0 +1,32 @@
+KC DP2 V0.19.39
+Release-Datum: 14.08.2026
+
+SCHWERPUNKT
+Klare Startauswahl nach der Anmeldung und sicherer Nur-Lese-Modus.
+
+NEU
+- Nach erfolgreicher Anmeldung erscheint zuerst „Was möchten Sie tun?“.
+- Große Auswahl: Dienstplan ansehen, Dienstplan bearbeiten, Meine Dienste, Wunschplan.
+- „Dienstplan bearbeiten“ erscheint nur bei vorhandener Berechtigung roster.plan.edit.
+- „Dienstplan ansehen“ öffnet den Gesamtplan im echten Nur-Lese-Modus.
+- Im Nur-Lese-Modus sind Drag & Drop, Resize, Doppelklick-Bearbeitung,
+  Kontext-Bearbeitung, Schnellplanung, Veröffentlichung, Undo/Redo und technische
+  Bearbeitungsschalter blockiert bzw. ausgeblendet.
+- Sichtbarer Modus-Hinweis „Nur ansehen“ bzw. „Bearbeiten“.
+- Aus allen einfachen persönlichen Ansichten führt „← Auswahl“ zurück zur Startauswahl.
+- Aus der erweiterten Plantafel führt „← Startauswahl“ zurück.
+- „Meine Dienste“ öffnet direkt den persönlichen Dienstplan.
+- „Wunschplan“ öffnet direkt die eigenen Wunschzeiten; bestehende Wunschphasen-Regeln bleiben aktiv.
+
+ROLLEN / DATENSCHUTZ
+- Mitarbeiter sehen keinen Button „Dienstplan bearbeiten“.
+- Planer/Admins erhalten Bearbeiten nur über die vorhandene Rechteprüfung.
+- Beim Gesamtplan verwendet KC DP weiterhin visiblePlannedShifts(): Benutzer ohne
+  Entwurfsrecht sehen nur den zuletzt veröffentlichten Plan.
+
+SICHERHEIT / REGRESSION
+- Kein Eingriff in Supabase, Datenbankschema, Sync, Dienst-Datenmodell oder Auth-Rollen.
+- V0.19.38 ist unveränderte Basis; nur die ausdrücklich freigegebenen Runtime-Dateien ändern sich.
+- Die Smartphone-Tagesansicht bis 600 px aus V0.19.38 bleibt bytegleich erhalten.
+- SHA-256 und Dateigrößen der neuen Runtime-Dateien sind im Update-Manifest fest hinterlegt.
+- JavaScript-Syntax- und Regressionstests müssen vor dem Deployment erfolgreich sein.
