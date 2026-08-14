@@ -12,6 +12,7 @@ on:
       - 'release/v0.19.41/site/src/core/planner-recommendations.js'
       - 'release/v0.19.41/site/src/core/day-availability.js'
       - 'release/v0.19.41/site/src/core/planner-audit.js'
+      - 'release/v0.19.41/site/src/core/source-health.js'
       - 'release/v0.19.41/site/src/core/planner-application-guard.js'
       - 'release/v0.19.41/site/src/ui/day-availability-filter.js'
       - 'release/v0.19.41/site/src/ui/day-availability-filter.css'
@@ -19,12 +20,15 @@ on:
       - 'release/v0.19.41/site/src/ui/quick-plan-recommendations.css'
       - 'release/v0.19.41/site/src/ui/planner-audit-ui.js'
       - 'release/v0.19.41/site/src/ui/planner-audit-ui.css'
+      - 'release/v0.19.41/site/src/ui/source-health-ui.js'
+      - 'release/v0.19.41/site/src/ui/source-health-ui.css'
       - 'tests/manager-leading-source-e2e.js'
       - 'tests/planner-engine-v01942-e2e.js'
       - 'tests/planner-recommendations-v01942-e2e.js'
       - 'tests/day-availability-filter-v01942-e2e.js'
       - 'tests/quick-plan-recommendations-v01942-e2e.js'
       - 'tests/planner-audit-v01942-e2e.js'
+      - 'tests/source-health-v01942-e2e.js'
       - 'tests/planner-runtime-wiring-v01942-e2e.js'
       - 'tests/planner-application-guard-v01942-e2e.js'
       - 'tests/mobile-smoke.js'
@@ -40,7 +44,7 @@ permissions:
 jobs:
   manager-leading-source:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v5
@@ -54,16 +58,19 @@ jobs:
           node --check release/v0.19.41/site/src/core/planner-recommendations.js
           node --check release/v0.19.41/site/src/core/day-availability.js
           node --check release/v0.19.41/site/src/core/planner-audit.js
+          node --check release/v0.19.41/site/src/core/source-health.js
           node --check release/v0.19.41/site/src/core/planner-application-guard.js
           node --check release/v0.19.41/site/src/ui/day-availability-filter.js
           node --check release/v0.19.41/site/src/ui/quick-plan-recommendations.js
           node --check release/v0.19.41/site/src/ui/planner-audit-ui.js
+          node --check release/v0.19.41/site/src/ui/source-health-ui.js
           node --check tests/manager-leading-source-e2e.js
           node --check tests/planner-engine-v01942-e2e.js
           node --check tests/planner-recommendations-v01942-e2e.js
           node --check tests/day-availability-filter-v01942-e2e.js
           node --check tests/quick-plan-recommendations-v01942-e2e.js
           node --check tests/planner-audit-v01942-e2e.js
+          node --check tests/source-health-v01942-e2e.js
           node --check tests/planner-runtime-wiring-v01942-e2e.js
           node --check tests/planner-application-guard-v01942-e2e.js
           node --check tests/mobile-smoke.js
@@ -102,6 +109,8 @@ jobs:
         run: node tests/quick-plan-recommendations-v01942-e2e.js
       - name: Run explainable planner audit acceptance
         run: node tests/planner-audit-v01942-e2e.js
+      - name: Run data source health acceptance
+        run: node tests/source-health-v01942-e2e.js
       - name: Run planner runtime wiring acceptance
         run: node tests/planner-runtime-wiring-v01942-e2e.js
       - name: Run planner application guard acceptance
