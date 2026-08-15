@@ -17,8 +17,10 @@ jobs:
           node-version: '22'
       - name: Resolve canonical current release
         id: release
+        shell: bash
         run: |
-          echo "path=$(node -p \"require('./release/current.json').releasePath\")" >> "$GITHUB_OUTPUT"
+          RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
       - name: Pilot syntax and security contract
         run: |
           ROOT="${{ steps.release.outputs.path }}"
