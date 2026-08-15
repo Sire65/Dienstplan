@@ -1,0 +1,48 @@
+name: KC DP2 Pilot Hotfix Seal
+
+on:
+  push:
+    branches: [pilot-thanks-fix]
+
+permissions:
+  contents: write
+
+jobs:
+  seal:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: pilot-thanks-fix
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Recompute manifest hashes
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),path=require('path'),crypto=require('crypto');
+          const root='release/v0.19.48/site';
+          const p=path.join(root,'update-manifest.json');
+          const m=JSON.parse(fs.readFileSync(p,'utf8'));
+          let total=0;
+          for(const f of m.files){
+            const rel=f.installPath||f.path;
+            const b=fs.readFileSync(path.join(root,rel));
+            f.bytes=b.length;
+            f.sha256=crypto.createHash('sha256').update(b).digest('hex');
+            if(f.runtime!==false) total+=b.length;
+          }
+          m.totalRuntimeBytes=total;
+          m.generatedAt=new Date().toISOString();
+          if(!m.releaseNotes.includes('Pilot-Abschluss wartet auf echte Dankes-Push-Öffnungsbestätigung')) m.releaseNotes.push('Pilot-Abschluss wartet auf echte Dankes-Push-Öffnungsbestätigung');
+          fs.writeFileSync(p,JSON.stringify(m,null,2)+'\n');
+          NODE
+      - name: Commit sealed manifest
+        run: |
+          if git diff --quiet -- release/v0.19.48/site/update-manifest.json; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.48/site/update-manifest.json
+          git commit -m 'release: reseal pilot hotfix manifest'
+          git push origin HEAD:pilot-thanks-fix
