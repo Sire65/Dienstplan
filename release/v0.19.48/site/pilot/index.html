@@ -12,12 +12,12 @@
       const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
       const link=document.createElement('link');
       link.rel='manifest';
-      link.href=(ios?'manifest-ios.webmanifest':'manifest.webmanifest')+'?v=0.19.48';
+      link.href=(ios?'manifest-ios.webmanifest':'manifest.webmanifest')+'?v=0.19.49';
       document.head.appendChild(link);
     })();
   </script>
-  <link rel="apple-touch-icon" href="../assets/kc-dp2-apple-touch-icon.png?v=0.19.48">
-  <link rel="stylesheet" href="../src/ui/pilot.css?v=0.19.48">
+  <link rel="apple-touch-icon" href="../assets/kc-dp2-apple-touch-icon.png?v=0.19.49">
+  <link rel="stylesheet" href="../src/ui/pilot.css?v=0.19.49">
 </head>
 <body>
   <main class="pilot-shell">
@@ -45,9 +45,13 @@
       <h2>✅ Test erfolgreich</h2>
       <p>Die Installation und der Push-Test funktionieren auf diesem Gerät.</p>
       <div id="pilotRemoveHelp" class="pilot-note"></div>
+      <div class="pilot-actions" style="margin-top:14px">
+        <button id="pilotThanksBtn" class="pilot-btn">💐 Dankes-Push erneut senden</button>
+      </div>
+      <p id="pilotThanksHint" class="pilot-small">Nach dem Antippen der Dankes-Push wird der Abschluss automatisch bestätigt.</p>
     </section>
   </main>
-  <script src="../src/core/pilot-onboarding.js?v=0.19.48"></script>
-  <script src="../src/ui/pilot-app.js?v=0.19.48"></script>
+  <script src="../src/core/pilot-onboarding.js?v=0.19.49"></script>
+  <script src="../src/ui/pilot-app.js?v=0.19.49"></script>
 </body>
 </html>
