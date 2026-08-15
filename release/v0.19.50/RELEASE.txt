@@ -1,0 +1,4 @@
+KC DP2 V0.19.50
+================
+
+Mobile Fix: Kollegen suchen funktioniert in der persönlichen Handyansicht zuverlässig.

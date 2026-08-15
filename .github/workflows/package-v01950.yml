@@ -1,0 +1,39 @@
+name: KC DP2 V0.19.50 Mobile Colleague Search Package
+on:
+  push:
+    branches:
+      - "fix/mobile-kollegen-suchen-v01950"
+    paths:
+      - ".github/workflows/package-v01950.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: "fix/mobile-kollegen-suchen-v01950"
+          fetch-depth: 0
+      - name: Build canonical V0.19.50
+        run: python3 scripts/package-v01950.py
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.50/site -type f -name '*.js' -print0)
+      - name: TÜV Studio
+        run: node tests/tuev-studio-current.js
+      - name: Commit sealed release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.50 release/current.json
+          git commit -m 'release: create KC DP2 V0.19.50 mobile colleague search fix'
+          git fetch origin fix/mobile-kollegen-suchen-v01950
+          git rebase origin/fix/mobile-kollegen-suchen-v01950
+          git push origin HEAD:fix/mobile-kollegen-suchen-v01950
+      # rerun after push adapter release identity correction
