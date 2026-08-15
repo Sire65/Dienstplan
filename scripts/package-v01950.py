@@ -20,9 +20,7 @@ repl('index.html', 'KC DP2 V0.19.49', 'KC DP2 V0.19.50')
 repl('index.html', "EXPECTED='0.19.49'", "EXPECTED='0.19.50'")
 repl('src/core/model.js', "K.VERSION='0.19.49'", "K.VERSION='0.19.50'")
 repl('src/core/update-manager.js', "CURRENT_RELEASE='0.19.49'", "CURRENT_RELEASE='0.19.50'")
-repl('src/core/update-manager.js', "version:'0.19.49'", "version:'0.19.50'")
 repl('src/adapters/push.js', 'service-worker.js?v=0.19.49', 'service-worker.js?v=0.19.50')
-repl('src/adapters/push.js', "version:'0.19.49'", "version:'0.19.50'")
 repl('src/ui/kc-ux-polish.js', '0.19.49', '0.19.50')
 repl('src/ui/source-health-ui.js', "K.sourceHealthUi={version:'0.19.49'", "K.sourceHealthUi={version:'0.19.50'")
 repl('src/ui/source-health-ui.js', 'kc-ux-polish.css?v=0.19.49', 'kc-ux-polish.css?v=0.19.50')
@@ -30,7 +28,7 @@ repl('src/ui/source-health-ui.js', 'kc-ux-polish.js?v=0.19.49', 'kc-ux-polish.js
 
 # New isolated smartphone colleague search. It is read-only and does not change the plan.
 (root/'src/ui/mobile-colleague-search.js').write_text(Path('tools/mobile-colleague-search-v01950.js').read_text(encoding='utf-8'), encoding='utf-8')
-source = (root/'src/ui/source-health-ui.js')
+source = root/'src/ui/source-health-ui.js'
 s = source.read_text(encoding='utf-8')
 needle = "  function loadUxPolish(){css('kcUxPolishCss','src/ui/kc-ux-polish.css?v=0.19.50');script('kcUxPolishJs','src/ui/kc-ux-polish.js?v=0.19.50',document.body)}\n  function loadExtras(){loadPushCenter();loadDiagnostics();loadUxPolish()}"
 replacement = "  function loadUxPolish(){css('kcUxPolishCss','src/ui/kc-ux-polish.css?v=0.19.50');script('kcUxPolishJs','src/ui/kc-ux-polish.js?v=0.19.50',document.body)}\n  function loadMobileColleagueSearch(){script('kcMobileColleagueSearchJs','src/ui/mobile-colleague-search.js?v=0.19.50',document.body)}\n  function loadExtras(){loadPushCenter();loadDiagnostics();loadUxPolish();loadMobileColleagueSearch()}"
