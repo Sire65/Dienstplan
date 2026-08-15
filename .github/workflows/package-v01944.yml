@@ -1,0 +1,95 @@
+name: KC DP2 V0.19.44 Package
+on:
+  push:
+    branches: [feature/error-diagnostics-v01944]
+    paths: ['.github/workflows/package-v01944.yml']
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/error-diagnostics-v01944
+          fetch-depth: 0
+      - name: Build canonical V0.19.44 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release/v0.19.44
+          cp -a release/v0.19.42 release/v0.19.44
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib,datetime
+          root=Path('release/v0.19.44/site')
+          def rep(path,pairs):
+              p=root/path
+              s=p.read_text(encoding='utf-8')
+              for a,b in pairs:s=s.replace(a,b)
+              p.write_text(s,encoding='utf-8')
+          rep(Path('src/core/update-manager.js'),[("const CURRENT_RELEASE='0.19.42'","const CURRENT_RELEASE='0.19.44'"),("K.updateManager={version:'0.19.41'","K.updateManager={version:'0.19.44'")])
+          rep(Path('src/adapters/push.js'),[("service-worker.js?v=0.19.42","service-worker.js?v=0.19.44"),("version:'0.19.42'","version:'0.19.44'")])
+          p=root/'src/ui/source-health-ui.js';s=p.read_text(encoding='utf-8').replace("'&quot'","'&quot;'");p.write_text(s,encoding='utf-8')
+          old=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          required=[
+            'src/ui/push-center.js','src/ui/push-center.css',
+            'src/adapters/diagnostics.js','src/ui/diagnostics-center.js','src/ui/diagnostics-center.css',
+            'src/core/table-core-adapter.js'
+          ]
+          seen={x['path'] for x in old.get('files',[]) if x.get('path')}
+          files=list(old.get('files',[]))
+          for path in required:
+              if path not in seen: files.append({'path':path,'installPath':path,'runtime':True})
+          out=[]
+          total=0
+          for x in files:
+              path=x.get('path')
+              if not path: continue
+              f=root/path
+              if not f.is_file(): raise SystemExit(f'Manifest-Datei fehlt: {path}')
+              data=f.read_bytes(); y=dict(x);y['bytes']=len(data);y['sha256']=hashlib.sha256(data).hexdigest();y['runtime']=x.get('runtime',True)
+              out.append(y)
+              if y['runtime'] is not False: total+=len(data)
+          manifest={
+            'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC DP2','version':'0.19.44','cacheName':'kc-dp-release-0.19.44',
+            'releaseNotes':[
+              'Push-Center für Admin/Planung mit Vorlagen, Empfängerwahl und Installationslink',
+              'Error & Diagnostics Center mit Supabase-Protokoll, Deduplizierung und Offline-Queue',
+              'Fehlerprotokoll auf Master-TableCore-Adapter mit Sortierung, Filter und Mehrfachauswahl',
+              'Häufigkeit, Erst-/Letztauftreten, Gerät/Browser, Status und Stacktrace im Adminbereich',
+              'Sammelaktionen für geprüft, behoben und archiviert; Secrets/Tokens werden redigiert'
+            ],
+            'generatedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            'totalRuntimeBytes':total,'files':out
+          }
+          (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/current.json').write_text(json.dumps({'app':'KC DP2','version':'0.19.44','mode':'verified-direct-site','baseVersion':'0.19.42','previousVersion':'0.19.42','releasePath':'release/v0.19.44/site','releasedAt':manifest['generatedAt']},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/v0.19.44/RELEASE.txt').write_text('KC DP2 V0.19.44\n================\n\nError & Diagnostics Center + Push Center + Master-TableCore-Anbindung.\n\nFreigabe nur nach vollständigen GitHub-Actions-Gates.\n',encoding='utf-8')
+          PY
+          cat > tests/release-v01944-gate.js <<'JS'
+          const fs=require('fs'),crypto=require('crypto'),path=require('path');
+          const root='release/v0.19.44/site',m=JSON.parse(fs.readFileSync(path.join(root,'update-manifest.json'),'utf8'));
+          if(m.version!=='0.19.44'||m.cacheName!=='kc-dp-release-0.19.44')throw Error('V0.19.44 Manifest-Version falsch');
+          const req=['src/ui/push-center.js','src/ui/push-center.css','src/adapters/diagnostics.js','src/ui/diagnostics-center.js','src/ui/diagnostics-center.css','src/core/table-core-adapter.js'];
+          for(const r of req)if(!m.files.some(x=>x.path===r))throw Error('Manifest fehlt: '+r);
+          let total=0;for(const f of m.files.filter(x=>x.runtime!==false)){const p=path.join(root,f.path),b=fs.readFileSync(p),h=crypto.createHash('sha256').update(b).digest('hex');if(b.length!==f.bytes)throw Error(`${f.path}: bytes ${b.length} != ${f.bytes}`);if(h!==f.sha256)throw Error(`${f.path}: sha mismatch`);total+=b.length;}
+          if(total!==m.totalRuntimeBytes)throw Error(`totalRuntimeBytes ${total} != ${m.totalRuntimeBytes}`);
+          const u=fs.readFileSync(path.join(root,'src/core/update-manager.js'),'utf8');if(!u.includes("CURRENT_RELEASE='0.19.44'"))throw Error('Update Manager nicht V0.19.44');
+          const p=fs.readFileSync(path.join(root,'src/adapters/push.js'),'utf8');if(!p.includes("version:'0.19.44'"))throw Error('Push Adapter nicht V0.19.44');
+          console.log('V0.19.44 canonical release gate GREEN',m.files.length,'runtime files',total,'bytes');
+          JS
+          node tests/release-v01944-gate.js
+          node --check release/v0.19.44/site/src/core/table-core-adapter.js
+          node --check release/v0.19.44/site/src/adapters/diagnostics.js
+          node --check release/v0.19.44/site/src/ui/diagnostics-center.js
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/deploy-kc-dp2.yml')
+          p.write_text('''name: KC DP2 Verified Web Release\n\non:\n  push:\n    branches: [main]\n  workflow_dispatch:\n\npermissions:\n  contents: read\n  pages: write\n  id-token: write\n\nconcurrency:\n  group: kc-dp2-pages-main\n  cancel-in-progress: false\n\njobs:\n  verify:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - uses: actions/setup-node@v5\n        with:\n          node-version: 22\n      - name: Verify canonical V0.19.44 release\n        run: |\n          set -euo pipefail\n          node tests/release-v01944-gate.js\n          node tests/diagnostics-v01944-gate.js\n          node tests/push-center-v01943-gate.js\n          node --check release/v0.19.44/site/service-worker.js\n          node --check release/v0.19.44/site/src/adapters/push.js\n          node --check release/v0.19.44/site/src/core/update-manager.js\n          node --check release/v0.19.44/site/src/core/table-core-adapter.js\n          node --check release/v0.19.44/site/src/adapters/diagnostics.js\n          node --check release/v0.19.44/site/src/ui/diagnostics-center.js\n      - uses: actions/configure-pages@v6\n      - uses: actions/upload-pages-artifact@v4\n        with:\n          path: release/v0.19.44/site\n  deploy:\n    needs: verify\n    runs-on: ubuntu-latest\n    environment:\n      name: github-pages\n      url: ${{ steps.deployment.outputs.page_url }}\n    steps:\n      - id: deployment\n        uses: actions/deploy-pages@v4\n''',encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.44 release/current.json tests/release-v01944-gate.js .github/workflows/deploy-kc-dp2.yml
+          git commit -m 'release: package canonical KC DP2 V0.19.44'
+          git push origin HEAD:feature/error-diagnostics-v01944
