@@ -10,7 +10,7 @@
     "Push-Erfolg zählt erst nach tatsächlichem Öffnen der Testnachricht",
     "Abschluss-Push mit Dank und gerätespezifischer Deinstallationshilfe"
   ],
-  "generatedAt": "2026-08-15T17:25:57.389119+00:00",
+  "generatedAt": "2026-08-15T17:30:21.862887+00:00",
   "totalRuntimeBytes": 413006,
   "files": [
     {
@@ -178,7 +178,7 @@
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
       "bytes": 4758,
-      "sha256": "7707aef3f8b625396cbe0a8567aad797f0a2bb3bb27a4f08fd24b5ccee3611cd",
+      "sha256": "3212137a81e7e974e66c1a9917515195b225f410433e8db6158886ac392d7611",
       "runtime": true
     },
     {
