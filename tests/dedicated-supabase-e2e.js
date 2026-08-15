@@ -1,5 +1,6 @@
 const { chromium } = require('playwright');
 const assert = require('assert');
+const current=require('../release/current.json');
 
 (async()=>{
   const launchOptions={headless:true};
@@ -44,9 +45,9 @@ const assert = require('assert');
     assert.strictEqual(out.migrated.migratedFrom,'FUTURA_SHARED_PROJECT','Migration wird nicht nachvollziehbar markiert');
     assert.strictEqual(out.same,true,'VAPID-Keyvergleich erkennt identischen Key nicht');
     assert.strictEqual(out.different,false,'VAPID-Keyvergleich erkennt Key-Wechsel nicht');
-    assert.strictEqual(out.pushVersion,'0.19.41','Push-Adapter ist nicht V0.19.41');
-    assert.strictEqual(out.integrationsVersion,'0.19.41','Integrations-Core ist nicht V0.19.41');
-    console.log('KC DP2 V0.19.41 dediziertes Supabase-Ziel und VAPID-Keyvergleich: PASS');
+    assert.strictEqual(out.pushVersion,current.version,`Push-Adapter-Version ${out.pushVersion} entspricht nicht aktuellem Release ${current.version}`);
+    assert.strictEqual(out.integrationsVersion,'0.19.41','Integrations-Core-Basisvertrag ist nicht V0.19.41');
+    console.log(`KC DP2 V${current.version} dediziertes Supabase-Ziel, Legacy-Migration und VAPID-Keyvergleich: PASS`);
   }finally{
     await browser.close().catch(()=>{});
   }
