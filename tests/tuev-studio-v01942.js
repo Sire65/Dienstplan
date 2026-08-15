@@ -62,7 +62,8 @@ const push=read('src/adapters/push.js');
 requireRule(push.includes('reconcileExisting'),'Push-Subscription-Reconcile vorhanden');
 requireRule(push.includes("K.storage.get('supabaseSession')"),'Push stellt verschlüsselte Supabase-Sitzung wieder her');
 requireRule(push.includes('ensureSession'),'Push erneuert/prüft Supabase-Sitzung vor geschützten Aufrufen');
+requireRule(!push.includes('kc-dp-self-push-test'),'Kein schwebender Push-Test-Overlay in der Releaseoberfläche');
 
 console.log('TÜV Studio V0.19.42: PASS');
 // Manifest-Seal 2026-08-15: full deep-TÜV rerun trigger.
-// Mobile self-test visibility rerun: 2026-08-15T10:18+02:00.
+// Floating self-test overlay removed after successful Android E2E; remeasure runtime.
