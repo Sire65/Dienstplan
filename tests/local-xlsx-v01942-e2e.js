@@ -1,0 +1,20 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.join(__dirname,'..','release','v0.19.41','site');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const index=read('index.html');
+const integrations=read('src/core/integrations.js');
+const role=read('src/ui/role-ux.js');
+const xlsx=read('src/adapters/xlsx-local.js');
+function ok(v,m){if(!v)throw new Error(m);}
+ok(index.indexOf('src/core/integrations.js')<index.indexOf('src/ui/role-ux.js'),'integrations.js muss vor role-ux.js geladen werden');
+ok(integrations.includes('src/adapters/xlsx-local.js?v=0.19.42'),'lokaler XLSX-Adapter wird nicht geladen');
+ok(integrations.includes("version:'0.19.42'"),'Integrationsversion ist nicht 0.19.42');
+ok(xlsx.includes("window.XLSX={version:'KC-local-1.0'"),'lokale XLSX-Schnittstelle fehlt');
+ok(xlsx.includes('function inflate(src)'),'DEFLATE-Leser fehlt');
+ok(xlsx.includes('function unzip(buf)'),'XLSX-ZIP-Leser fehlt');
+ok(xlsx.includes("xl/sharedStrings.xml"),'Shared-Strings-Unterstützung fehlt');
+ok(xlsx.includes('xl\\/worksheets\\/sheet'),'Worksheet-Unterstützung fehlt');
+ok(role.includes('if(window.XLSX)return window.XLSX'),'bestehender Import bevorzugt lokalen XLSX-Adapter nicht');
+console.log('LOCAL XLSX V0.19.42: OK – lokaler Offline-Adapter wird vor dem bestehenden Excel-Import bereitgestellt.');
