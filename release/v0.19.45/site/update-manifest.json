@@ -1,23 +1,23 @@
 {
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
-  "version": "0.19.44",
-  "cacheName": "kc-dp-release-0.19.44",
+  "version": "0.19.45",
+  "cacheName": "kc-dp-release-0.19.45",
   "releaseNotes": [
-    "Push-Center für Admin/Planung mit Vorlagen, Empfängerwahl und Installationslink",
-    "Error & Diagnostics Center mit Supabase-Protokoll, Deduplizierung und Offline-Queue",
-    "Fehlerprotokoll auf Master-TableCore-Adapter mit Sortierung, Filter und Mehrfachauswahl",
-    "Häufigkeit, Erst-/Letztauftreten, Gerät/Browser, Status und Stacktrace im Adminbereich",
-    "Sammelaktionen für geprüft, behoben und archiviert; Secrets/Tokens werden redigiert"
+    "KC UX Polish: Planer in Bordeaux/Gold/Creme vereinheitlicht",
+    "Bedienleisten visuell priorisiert und seltene Werkzeuge zurückgenommen",
+    "Technische Speicheranzeigen rollenabhängig vereinfacht",
+    "Handy-, Tablet- und Touchdarstellung weiter harmonisiert",
+    "Sichtbare Versionsreste bereinigt; V0.19.45 kanonisch versiegelt"
   ],
-  "generatedAt": "2026-08-15T11:16:57.904682+00:00",
-  "totalRuntimeBytes": 389205,
+  "generatedAt": "2026-08-15T11:41:39.138120+00:00",
+  "totalRuntimeBytes": 396741,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 11209,
-      "sha256": "c8ae8ad207e826712e7b2670e8cf8907fb4a1129122c547a5f0ee9d47490256b",
+      "bytes": 11201,
+      "sha256": "029312f78b19e7e24108f5877e2e7f768d21c6b234a6522ba645746775724834",
       "runtime": true
     },
     {
@@ -38,7 +38,7 @@
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
       "bytes": 10360,
-      "sha256": "0badcd403b8a86c5c57a99ef2947996c340da498091e640489dd86abdbbceb93",
+      "sha256": "60fed1cf2086dc38d5c4f946844c24fa145810bb15f058fa09bab4a3d17b459e",
       "runtime": true
     },
     {
@@ -115,7 +115,7 @@
       "path": "src/core/update-manager.js",
       "installPath": "src/core/update-manager.js",
       "bytes": 12270,
-      "sha256": "80fa38fa081c2ae20bc118c863e0dffa8df6058015bdf93f7f2cf1206fe1619d",
+      "sha256": "5901c6da0b57c564faa1bebe63e7637240d720ba9506e5a48126ad5621378a67",
       "runtime": true
     },
     {
@@ -177,8 +177,8 @@
     {
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
-      "bytes": 4470,
-      "sha256": "2a87dd20f8ef2a96f5fbc1d06d9ed13df9aa378138921fcc9c0cc780e77157ee",
+      "bytes": 4564,
+      "sha256": "2d4d2201589a49440da7a205ffb57592e3bdf947f86be8f91f81a7d3c4658188",
       "runtime": true
     },
     {
@@ -222,6 +222,20 @@
       "runtime": true,
       "bytes": 2596,
       "sha256": "df39740b6c517a7618eacc93747c539115a4cc498a52eea1827e9e84efaba569"
+    },
+    {
+      "path": "src/ui/kc-ux-polish.css",
+      "installPath": "src/ui/kc-ux-polish.css",
+      "runtime": true,
+      "bytes": 4422,
+      "sha256": "944c71937ebc9886fe941d89f3fb61baba6433c61ba35129f00745f8ad19b8b7"
+    },
+    {
+      "path": "src/ui/kc-ux-polish.js",
+      "installPath": "src/ui/kc-ux-polish.js",
+      "runtime": true,
+      "bytes": 3028,
+      "sha256": "39998dda2807b2413c26a5e2d61383d524f9c061cf28ca7469063e2c225e9e2b"
     }
   ]
 }

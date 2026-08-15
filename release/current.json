@@ -4,5 +4,6 @@
   "mode": "verified-direct-site",
   "baseVersion": "0.19.44",
   "previousVersion": "0.19.44",
-  "releasePath": "release/v0.19.45/site"
+  "releasePath": "release/v0.19.45/site",
+  "releasedAt": "2026-08-15T11:41:39.138120+00:00"
 }
