@@ -65,3 +65,4 @@ requireRule(push.includes('ensureSession'),'Push erneuert/prüft Supabase-Sitzun
 
 console.log('TÜV Studio V0.19.42: PASS');
 // Manifest-Seal 2026-08-15: full deep-TÜV rerun trigger.
+// Mobile self-test visibility rerun: 2026-08-15T10:18+02:00.
