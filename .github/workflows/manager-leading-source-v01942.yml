@@ -7,6 +7,7 @@ on:
     paths:
       - 'release/v0.19.41/site/index.html'
       - 'release/v0.19.41/site/service-worker.js'
+      - 'release/v0.19.41/site/update-manifest.json'
       - 'release/v0.19.41/site/src/ui/app.js'
       - 'release/v0.19.41/site/src/adapters/person-provider.js'
       - 'release/v0.19.41/site/src/adapters/pc-manager.js'
