@@ -1,0 +1,6 @@
+KC DP2 V0.19.44
+================
+
+Error & Diagnostics Center + Push Center + Master-TableCore-Anbindung.
+
+Freigabe nur nach vollständigen GitHub-Actions-Gates.
