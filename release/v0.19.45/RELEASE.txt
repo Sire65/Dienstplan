@@ -1,0 +1,4 @@
+KC DP2 V0.19.45
+================
+
+KC UX Polish: Design, Bedienleiste, Rollen, Responsive und Releasebereinigung.
