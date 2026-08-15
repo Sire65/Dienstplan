@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#741521">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="KC DP2 Pilot">
+  <title>KC DP2 Pilot-Test</title>
+  <link rel="manifest" href="manifest.webmanifest?v=0.19.47">
+  <link rel="apple-touch-icon" href="../assets/kc-dp2-apple-touch-icon.png?v=0.19.47">
+  <link rel="stylesheet" href="../src/ui/pilot.css?v=0.19.47">
+</head>
+<body>
+  <main class="pilot-shell">
+    <section class="pilot-card">
+      <div class="pilot-brand">
+        <img src="../assets/kc-dp2-apple-touch-icon.png" alt="KC DP2">
+        <div><h1>KC DP2 Pilot-Test</h1><p>Köcheclub Werne · Installation & Push</p></div>
+      </div>
+      <div id="pilotIntro" class="pilot-note">Dein persönlicher Testzugang wird geprüft …</div>
+      <div id="pilotError" class="pilot-error pilot-hidden"></div>
+      <div id="pilotSteps" class="pilot-status"></div>
+      <div id="pilotDeviceHelp" class="pilot-note pilot-hidden"></div>
+      <div class="pilot-actions">
+        <button id="pilotInstallBtn" class="pilot-btn secondary pilot-hidden">KC DP2 Pilot installieren</button>
+        <button id="pilotInstalledBtn" class="pilot-btn ghost pilot-hidden">Ich habe die App installiert</button>
+        <button id="pilotPushBtn" class="pilot-btn" disabled>Benachrichtigungen aktivieren</button>
+        <button id="pilotTestBtn" class="pilot-btn ghost" disabled>Test-Push anfordern</button>
+      </div>
+      <p class="pilot-small">Dieser Pilotzugang enthält keine Köcheclub-Mitgliederdaten und keine Dienstpläne. Er prüft ausschließlich Installation, Push und technische Diagnose.</p>
+    </section>
+    <section id="pilotComplete" class="pilot-card pilot-complete pilot-hidden" style="margin-top:16px">
+      <h2>Vielen Dank für deine Unterstützung!</h2>
+      <p>Der Entwickler bedankt sich für deine Unterstützung beim KC-DP2-Pilottest.</p>
+      <div id="pilotRemoveHelp" class="pilot-note"></div>
+    </section>
+  </main>
+  <script src="../src/core/pilot-onboarding.js?v=0.19.47"></script>
+  <script src="../src/ui/pilot-app.js?v=0.19.47"></script>
+</body>
+</html>
