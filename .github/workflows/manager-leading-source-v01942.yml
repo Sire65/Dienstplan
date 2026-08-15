@@ -6,6 +6,7 @@ on:
     branches: [feature/pc-manager-leading-source-v01942]
     paths:
       - 'release/v0.19.41/site/index.html'
+      - 'release/v0.19.41/site/service-worker.js'
       - 'release/v0.19.41/site/src/ui/app.js'
       - 'release/v0.19.41/site/src/adapters/person-provider.js'
       - 'release/v0.19.41/site/src/adapters/pc-manager.js'
@@ -41,6 +42,7 @@ on:
       - 'tests/planner-runtime-wiring-v01942-e2e.js'
       - 'tests/planner-application-guard-v01942-e2e.js'
       - 'tests/local-xlsx-v01942-e2e.js'
+      - 'tests/push-receipt-v01942-e2e.js'
       - 'tests/tuev-studio-v01942.js'
       - 'tests/mobile-smoke.js'
       - 'tests/workflow-e2e.js'
@@ -68,6 +70,7 @@ jobs:
           node-version: '22'
       - name: Syntax check V0.19.42 delta
         run: |
+          node --check release/v0.19.41/site/service-worker.js
           node --check release/v0.19.41/site/src/ui/app.js
           node --check release/v0.19.41/site/src/adapters/person-provider.js
           node --check release/v0.19.41/site/src/adapters/pc-manager.js
@@ -98,6 +101,7 @@ jobs:
           node --check tests/planner-runtime-wiring-v01942-e2e.js
           node --check tests/planner-application-guard-v01942-e2e.js
           node --check tests/local-xlsx-v01942-e2e.js
+          node --check tests/push-receipt-v01942-e2e.js
           node --check tests/tuev-studio-v01942.js
           node --check tests/mobile-smoke.js
           node --check tests/workflow-e2e.js
@@ -108,6 +112,8 @@ jobs:
         run: node tests/tuev-studio-v01942.js
       - name: Local XLSX offline gate
         run: node tests/local-xlsx-v01942-e2e.js
+      - name: Push receipt gate
+        run: node tests/push-receipt-v01942-e2e.js
       - name: Prepare Playwright browser
         run: |
           npm install --no-save playwright@1.55.0
