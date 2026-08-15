@@ -1,0 +1,25 @@
+const fs=require('fs'),path=require('path');
+const root=path.join(__dirname,'..','release','v0.19.42','site');
+const adapter=fs.readFileSync(path.join(root,'src','adapters','diagnostics.js'),'utf8');
+const ui=fs.readFileSync(path.join(root,'src','ui','diagnostics-center.js'),'utf8');
+const loader=fs.readFileSync(path.join(root,'src','ui','source-health-ui.js'),'utf8');
+function must(text,re,msg){if(!re.test(text))throw new Error(msg)}
+must(adapter,/kc_dp_report_error/,'Report-RPC fehlt');
+must(adapter,/unhandledrejection/,'Promise-Fehlerfang fehlt');
+must(adapter,/window\.addEventListener\('error'/,'Globaler Fehlerfang fehlt');
+must(adapter,/REDACTED/,'Secret-Redaction fehlt');
+must(adapter,/QUEUE_KEY/,'Offline-Queue fehlt');
+must(adapter,/fingerprint/,'Fingerprint fehlt');
+must(adapter,/crypto\.subtle\.digest\('SHA-256'/,'SHA-256 Fingerprint fehlt');
+must(adapter,/queueWrite\(q\)/,'Queue Persistenz fehlt');
+must(adapter,/window\.addEventListener\('online'/,'Online-Flush fehlt');
+must(adapter,/kc_dp_error_admin_list/,'Admin-List-RPC fehlt');
+must(adapter,/kc_dp_error_admin_set_status/,'Admin-Status-RPC fehlt');
+must(ui,/planner','duty_manager','admin/,'Adminrollen fehlen');
+must(ui,/Fehler & Diagnose/,'Admin-Diagnosecenter fehlt');
+must(ui,/critical/,'Kritisch-Filter fehlt');
+must(ui,/resolved/,'Behoben-Status fehlt');
+must(loader,/diagnostics\.js\?v=0\.19\.44/,'Diagnostics Adapter Loader fehlt');
+must(loader,/diagnostics-center\.js\?v=0\.19\.44/,'Diagnostics UI Loader fehlt');
+must(loader,/diagnostics-center\.css\?v=0\.19\.44/,'Diagnostics CSS Loader fehlt');
+console.log('KC DP2 V0.19.44 Diagnostics Gate: PASS');
