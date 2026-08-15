@@ -6,11 +6,12 @@
   "releaseNotes": [
     "Deep Consolidation: zentrale Versionswahrheit korrigiert",
     "Falscher Versionskonflikt-Overlay beseitigt",
+    "Datenquellenstatus zeigt bei Teilfreigaben wieder die konkrete Ursache",
     "TÜV/Studio-Regelwerk und Deep-Regression konsolidiert",
     "V0.19.45 bleibt unverändert als versiegelter Vorgänger erhalten"
   ],
-  "generatedAt": "2026-08-15T12:35:41.137063+00:00",
-  "totalRuntimeBytes": 396741,
+  "generatedAt": "2026-08-15T14:47:15.197747+00:00",
+  "totalRuntimeBytes": 396935,
   "files": [
     {
       "path": "index.html",
@@ -176,8 +177,8 @@
     {
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
-      "bytes": 4564,
-      "sha256": "30f3933303d3249e74b3e6716855ae8e60b32d9e9bd49ed23bdb1c48727f3d0f",
+      "bytes": 4758,
+      "sha256": "7707aef3f8b625396cbe0a8567aad797f0a2bb3bb27a4f08fd24b5ccee3611cd",
       "runtime": true
     },
     {
