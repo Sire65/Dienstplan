@@ -28,6 +28,7 @@ for(const f of manifest.files){
   requireRule(exists(f.path),`Manifest-Datei vorhanden: ${f.path}`);
   const buf=fs.readFileSync(path.join(SITE,f.path));
   const actualBytes=buf.length,actualSha=sha256(buf);
+  console.log(`MANIFEST_ACTUAL ${f.path} bytes=${actualBytes} sha256=${actualSha}`);
   requireRule(actualBytes===Number(f.bytes),`Byte-Länge stimmt: ${f.path} (manifest=${f.bytes}, ist=${actualBytes})`);
   requireRule(actualSha===String(f.sha256).toLowerCase(),`SHA-256 stimmt: ${f.path} (manifest=${f.sha256}, ist=${actualSha})`);
 }
