@@ -14,7 +14,7 @@ concurrency:
   group: kc-dp2-pages-main
   cancel-in-progress: false
 
-# Deploy source includes the verified V0.19.41 push-receipt service-worker hotfix, privileged self-push test button, and push-adapter cache refresh hotfix.
+# Deploy source includes the verified V0.19.41 push receipt, self-test, cache refresh, and Supabase session restore fixes.
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -42,6 +42,8 @@ jobs:
           assert 'reconcileExisting' in push
           assert 'sendSelfTest' in push
           assert 'kc-dp-self-push-test' in push
+          assert "K.storage.get('supabaseSession')" in push
+          assert 'ensureSession' in push
           assert "CURRENT_RELEASE='0.19.41'" in upd
           print('V0.19.41 real-device handtest: PASS')
           PY
