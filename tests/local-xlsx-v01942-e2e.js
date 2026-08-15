@@ -1,0 +1,24 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.join(__dirname,'..','release','v0.19.42','site');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const index=read('index.html');
+const integrations=read('src/core/integrations.js');
+const wishImport=read('src/adapters/wish-import.js');
+const role=read('src/ui/role-ux.js');
+const xlsx=read('src/adapters/xlsx-local.js');
+function ok(v,m){if(!v)throw new Error(m);}
+const wishScript='<script src="src/adapters/wish-import.js';
+const roleScript='<script src="src/ui/role-ux.js';
+ok(index.indexOf(wishScript)>=0&&index.indexOf(roleScript)>=0&&index.indexOf(wishScript)<index.indexOf(roleScript),'wish-import.js muss als Script vor role-ux.js geladen werden');
+ok(wishImport.includes('src/adapters/xlsx-local.js?v=0.19.42'),'lokaler XLSX-Adapter wird nicht aus dem Importpfad geladen');
+ok(integrations.includes("version:'0.19.41'"),'versiegelte Integrationsbasis wurde unerwartet verändert');
+ok(!integrations.includes('xlsx-local.js'),'XLSX darf die versiegelte Integrationsbasis nicht verändern');
+ok(xlsx.includes("window.XLSX={version:'KC-local-1.0'"),'lokale XLSX-Schnittstelle fehlt');
+ok(xlsx.includes('function inflate(src)'),'DEFLATE-Leser fehlt');
+ok(xlsx.includes('function unzip(buf)'),'XLSX-ZIP-Leser fehlt');
+ok(xlsx.includes("xl/sharedStrings.xml"),'Shared-Strings-Unterstützung fehlt');
+ok(xlsx.includes('xl\\/worksheets\\/sheet'),'Worksheet-Unterstützung fehlt');
+ok(role.includes('if(window.XLSX)return window.XLSX'),'bestehender Import bevorzugt lokalen XLSX-Adapter nicht');
+console.log('LOCAL XLSX V0.19.42: OK – kanonischer Release nutzt den lokalen Offline-XLSX-Adapter.');

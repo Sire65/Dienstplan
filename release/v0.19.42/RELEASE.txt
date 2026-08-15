@@ -1,0 +1,33 @@
+KC DP2 V0.19.42
+=================
+
+Basis
+-----
+Basisversion: V0.19.41
+Ziel: Den geprüften KC-DP2-Stand als kanonischen V0.19.42-Release freigabefähig verpacken und die Manager-/Planer- sowie Push-Härtungen ohne Regressionen veröffentlichen.
+
+Freigabestand
+-------------
+- Dediziertes KC-DP2-Supabase-Projekt bleibt das alleinige Runtime-Ziel.
+- Manager bleibt führende Quelle für die vorgesehenen Stammdaten und Regeln.
+- Planer-, Empfehlungs-, Verfügbarkeits- und Auditpfade wurden im V0.19.42-Tiefen-TÜV geprüft.
+- Smartphone-, Wunsch -> Soll -> Ist-, Rollen-, Dokument/PDF/E-Mail- und Foto-Pipeline-Regressionen wurden geprüft.
+
+Push-Härtung
+------------
+- Zeitkritische Push-Nachrichten werden mit High Urgency und definierter TTL versendet.
+- Die Push-Kette kann Anzeige, Öffnen und Verwerfen getrennt protokollieren.
+- Der Android-End-to-End-Test wurde erfolgreich nachgewiesen: gesendet -> angezeigt -> geöffnet.
+- Die Supabase-Sitzung wird vor geschützten Push-Aufrufen wiederhergestellt bzw. bei Bedarf per Refresh-Token erneuert.
+- Die geschützte Self-Test-Funktion bleibt als Diagnosepfad erhalten; ein schwebender Testbutton ist nicht Bestandteil der normalen Oberfläche.
+
+Releaseintegrität
+-----------------
+- V0.19.42 besitzt einen eigenen kanonischen Releasebaum unter release/v0.19.42/site.
+- Runtime-Dateien werden über Bytezahl und SHA-256 im Update-Manifest versiegelt.
+- Manifest- und Push-Dateiänderungen lösen den V0.19.42-Tiefen-TÜV aus.
+- Der produktive Stand darf erst nach vollständig grüner Prüfung des tatsächlichen V0.19.42-Releasebaums auf main/GitHub Pages übernommen werden.
+
+Abnahme
+-------
+Vor dem finalen Merge müssen insbesondere Release-/Security-/Architekturregeln, Offline-XLSX, Push-Receipts, Manager Leading Source, Auto-Sync, Planner, Smartphone, Wunsch -> Soll -> Ist, Rollen/Berechtigungen, Dokumente/PDF/E-Mail und Foto-Pipeline vollständig grün sein.

@@ -14,48 +14,27 @@ concurrency:
   group: kc-dp2-pages-main
   cancel-in-progress: false
 
-# Deploy source includes the verified V0.19.41 push receipt, self-test, cache refresh, and Supabase session restore fixes.
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          ref: feature/dedicated-supabase-v01941
 
-      - name: Verify V0.19.41 handtest release
+      - name: Verify canonical V0.19.42 release
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import json
-          root=Path('release/v0.19.41/site')
-          manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
-          assert manifest['version']=='0.19.41'
-          assert manifest['cacheName']=='kc-dp-release-0.19.41'
-          integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
-          push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
-          upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
-          assert "profile:'KC_DP_DEDICATED_PROJECT'" in integ
-          assert "version:'0.19.41'" in push
-          assert 'reconcileExisting' in push
-          assert 'sendSelfTest' in push
-          assert 'kc-dp-self-push-test' in push
-          assert "K.storage.get('supabaseSession')" in push
-          assert 'ensureSession' in push
-          assert "CURRENT_RELEASE='0.19.41'" in upd
-          print('V0.19.41 real-device handtest: PASS')
-          PY
-          node --check release/v0.19.41/site/src/core/integrations.js
-          node --check release/v0.19.41/site/src/adapters/push.js
-          node --check release/v0.19.41/site/src/core/update-manager.js
-          node --check release/v0.19.41/site/service-worker.js
+          set -euo pipefail
+          node tests/tuev-studio-v01942.js
+          node tests/local-xlsx-v01942-e2e.js
+          node tests/push-receipt-v01942-e2e.js
+          node --check release/v0.19.42/site/service-worker.js
+          node --check release/v0.19.42/site/src/adapters/push.js
+          node --check release/v0.19.42/site/src/core/update-manager.js
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: release/v0.19.41/site
+          path: release/v0.19.42/site
 
   deploy:
     needs: verify

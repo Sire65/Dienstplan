@@ -1,0 +1,127 @@
+name: KC DP2 V0.19.42 Manager Leading Source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/pc-manager-leading-source-v01942]
+    paths:
+      - 'release/v0.19.42/**'
+      - 'release/current.json'
+      - 'docs/KC-DP2-ENGINEERING-RULES.md'
+      - 'tests/**'
+      - '.github/workflows/manager-leading-source-v01942.yml'
+
+concurrency:
+  group: kc-dp2-v01942-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  manager-leading-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax check canonical V0.19.42 release
+        run: |
+          node --check release/v0.19.42/site/service-worker.js
+          node --check release/v0.19.42/site/src/ui/app.js
+          node --check release/v0.19.42/site/src/adapters/person-provider.js
+          node --check release/v0.19.42/site/src/adapters/pc-manager.js
+          node --check release/v0.19.42/site/src/adapters/push.js
+          node --check release/v0.19.42/site/src/adapters/wish-import.js
+          node --check release/v0.19.42/site/src/adapters/xlsx-local.js
+          node --check release/v0.19.42/site/src/core/integrations.js
+          node --check release/v0.19.42/site/src/core/planner-engine.js
+          node --check release/v0.19.42/site/src/core/planner-recommendations.js
+          node --check release/v0.19.42/site/src/core/replacement-recommendations.js
+          node --check release/v0.19.42/site/src/core/day-availability.js
+          node --check release/v0.19.42/site/src/core/planner-audit.js
+          node --check release/v0.19.42/site/src/core/source-health.js
+          node --check release/v0.19.42/site/src/core/manager-auto-sync.js
+          node --check release/v0.19.42/site/src/core/planner-application-guard.js
+          node --check release/v0.19.42/site/src/ui/day-availability-filter.js
+          node --check release/v0.19.42/site/src/ui/quick-plan-recommendations.js
+          node --check release/v0.19.42/site/src/ui/planner-audit-ui.js
+          node --check release/v0.19.42/site/src/ui/source-health-ui.js
+          node --check tests/manager-leading-source-e2e.js
+          node --check tests/manager-auto-sync-v01942-e2e.js
+          node --check tests/planner-engine-v01942-e2e.js
+          node --check tests/planner-recommendations-v01942-e2e.js
+          node --check tests/replacement-recommendations-v01942-e2e.js
+          node --check tests/day-availability-filter-v01942-e2e.js
+          node --check tests/quick-plan-recommendations-v01942-e2e.js
+          node --check tests/planner-audit-v01942-e2e.js
+          node --check tests/source-health-v01942-e2e.js
+          node --check tests/planner-runtime-wiring-v01942-e2e.js
+          node --check tests/planner-application-guard-v01942-e2e.js
+          node --check tests/local-xlsx-v01942-e2e.js
+          node --check tests/push-receipt-v01942-e2e.js
+          node --check tests/tuev-studio-v01942.js
+          node --check tests/mobile-smoke.js
+          node --check tests/workflow-e2e.js
+          node --check tests/roles-e2e.js
+          node --check tests/documents-e2e.js
+          node --check tests/photo-pipeline-e2e.js
+      - name: TÜV Studio – canonical release, security, architecture, rules
+        run: node tests/tuev-studio-v01942.js
+      - name: Local XLSX offline gate
+        run: node tests/local-xlsx-v01942-e2e.js
+      - name: Push receipt gate
+        run: node tests/push-receipt-v01942-e2e.js
+      - name: Prepare Playwright browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Start canonical V0.19.42 release
+        run: |
+          cd release/v0.19.42/site
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-v01942-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-v01942-http.log
+          exit 1
+      - name: Run manager leading-source safety acceptance
+        run: node tests/manager-leading-source-e2e.js
+      - name: Run permission-aware Manager auto-sync acceptance
+        run: node tests/manager-auto-sync-v01942-e2e.js
+      - name: Run rule-bound planner acceptance
+        run: node tests/planner-engine-v01942-e2e.js
+      - name: Run shared planner recommendation acceptance
+        run: node tests/planner-recommendations-v01942-e2e.js
+      - name: Run shared replacement recommendation acceptance
+        run: node tests/replacement-recommendations-v01942-e2e.js
+      - name: Run day availability picker acceptance
+        run: node tests/day-availability-filter-v01942-e2e.js
+      - name: Run Quick-Plan recommendation UI acceptance
+        run: node tests/quick-plan-recommendations-v01942-e2e.js
+      - name: Run explainable planner audit acceptance
+        run: node tests/planner-audit-v01942-e2e.js
+      - name: Run data source health acceptance
+        run: node tests/source-health-v01942-e2e.js
+      - name: Run planner runtime wiring acceptance
+        run: node tests/planner-runtime-wiring-v01942-e2e.js
+      - name: Run planner application guard acceptance
+        run: node tests/planner-application-guard-v01942-e2e.js
+      - name: Regression – smartphone
+        run: node tests/mobile-smoke.js
+      - name: Regression – Wunsch to Soll to Ist
+        run: node tests/workflow-e2e.js
+      - name: Regression – roles and permissions
+        run: node tests/roles-e2e.js
+      - name: Regression – documents PDF email
+        run: node tests/documents-e2e.js
+      - name: Regression – photo pipeline
+        run: node tests/photo-pipeline-e2e.js
