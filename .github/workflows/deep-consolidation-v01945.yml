@@ -2,7 +2,7 @@ name: KC DP2 Current Deep Consolidation TÜV
 
 on:
   push:
-    branches: [feature/pilot-onboarding-v01947]
+    branches: [feature/pilot-onboarding-v01947, feature/pilot-ux-fix-v01948]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-
       - name: Resolve canonical current release
         id: release
         shell: bash
@@ -35,7 +34,6 @@ jobs:
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Deep TÜV for KC DP2 V$VERSION at $RELEASE_PATH"
-
       - name: Syntax – complete current browser runtime and all tests
         shell: bash
         run: |
@@ -43,13 +41,12 @@ jobs:
           ROOT="${{ steps.release.outputs.path }}"
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find tests -maxdepth 1 -type f -name '*.js' -print0)
-
       - name: TÜV Studio – current release, security, architecture, rules and version truth
         run: node tests/tuev-studio-current.js
       - name: Current UX and responsive version-truth contract
         run: node tests/ux-current-gate.js
-      - name: Pilot onboarding isolation and PWA contract
-        run: node tests/pilot-v01947-gate.js
+      - name: Pilot onboarding isolation and guided iPhone contract
+        run: node tests/pilot-v01948-gate.js
       - name: Immutable V0.19.45 release regression
         shell: bash
         run: |
@@ -65,7 +62,6 @@ jobs:
           node tests/local-xlsx-v01942-e2e.js
           node tests/push-receipt-v01942-e2e.js
           node tests/tuev-studio-v01942.js
-
       - name: Prepare Playwright browser
         run: |
           npm install --no-save playwright@1.55.0
@@ -75,20 +71,14 @@ jobs:
           else
             npx playwright install --with-deps chromium
           fi
-
       - name: Start canonical current release
         shell: bash
         run: |
           cd "${{ steps.release.outputs.path }}"
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-deep-http.log 2>&1 &
           echo $! > /tmp/kcdp-deep-http.pid
-          for i in {1..30}; do
-            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
-            sleep 1
-          done
-          cat /tmp/kcdp-deep-http.log
-          exit 1
-
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/kcdp-deep-http.log; exit 1
       - name: Dedicated Supabase contract
         run: timeout --signal=TERM 120s node tests/dedicated-supabase-e2e.js
       - name: Manager Core leading-source and completeness
@@ -123,12 +113,10 @@ jobs:
         run: timeout --signal=TERM 120s node tests/documents-e2e.js
       - name: Plan photo pipeline
         run: timeout --signal=TERM 120s node tests/photo-pipeline-e2e.js
-
       - name: Deep consolidation result
         run: |
           echo 'KC DP2 CURRENT DEEP CONSOLIDATION: GREEN'
           echo 'Release + version truth + Security + Architecture + Rules + Manager + Planner + UX + Mobile + Roles + Push + Pilot + Diagnostics + PWA + Documents + Photo: PASS'
-
       - name: Test server log on failure
         if: failure()
         run: cat /tmp/kcdp-deep-http.log || true
