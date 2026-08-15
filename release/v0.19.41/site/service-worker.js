@@ -54,6 +54,7 @@ const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const UPDATE_MANIFEST='./update-manifest.json';
 const FALLBACK='./index.html';
+const PUSH_RECEIPT_ENDPOINT='https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/kc-dp-push-receipt';
 
 async function readMeta(){const c=await caches.open(META_CACHE),r=await c.match(META_URL);if(!r)return null;try{return await r.json();}catch(_){return null;}}
 async function writeMeta(meta){const c=await caches.open(META_CACHE);await c.put(META_URL,new Response(JSON.stringify(meta),{headers:{'Content-Type':'application/json','X-KC-DP-Engine':ENGINE}}));return meta;}
@@ -103,6 +104,14 @@ async function normalizeRecoveryCache(meta){
 }
 async function activeMeta(){return maybeRollback((await readMeta())||await ensureInitialRelease());}
 async function tellClients(payload){const list=await clients.matchAll({type:'window',includeUncontrolled:true});for(const c of list)c.postMessage(payload);}
+async function pushReceipt(data,eventName){
+  try{
+    const notificationId=String(data?.notificationId||'');if(!notificationId)return false;
+    const sub=await self.registration.pushManager.getSubscription();const endpoint=sub?.endpoint;if(!endpoint)return false;
+    const r=await fetch(PUSH_RECEIPT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notificationId,endpoint,event:eventName}),cache:'no-store'});
+    return r.ok;
+  }catch(_){return false;}
+}
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{await ensureInitialRelease();await self.skipWaiting();})()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{let meta=await ensureInitialRelease();meta=await refreshForcedRuntime(meta);meta=await normalizeRecoveryCache(meta);await pruneCaches(meta);await self.clients.claim();})()));
@@ -126,5 +135,6 @@ self.addEventListener('fetch',event=>{
     try{const r=await fetch(event.request);if(r&&r.ok)await cache.put(event.request,r.clone());return r;}catch(_){if(meta.previousCache){const old=await caches.open(meta.previousCache),prev=await old.match(event.request,{ignoreSearch:true});if(prev)return prev;}return (await cache.match(new URL(FALLBACK,self.registration.scope).toString(),{ignoreSearch:true}))||Response.error();}
   })());
 });
-self.addEventListener('push',event=>{let data={};try{data=event.data?.json?.()||{body:event.data?.text?.()||''};}catch(_){data={body:event.data?.text?.()||''};}const title=data.title||'KC DP';event.waitUntil(self.registration.showNotification(title,{body:data.body||'',data:data.data||{},tag:data.data?.notificationId||undefined,renotify:true}));});
-self.addEventListener('notificationclick',event=>{event.notification.close();const data=event.notification.data||{},query=new URLSearchParams();if(data.notificationId)query.set('notification',data.notificationId);if(data.route)query.set('route',data.route);if(data.date)query.set('date',data.date);if(data.requestId)query.set('request',data.requestId);const url='./index.html'+(query.toString()?'?'+query.toString():'');event.waitUntil(clients.matchAll({type:'window',includeUncontrolled:true}).then(list=>{for(const c of list){if('focus'in c){c.postMessage({type:'KC_DP_NOTIFICATION_OPEN',data});return c.focus();}}return clients.openWindow?clients.openWindow(url):undefined;}));});
+self.addEventListener('push',event=>{let data={};try{data=event.data?.json?.()||{body:event.data?.text?.()||''};}catch(_){data={body:event.data?.text?.()||''};}const title=data.title||'KC DP';event.waitUntil((async()=>{await self.registration.showNotification(title,{body:data.body||'',data:data.data||{},tag:data.data?.notificationId||undefined,renotify:true});await pushReceipt(data.data,'displayed');})());});
+self.addEventListener('notificationclick',event=>{event.notification.close();const data=event.notification.data||{},query=new URLSearchParams();if(data.notificationId)query.set('notification',data.notificationId);if(data.route)query.set('route',data.route);if(data.date)query.set('date',data.date);if(data.requestId)query.set('request',data.requestId);const url='./index.html'+(query.toString()?'?'+query.toString():'');event.waitUntil((async()=>{await pushReceipt(data,'opened');const list=await clients.matchAll({type:'window',includeUncontrolled:true});for(const c of list){if('focus'in c){c.postMessage({type:'KC_DP_NOTIFICATION_OPEN',data});return c.focus();}}return clients.openWindow?clients.openWindow(url):undefined;})());});
+self.addEventListener('notificationclose',event=>{const data=event.notification?.data||{};event.waitUntil(pushReceipt(data,'dismissed'));});
