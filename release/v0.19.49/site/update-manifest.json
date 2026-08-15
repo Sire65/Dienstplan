@@ -1,24 +1,23 @@
 {
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
-  "version": "0.19.48",
-  "cacheName": "kc-dp-release-0.19.48",
+  "version": "0.19.49",
+  "cacheName": "kc-dp-release-0.19.49",
   "releaseNotes": [
-    "Pilot-Onboarding als eindeutiger Schritt-für-Schritt-Assistent",
-    "iPhone-Installation bewahrt den persönlichen Einladungslink",
-    "App installiert wird nur noch bei echtem Home-Screen-Start erkannt",
-    "WhatsApp-Browser und Safari werden verständlich unterschieden",
-    "Geführte Reparatur bei bereits ohne Token installierter Pilot-App",
-    "Pilot-Abschluss wartet auf echte Dankes-Push-Öffnungsbestätigung"
+    "Pilot-Abschluss-Push kann bei Bedarf erneut gesendet werden",
+    "Pilot-Subscription bleibt bis zur echten Öffnungsbestätigung aktiv",
+    "Dankes-Push meldet Öffnung serverseitig als completion_received zurück",
+    "Digitaler Dank mit Blumenstrauß für Pilot-Tester",
+    "Pilot-Service-Worker-Cache auf V0.19.49 erneuert"
   ],
-  "generatedAt": "2026-08-15T20:46:21.498Z",
+  "generatedAt": "2026-08-15T20:48:46.185693+00:00",
   "totalRuntimeBytes": 417106,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
       "bytes": 11201,
-      "sha256": "a8dae7801457859692ffb5a399c14302291af92713b843c07ddb914dcbb1fb6d",
+      "sha256": "04267e2b3aabdbf89eec77eb4c20b33fd5573004e1cc7b1696a8de262b67a821",
       "runtime": true
     },
     {
@@ -39,7 +38,7 @@
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
       "bytes": 10360,
-      "sha256": "72b8889c34a815be6518dcd84be546d0d3ad36516c49c3779bd531de4d5a3978",
+      "sha256": "dd3cba07e9f6fe2f54cfc2ad0cb6a3845207ec84ad606537916b43fb781dad1f",
       "runtime": true
     },
     {
@@ -116,7 +115,7 @@
       "path": "src/core/update-manager.js",
       "installPath": "src/core/update-manager.js",
       "bytes": 12270,
-      "sha256": "1870726c0a3d75ca68175f87ae05b36ecaf4fd70a48ff62e0608a2c3d08e7da2",
+      "sha256": "9356121d168584af784d23c495deeda28b074eb594748857d0bee28a66f860f9",
       "runtime": true
     },
     {
@@ -179,7 +178,7 @@
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
       "bytes": 4758,
-      "sha256": "a2d3f91f5903b21f943b167870e8369d804e5fe27542accbe87876e88df15c69",
+      "sha256": "ad59c88209c0c912d95a6f54dc4a41914a132bd585bfa9145ca12d23c07b556e",
       "runtime": true
     },
     {
@@ -236,7 +235,7 @@
       "installPath": "src/ui/kc-ux-polish.js",
       "runtime": true,
       "bytes": 3028,
-      "sha256": "eb7226194a90902961941ab9935716cb466aaa8857fe69a91a70f13ddb44d0ad"
+      "sha256": "10d84380b903d60e5741b83a6331e1e4604624a5caec5370f7a2d9ec3d76285f"
     },
     {
       "path": "pilot/index.html",
