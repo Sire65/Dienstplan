@@ -85,39 +85,39 @@ jobs:
           exit 1
 
       - name: Dedicated Supabase contract
-        run: node tests/dedicated-supabase-e2e.js
+        run: timeout --signal=TERM 120s node tests/dedicated-supabase-e2e.js
       - name: Manager Core leading-source and completeness
-        run: node tests/manager-leading-source-e2e.js
+        run: timeout --signal=TERM 120s node tests/manager-leading-source-e2e.js
       - name: Manager auto-sync permissions and failure safety
-        run: node tests/manager-auto-sync-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/manager-auto-sync-v01942-e2e.js
       - name: Planner central rule engine
-        run: node tests/planner-engine-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/planner-engine-v01942-e2e.js
       - name: Planner recommendations
-        run: node tests/planner-recommendations-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/planner-recommendations-v01942-e2e.js
       - name: Replacement and gap recommendations
-        run: node tests/replacement-recommendations-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/replacement-recommendations-v01942-e2e.js
       - name: Day availability and day switching
-        run: node tests/day-availability-filter-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/day-availability-filter-v01942-e2e.js
       - name: Quick Plan recommendation UI
-        run: node tests/quick-plan-recommendations-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/quick-plan-recommendations-v01942-e2e.js
       - name: Explainable planner audit
-        run: node tests/planner-audit-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/planner-audit-v01942-e2e.js
       - name: Source health and provenance
-        run: node tests/source-health-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/source-health-v01942-e2e.js
       - name: Planner runtime wiring
-        run: node tests/planner-runtime-wiring-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/planner-runtime-wiring-v01942-e2e.js
       - name: Planner apply guard
-        run: node tests/planner-application-guard-v01942-e2e.js
+        run: timeout --signal=TERM 120s node tests/planner-application-guard-v01942-e2e.js
       - name: Smartphone 390x844 practice regression
-        run: node tests/mobile-smoke.js
+        run: timeout --signal=TERM 120s node tests/mobile-smoke.js
       - name: Wunsch Soll Freigabe Ist comparison
-        run: node tests/workflow-e2e.js
+        run: timeout --signal=TERM 120s node tests/workflow-e2e.js
       - name: Roles permissions and read-only guards
-        run: node tests/roles-e2e.js
+        run: timeout --signal=TERM 120s node tests/roles-e2e.js
       - name: Documents PDF print email export
-        run: node tests/documents-e2e.js
+        run: timeout --signal=TERM 120s node tests/documents-e2e.js
       - name: Plan photo pipeline
-        run: node tests/photo-pipeline-e2e.js
+        run: timeout --signal=TERM 120s node tests/photo-pipeline-e2e.js
 
       - name: Deep consolidation result
         run: |
