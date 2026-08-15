@@ -36,3 +36,4 @@ jobs:
           git fetch origin fix/mobile-kollegen-suchen-v01950
           git rebase origin/fix/mobile-kollegen-suchen-v01950
           git push origin HEAD:fix/mobile-kollegen-suchen-v01950
+      # rerun after deterministic marker correction
