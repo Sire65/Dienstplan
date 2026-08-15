@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
-const root=path.join(__dirname,'..','release','v0.19.41','site');
+const root=path.join(__dirname,'..','release','v0.19.42','site');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const index=read('index.html');
 const integrations=read('src/core/integrations.js');
@@ -21,4 +21,4 @@ ok(xlsx.includes('function unzip(buf)'),'XLSX-ZIP-Leser fehlt');
 ok(xlsx.includes("xl/sharedStrings.xml"),'Shared-Strings-Unterstützung fehlt');
 ok(xlsx.includes('xl\\/worksheets\\/sheet'),'Worksheet-Unterstützung fehlt');
 ok(role.includes('if(window.XLSX)return window.XLSX'),'bestehender Import bevorzugt lokalen XLSX-Adapter nicht');
-console.log('LOCAL XLSX V0.19.42: OK – lokaler Offline-Adapter liegt im Importpfad; V0.19.41-Integrationsmanifest bleibt versiegelt.');
+console.log('LOCAL XLSX V0.19.42: OK – kanonischer Release nutzt den lokalen Offline-XLSX-Adapter.');
