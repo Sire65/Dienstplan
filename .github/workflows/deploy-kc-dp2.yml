@@ -23,25 +23,32 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify canonical V0.19.45 release
+      - name: Resolve canonical V0.19.46 release
+        id: release
         shell: bash
         run: |
           set -euo pipefail
-          node tests/release-v01945-gate.js
-          node tests/ux-polish-v01945-gate.js
-          node --check release/v0.19.45/site/service-worker.js
-          node --check release/v0.19.45/site/src/adapters/push.js
-          node --check release/v0.19.45/site/src/core/update-manager.js
-          node --check release/v0.19.45/site/src/core/table-core-adapter.js
-          node --check release/v0.19.45/site/src/adapters/diagnostics.js
-          node --check release/v0.19.45/site/src/ui/diagnostics-center.js
-          node --check release/v0.19.45/site/src/ui/kc-ux-polish.js
-          node --check release/v0.19.45/site/src/ui/source-health-ui.js
+          VERSION="$(node -p "require('./release/current.json').version")"
+          RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          test "$VERSION" = "0.19.46"
+          test "$RELEASE_PATH" = "release/v0.19.46/site"
+          echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Verify canonical V0.19.46 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/tuev-studio-current.js
+          node tests/ux-current-gate.js
+          node tests/diagnostics-v01944-gate.js
+          node tests/push-center-v01943-gate.js
+          ROOT="${{ steps.release.outputs.path }}"
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: release/v0.19.45/site
+          path: ${{ steps.release.outputs.path }}
 
   deploy:
     needs: verify

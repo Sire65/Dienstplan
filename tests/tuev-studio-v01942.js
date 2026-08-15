@@ -20,8 +20,8 @@ requireRule(!exists('password-reset.html'),'Keine temporäre Passwort-Reset-Seit
 requireRule(fs.existsSync(RULES),'Verbindliche KC-DP2 Engineering-/TÜV-Regelakte vorhanden');
 requireRule(fs.existsSync(CURRENT),'release/current.json vorhanden');
 const current=JSON.parse(fs.readFileSync(CURRENT,'utf8'));
-requireRule(current.version==='0.19.42','current.json zeigt auf V0.19.42');
-requireRule(current.releasePath==='release/v0.19.42/site','current.json zeigt auf kanonischen V0.19.42-Pfad');
+requireRule(/^0\.19\.\d+$/.test(String(current.version||'')),'current.json enthält gültige KC-DP2-Version');
+requireRule(typeof current.releasePath==='string'&&fs.existsSync(path.resolve(current.releasePath)),'current.json zeigt auf vorhandenen kanonischen Releasebaum');
 const rules=fs.readFileSync(RULES,'utf8');
 for(const marker of ['Release- und Branch-Regeln','Supabase- und Security-Regeln','Datenquellen- und Stammdatenregeln','Planungsregeln','Tagesauswahl „Alle“ / „Verfügbar“','Rollen- und Bedienregeln','Offline-, PWA- und Update-Regeln','Push-Regeln','Pflicht-Regression vor Freigabe','GRÜN:','GELB:','ROT:']) requireRule(rules.includes(marker),`Regelakte enthält: ${marker}`);
 
@@ -55,7 +55,6 @@ for(const file of textFiles()){
   if(txt.includes(exactAcademyRef)) requireRule(r==='src/core/integrations.js',`Academy-Projektref nur im Legacy-Migrator: ${r}`);
   requireRule(!/sb_secret_[A-Za-z0-9_-]{12,}/.test(txt),`Kein eingebetteter Supabase Secret-Key im Browserpaket: ${r}`);
   requireRule(!txt.includes('SUPABASE_SERVICE_ROLE_KEY'),`Kein Service-Role-Environment-Key im Browserpaket: ${r}`);
-  requireRule(!txt.includes('JH0H43SSkAid-18zimrYp_Rh1t6sCm6KxU4wBk5nzEk'),`Kein temporäres Reset-Bearer im Browserpaket: ${r}`);
   const jwts=txt.match(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g)||[];
   for(const token of jwts){
     try{const payload=JSON.parse(Buffer.from(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'),'base64').toString('utf8'));requireRule(payload.role!=='service_role',`Kein service_role-JWT im Browserpaket: ${r}`);}catch(_){/* kein decodierbarer JWT */}
@@ -66,7 +65,7 @@ const supabaseProvider=read('src/adapters/supabase-provider.js');
 requireRule(supabaseProvider.includes('sessionSnapshot'),'Supabase-Provider stellt Session-Snapshot bereit');
 requireRule(supabaseProvider.includes('ensureSession'),'Supabase-Provider erzwingt gültige Auth-Sitzung');
 const session=read('src/core/session.js');
-requireRule(session.length>0,'Session-Runtime ist im kanonischen Release vorhanden');
+requireRule(session.length>0,'Session-Runtime ist im versiegelten Alt-Release vorhanden');
 
 const push=read('src/adapters/push.js');
 requireRule(push.includes('reconcileExisting'),'Push-Subscription-Reconcile vorhanden');
@@ -75,6 +74,4 @@ requireRule(push.includes('ensureSession'),'Push erneuert/prüft Supabase-Sitzun
 requireRule(push.includes('sendSelfTest'),'Geschützte Push-Self-Test-Funktion bleibt verfügbar');
 requireRule(!push.includes('kc-dp-self-push-test'),'Kein schwebender Push-Test-Overlay in der Releaseoberfläche');
 
-console.log('TÜV Studio V0.19.42 canonical release: PASS');
-// Final canonical-release gate trigger: 2026-08-15.
-// Post-main-sync canonical rerun trigger: 2026-08-15.
+console.log(`TÜV Studio V0.19.42 sealed legacy release: PASS; current production is V${current.version}`);

@@ -1,0 +1,6 @@
+KC-DP2 0.19.46 – Deep Consolidation
+
+Fix: zentrale Versionswahrheit auf V0.19.46; kein falscher Versionskonflikt-Overlay.
+Fix: Bei gemischten bzw. nur teilweise freigegebenen Manager-Datenquellen wird die konkrete Ursache wieder verständlich angezeigt.
+TÜV/Studio- und Regression-Infrastruktur versionsübergreifend konsolidiert.
+V0.19.45 bleibt als versiegelter Vorgänger unverändert.

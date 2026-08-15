@@ -1,17 +1,20 @@
 # KC DP2 – Engineering-, TÜV- und Studio-Regeln
 
-Stand: V0.19.42 Entwicklungszweig
+Stand: V0.19.46 Produktionskandidat – versionsübergreifend verbindlich
 
-Diese Regeln sind verbindliche Architektur- und Freigabekriterien für KC DP2. Ein Release darf eine Regel nur ändern, wenn die Änderung bewusst dokumentiert, getestet und im TÜV-/Studio-Gate nachvollziehbar gemacht wird.
+Diese Regeln sind verbindliche Architektur-, Qualitäts- und Freigabekriterien für KC DP2. Ein Release darf eine Regel nur ändern, wenn die Änderung bewusst dokumentiert, getestet und im TÜV-/Studio-Gate nachvollziehbar gemacht wird. Versionsspezifische Alt-Gates dürfen ergänzend bestehen bleiben, ersetzen aber niemals den TÜV des in `release/current.json` bezeichneten kanonischen Releases.
 
 ## 1. Release- und Branch-Regeln
 
 1. `main` enthält nur freigegebene, geprüfte Releases.
 2. Ein bestehender funktionierender Produktionsstand darf nie durch einen roten oder ungeprüften Stand ersetzt werden.
-3. V0.19.42 baut auf dem vollständig abgenommenen V0.19.41-Stand auf. Solange V0.19.41 im Realgeräte-Test ist, bleibt V0.19.42 ein gestapelter Draft.
-4. Jeder Releasekandidat benötigt Syntaxprüfung, statischen TÜV-/Studio-Check und die vollständigen End-to-End-Regressionen.
-5. Temporäre Handtest-, Reset-, Bootstrap- oder Diagnosehilfen dürfen nicht unbemerkt Bestandteil eines finalen Releases bleiben.
-6. `release/current.json` wird erst nach abgeschlossener Freigabe auf die neue Version gesetzt.
+3. Jede neue Version baut auf dem zuletzt vollständig freigegebenen `main`-Stand auf; alte Releasebäume werden nachträglich nicht verändert.
+4. Jeder Releasekandidat benötigt Syntaxprüfung, statischen TÜV-/Studio-Check und die vollständigen End-to-End-Regressionen auf demselben finalen Head.
+5. Temporäre Handtest-, Reset-, Bootstrap-, Overlay- oder Diagnosehilfen dürfen nicht unbemerkt Bestandteil eines finalen Releases bleiben.
+6. `release/current.json`, Update-Manifest, Cache-Name, sichtbare Versionsangaben und Produktivdeploy müssen auf denselben kanonischen Release zeigen.
+7. Manifest-Dateien werden vor Freigabe bytegenau und per SHA-256 versiegelt; Abweichungen sind ROT.
+8. Ein Merge erfolgt nur mit fixiertem, vollständig geprüftem Head-SHA. Nach dem Merge muss der Produktiv-Verify erneut erfolgreich sein.
+9. Die globale Runtime-Version (`K.VERSION`), `K.APP_RELEASE`, Manifestversion, sichtbare Releaseversion und Update-Manager-Version müssen dieselbe kanonische Produktversion melden. Ein falscher Versionskonflikt ist ein Release-Blocker.
 
 ## 2. Supabase- und Security-Regeln
 
@@ -22,7 +25,8 @@ Diese Regeln sind verbindliche Architektur- und Freigabekriterien für KC DP2. E
 5. SECURITY-DEFINER-Funktionen dürfen nicht für `anon` oder `authenticated` ausführbar sein, sofern dies nicht ausdrücklich fachlich erforderlich und geprüft ist.
 6. Server-only Tabellen dürfen bei aktivem RLS ohne Client-Policy bleiben, wenn `anon` und `authenticated` keine Tabellenrechte besitzen.
 7. VAPID Private Keys, Cron-Secrets, Reset-Bearer und vergleichbare Geheimnisse dürfen niemals im Browserpaket, in Logs für Anwender oder in Dokumentation ausgegeben werden.
-8. Auth-Sessions werden nicht durch einen lokalen pauschalen 10-Minuten-Timer beendet. Supabase-Sitzungen nutzen die vorgesehene Token-/Refresh-Logik.
+8. Auth-Sessions werden nicht durch einen lokalen pauschalen Kurzzeit-Timer beendet. Supabase-Sitzungen nutzen die vorgesehene Token-/Refresh-Logik.
+9. Fehlerdiagnosen dürfen keine Passwörter, Tokens, Authorization-Header oder vergleichbare Geheimnisse persistieren; Redaction ist Pflicht.
 
 ## 3. Datenquellen- und Stammdatenregeln
 
@@ -58,9 +62,11 @@ Diese Regeln sind verbindliche Architektur- und Freigabekriterien für KC DP2. E
 2. Planer dürfen Sollpläne bearbeiten und veröffentlichen.
 3. Dienstverantwortliche dürfen im vorgesehenen Umfang planen, aber nicht automatisch veröffentlichen.
 4. Zeitprüfer bearbeiten Ist-/Zeitdaten, nicht den Sollplan.
-5. Read-only Rollen erhalten keinen Bearbeiten-Einstieg.
+5. Read-only Rollen erhalten keinen Bearbeiten-Einstieg und keine versteckten Schreibpfade über Pointer, Tastatur oder Kontextmenü.
 6. Admin-Rechte bleiben explizit und dürfen nicht aus UI-Sichtbarkeit abgeleitet werden.
 7. Smartphone-, Tablet- und Desktop-Bedienung dürfen sich funktional nicht widersprechen.
+8. Technische Diagnoseanzeigen werden rollenabhängig dargestellt; normale Mitglieder erhalten verständliche Benutzertexte statt interner Kürzel.
+9. Köcheclub-Design darf fachliche Signalfarben für Besetzung, Fehler und Warnungen nicht verfälschen.
 
 ## 7. Offline-, PWA- und Update-Regeln
 
@@ -69,6 +75,8 @@ Diese Regeln sind verbindliche Architektur- und Freigabekriterien für KC DP2. E
 3. Kritische Hotfix-Dateien können per `forceRefresh` gezielt aus einem alten PWA-Cache heraus aktualisiert werden.
 4. Updateprüfungen müssen veraltete HTTP-Caches umgehen.
 5. Boot-Bestätigung und Rollback-Schutz dürfen nicht entfernt werden, ohne einen gleichwertigen Mechanismus zu ersetzen.
+6. Offline benötigte Runtime-Dateien müssen im kanonischen Manifest enthalten sein.
+7. Update, Installation und erster Start dürfen keine bestehende freigegebene lokale Planung zerstören.
 
 ## 8. Push-Regeln
 
@@ -77,12 +85,24 @@ Diese Regeln sind verbindliche Architektur- und Freigabekriterien für KC DP2. E
 3. Zeitgesteuerte Push-Läufe müssen idempotent sein und Doppelversand verhindern.
 4. Temporäre Push-Tests müssen zeitlich begrenzt und nach Abnahme entfernbar sein.
 5. Push-Erfolg gilt erst als End-to-End bestätigt, wenn Serverzustellung und Realgerät geprüft sind.
+6. Push-Center-Massenversand ist auf berechtigte Rollen beschränkt und benötigt vor Versand eine eindeutige Empfänger-/Inhaltsbestätigung.
+7. Versandstatus `gesendet`, `angezeigt`, `geöffnet`, `verworfen/Fehler` muss technisch nachvollziehbar bleiben.
 
-## 9. Pflicht-Regression vor Freigabe
+## 9. Diagnose-, TableCore- und Fehlerprotokoll-Regeln
+
+1. Technische Fehler werden datensparsam erfasst, redigiert und über Fingerprints dedupliziert.
+2. Offline entstandene Diagnoseereignisse dürfen gepuffert und später übertragen werden.
+3. Das Admin-Fehlerprotokoll verwendet den freigegebenen Master-TableCore bzw. einen dünnen kompatiblen Adapter; keine parallele Tabellenarchitektur.
+4. Häufigkeit, erstes/letztes Auftreten, Version, technische Plattform, Schweregrad und Bearbeitungsstatus müssen auswertbar sein.
+5. Archivieren/Löschen benötigt bewusste Adminaktion; Mehrfachaktionen dürfen keine fremden oder ungeprüften Datensätze versehentlich verändern.
+6. Normale Mitglieder dürfen die zentrale Fehlerdatenbank nicht direkt lesen.
+
+## 10. Pflicht-Regression vor Freigabe
 
 Mindestens folgende Prüfungen müssen auf dem finalen Release-Head erfolgreich sein:
 
 - TÜV Studio: Releaseintegrität, Security, Architektur und Regeln
+- Manifest/Bytes/SHA-256 sowie `release/current.json`
 - Manager/Core Leading Source und Vollständigkeitsschutz
 - Manager Auto-Sync inklusive Rechte-/Fehlerfälle
 - Planner Engine und gemeinsame Recommendations
@@ -90,15 +110,18 @@ Mindestens folgende Prüfungen müssen auf dem finalen Release-Head erfolgreich 
 - Tagesverfügbarkeitsfilter inklusive Tageswechsel
 - KI-Audit und Apply-Guard
 - Datenquellenstatus
-- Smartphone Smoke Test
+- Smartphone Smoke Test und Responsive-/Touch-Prüfung
 - Wunsch → Soll → Ist
-- Rollen/Berechtigungen
+- Rollen/Berechtigungen und Read-only Guards
 - Dokumente / PDF / E-Mail
 - Foto-Pipeline
+- Push-Center und Push-Receipts
+- Diagnostics/TableCore
+- Offline/PWA/Update/Rollback
 - Supabase Auth/RLS/Sync
 - Realgeräte-Push bei Push-relevanten Releases
 
-## 10. Freigabestatus
+## 11. Freigabestatus
 
 - **GRÜN:** alle verpflichtenden Gates bestanden; keine offenen Release-Blocker.
 - **GELB:** nicht-blockierende Hinweise/Optimierungen sind dokumentiert; Funktion und Sicherheit sind nicht beeinträchtigt.

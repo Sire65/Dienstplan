@@ -1,0 +1,66 @@
+name: KC DP2 V0.19.46 Deep Consolidation Package
+
+on:
+  push:
+    branches: [chore/deep-consolidation-v01945]
+    paths:
+      - '.github/workflows/package-v01946.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: chore/deep-consolidation-v01945
+          fetch-depth: 0
+      - name: Seal canonical V0.19.46 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p "require('./release/current.json').version")" = "0.19.46"
+          test "$(node -p "require('./release/current.json').releasePath")" = "release/v0.19.46/site"
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,datetime
+          site=Path('release/v0.19.46/site')
+          if not site.is_dir(): raise SystemExit('canonical V0.19.46 release tree missing')
+          mp=site/'update-manifest.json'
+          m=json.loads(mp.read_text(encoding='utf-8'))
+          if m.get('version')!='0.19.46': raise SystemExit('manifest version drift')
+          m['cacheName']='kc-dp-release-0.19.46'
+          m['releaseNotes']=[
+            'Deep Consolidation: zentrale Versionswahrheit korrigiert',
+            'Falscher Versionskonflikt-Overlay beseitigt',
+            'Datenquellenstatus zeigt bei Teilfreigaben wieder die konkrete Ursache',
+            'TÜV/Studio-Regelwerk und Deep-Regression konsolidiert',
+            'V0.19.45 bleibt unverändert als versiegelter Vorgänger erhalten'
+          ]
+          m['generatedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          total=0
+          seen=set()
+          for f in m['files']:
+              install=f.get('installPath') or f['path']
+              if install in seen: raise SystemExit(f'duplicate manifest path: {install}')
+              seen.add(install)
+              p=site/install
+              if not p.is_file(): raise SystemExit(f'manifest runtime missing: {install}')
+              b=p.read_bytes(); f['bytes']=len(b); f['sha256']=hashlib.sha256(b).hexdigest()
+              if f.get('runtime',True): total+=len(b)
+          m['totalRuntimeBytes']=total
+          mp.write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print('SEALED V0.19.46',len(m['files']),'files',total,'runtime bytes')
+          PY
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.46/site -type f -name '*.js' -print0)
+          node tests/tuev-studio-current.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.46/site/update-manifest.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'release: reseal KC DP2 V0.19.46 after deep consolidation fix'
+            git push origin HEAD:chore/deep-consolidation-v01945
+          fi
