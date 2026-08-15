@@ -1,0 +1,2 @@
+Temporary trigger for V0.19.41 real-device handtest deployment.
+Session-timeout hotfix and cache repair verified in staging run #17.

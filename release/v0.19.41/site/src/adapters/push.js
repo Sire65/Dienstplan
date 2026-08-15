@@ -12,8 +12,32 @@
   async function swRegistration(){let reg=await navigator.serviceWorker.getRegistration();if(!reg)reg=await navigator.serviceWorker.register('service-worker.js?v=0.19.41',{updateViaCache:'none'});await navigator.serviceWorker.ready;return reg;}
   const subscriptionValue=sub=>sub.toJSON?sub.toJSON():JSON.parse(JSON.stringify(sub));
   async function storeSubscription(personId,sub){const value=subscriptionValue(sub);await edge('subscribe',{subscription:value,userAgent:navigator.userAgent});K.pushSubscriptions[personId]=value;state.status='ready';state.lastError=null;return value;}
-  async function subscribe(personId=K.currentUser?.personId){if(!supported())throw new Error('Web Push wird auf diesem Gerät/Browser nicht unterstützt.');if(!personId)throw new Error('Keine personId für Push-Subscription.');const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();if(permission!=='granted')throw new Error('Push-Berechtigung wurde nicht erteilt.');const key=await serverKey(),reg=await swRegistration();let sub=await reg.pushManager.getSubscription();if(sub&&!sameApplicationServerKey(sub,key)){await sub.unsubscribe();sub=null;}if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(key)});return storeSubscription(personId,sub);}
-  async function reconcileExisting(personId=K.currentUser?.personId){if(!supported()||Notification.permission!=='granted'||!personId)return{status:'skipped'};try{const key=await serverKey(),reg=await swRegistration();let sub=await reg.pushManager.getSubscription();const remembered=!!K.pushSubscriptions?.[personId];if(!sub&&!remembered)return{status:'not_enabled'};let renewed=false;if(sub&&!sameApplicationServerKey(sub,key)){await sub.unsubscribe();sub=null;renewed=true;}if(!sub){sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(key)});renewed=true;}await storeSubscription(personId,sub);state.lastReconcileAt=new Date().toISOString();return{status:renewed?'renewed':'refreshed'};}catch(e){state.lastError=e.message;state.status='deferred';console.warn('Push-Neuregistrierung wird später erneut versucht:',e.message);return{status:'deferred',error:e.message};}}
+  async function subscribe(personId=K.currentUser?.personId){
+    if(!supported())throw new Error('Web Push wird auf diesem Gerät/Browser nicht unterstützt.');
+    if(!personId)throw new Error('Keine personId für Push-Subscription.');
+    const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+    if(permission!=='granted')throw new Error('Push-Berechtigung wurde nicht erteilt.');
+    const key=await serverKey(),reg=await swRegistration();
+    let sub=await reg.pushManager.getSubscription();
+    if(sub&&!sameApplicationServerKey(sub,key)){await sub.unsubscribe();sub=null;}
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(key)});
+    return storeSubscription(personId,sub);
+  }
+  async function reconcileExisting(personId=K.currentUser?.personId){
+    if(!supported()||Notification.permission!=='granted'||!personId)return{status:'skipped'};
+    try{
+      const key=await serverKey(),reg=await swRegistration();
+      let sub=await reg.pushManager.getSubscription();
+      const remembered=!!K.pushSubscriptions?.[personId];
+      if(!sub&&!remembered)return{status:'not_enabled'};
+      let renewed=false;
+      if(sub&&!sameApplicationServerKey(sub,key)){await sub.unsubscribe();sub=null;renewed=true;}
+      if(!sub){sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(key)});renewed=true;}
+      await storeSubscription(personId,sub);
+      state.lastReconcileAt=new Date().toISOString();
+      return{status:renewed?'renewed':'refreshed'};
+    }catch(e){state.lastError=e.message;state.status='deferred';console.warn('Push-Neuregistrierung wird später erneut versucht:',e.message);return{status:'deferred',error:e.message};}
+  }
   function hasSubscription(personId=K.currentUser?.personId){return !!K.pushSubscriptions?.[personId];}
   async function unsubscribe(personId=K.currentUser?.personId){if(supported()){const reg=await navigator.serviceWorker.getRegistration(),sub=await reg?.pushManager.getSubscription();if(sub){try{await edge('unsubscribe',{endpoint:sub.endpoint});}finally{await sub.unsubscribe();}}}delete K.pushSubscriptions[personId];return true;}
   async function send(notification,personId){state.status='sending';try{const out=await edge('send',{personIds:[personId],payload:{title:notification.title,body:notification.body,data:{...notification.data,notificationId:notification.id}}});state.status='ready';state.lastSendAt=new Date().toISOString();return {status:out.sent?'sent':'no_subscription',result:out};}catch(e){state.status='error';state.lastError=e.message;throw e;}}
@@ -30,7 +54,18 @@
   async function localTest(){if(!supported())throw new Error('Benachrichtigungen werden nicht unterstützt.');if(Notification.permission!=='granted')throw new Error('Push-Berechtigung ist nicht freigegeben.');const reg=await navigator.serviceWorker.getRegistration()||await navigator.serviceWorker.register('service-worker.js?v=0.19.41',{updateViaCache:'none'});await reg.showNotification('KC DP Test',{body:'Lokale Testnachricht. Dies bestätigt die Geräteanzeige, nicht den Server-Push.',data:{route:'notifications'}});return true;}
   function privilegedSelfTestRole(){return ['planner','duty_manager','admin'].includes(String(K.currentUser?.role||''));}
   async function sendSelfTest(){if(!privilegedSelfTestRole())throw new Error('Der Push-Test ist nur für Planung, Dienstleitung oder Admin freigegeben.');const personId=K.currentUser?.personId;if(!personId)throw new Error('Keine angemeldete Person gefunden.');const id=`SELFTEST-${Date.now()}`;const out=await send({id,title:'KC DP2 – Push-Test',body:'Server-Push an dieses Gerät. Bitte antippen.',data:{route:'personal_plan',test:true}},personId);if(out.status!=='sent')throw new Error('Für dieses Konto wurde keine aktive Push-Subscription gefunden.');return{id,result:out.result};}
-  function installReconcileHook(){let tries=0;const timer=setInterval(()=>{tries++;if(K.roleUx?.afterDataLoaded&&!K.roleUx.__pushReconcileV01941){const base=K.roleUx.afterDataLoaded;K.roleUx.afterDataLoaded=function(...args){const out=base.apply(this,args);Promise.resolve(out).finally(()=>setTimeout(()=>reconcileExisting(),0));return out;};K.roleUx.__pushReconcileV01941=true;clearInterval(timer);if(K.currentUser?.personId)setTimeout(()=>reconcileExisting(),0);}else if(tries>1500)clearInterval(timer);},20);}
+  function ensureSelfTestButton(){
+    const id='kc-dp-self-push-test';let btn=document.getElementById(id);
+    if(!privilegedSelfTestRole()){btn?.remove();return;}
+    if(btn)return;
+    btn=document.createElement('button');btn.id=id;btn.type='button';btn.textContent='🔔 Push-Test an mich';btn.setAttribute('aria-label','Push-Test an mich senden');
+    Object.assign(btn.style,{position:'fixed',right:'12px',bottom:'12px',zIndex:'2147483000',padding:'10px 12px',borderRadius:'10px',border:'1px solid rgba(0,0,0,.25)',background:'#fff',color:'#111',font:'600 14px system-ui,sans-serif',boxShadow:'0 2px 10px rgba(0,0,0,.18)'});
+    btn.addEventListener('click',async()=>{const old=btn.textContent;btn.disabled=true;btn.textContent='Sende …';try{const r=await sendSelfTest();btn.textContent='✓ Gesendet';btn.title=`Test-ID ${r.id}`;}catch(e){btn.textContent='✕ Push-Test';btn.title=e?.message||String(e);alert(`Push-Test nicht gesendet: ${e?.message||e}`);}finally{setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2500);}});
+    document.body.appendChild(btn);
+  }
+  function installSelfTestButtonHook(){let tries=0;const timer=setInterval(()=>{tries++;if(document.body){ensureSelfTestButton();if(K.currentUser?.personId&&privilegedSelfTestRole())clearInterval(timer);}if(tries>1500)clearInterval(timer);},250);window.addEventListener('focus',ensureSelfTestButton);document.addEventListener('visibilitychange',()=>{if(!document.hidden)ensureSelfTestButton();});}
+  function installReconcileHook(){let tries=0;const timer=setInterval(()=>{tries++;if(K.roleUx?.afterDataLoaded&&!K.roleUx.__pushReconcileV01941){const base=K.roleUx.afterDataLoaded;K.roleUx.afterDataLoaded=function(...args){const out=base.apply(this,args);Promise.resolve(out).finally(()=>{setTimeout(()=>reconcileExisting(),0);setTimeout(()=>ensureSelfTestButton(),0);});return out;};K.roleUx.__pushReconcileV01941=true;clearInterval(timer);if(K.currentUser?.personId)setTimeout(()=>reconcileExisting(),0);}else if(tries>1500)clearInterval(timer);},20);}
   K.pushAdapter={version:'0.19.41',state,configure,supported,subscribe,reconcileExisting,unsubscribe,hasSubscription,send,sendMany,sendSelfTest,acknowledge,deliveryStatus,scheduleSettings,publishPreview,createReplacement,getReplacement,respondReplacement,replacementAssignments,replacementSynced,localTest,edge,sameApplicationServerKey};
   installReconcileHook();
+  installSelfTestButtonHook();
 })();
