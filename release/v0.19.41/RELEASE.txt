@@ -1,0 +1,59 @@
+KC DP2 V0.19.41
+=================
+
+Basis
+-----
+Basisversion: V0.19.40
+Ziel: KC DP2 wieder vollständig auf das dedizierte Supabase-Projekt ptblnpiroqftcvlsrhac zurückführen, ohne den Live-Stand V0.19.40 vor einer vollständigen Abnahme zu überschreiben.
+
+Runtime-Änderungen
+------------------
+Es wurden gegenüber V0.19.40 ausschließlich drei Runtime-Dateien geändert:
+- src/core/integrations.js
+- src/adapters/push.js
+- src/core/update-manager.js
+
+Supabase-Ziel
+-------------
+- Das dedizierte KC-DP2-Projekt ist ptblnpiroqftcvlsrhac.
+- Future Academy (iddudrxuihdodnvejxcp) ist kein KC-DP2-Runtime-Ziel mehr.
+- Bereits lokal gespeicherte Academy-Konfigurationen werden beim Laden automatisch auf das dedizierte KC-DP2-Projekt migriert.
+
+Datenbank-Rückführung
+---------------------
+- Fehlende spätere KC-DP2-Schemabausteine wurden im dedizierten Projekt ergänzt: Mehrgeräte-Sync, Konfliktjournal, Push-Basis, Push-Bestätigungen, Nacht-Push-Datentabellen und Vertretungsworkflow.
+- Der verschlüsselte Syncbestand wurde kontrolliert abgeglichen.
+- Ergebnis im dedizierten Projekt: 54 Sync-Operationen, Sequenzbereich 1 bis 56 und 27 Entity-Versionen.
+- Die acht fehlenden verschlüsselten Operationen wurden anhand ihrer stabilen operation_id übernommen; die projektspezifische Auth-UUID wurde auf den vorhandenen KC-DP2-Admin gemappt.
+- Testkonflikte, eine abgelaufene Test-Vertretungsanfrage und alte Push-Abonnements wurden bewusst nicht übernommen.
+
+Push
+----
+- Die Edge Function kc-dp-push ist im dedizierten Projekt installiert; ihr Code entspricht der geprüften bisherigen Funktion.
+- Alte Browser-Push-Abonnements werden nicht zwischen Supabase-Projekten kopiert.
+- V0.19.41 prüft nach Anmeldung bei bereits erteilter Push-Berechtigung still den aktuellen VAPID-Key. Bei einem Key-Wechsel wird das Geräteabo automatisch erneuert, ohne eine neue Browser-Berechtigungsabfrage auszulösen.
+- Die manuelle Push-Aktivierung fordert weiterhin regulär die Browserberechtigung an.
+
+Sicherheitsgrenze vor Produktivfreigabe
+---------------------------------------
+- Der private VAPID-Schlüssel wurde nicht in GitHub, Quellcode oder Migrationen geschrieben.
+- Die produktiven VAPID-Secrets des dedizierten Projekts sind noch nicht gesetzt.
+- Der Nacht-Push-Cron ist im dedizierten Projekt noch nicht aktiviert.
+- Deshalb darf V0.19.41 noch nicht auf main bzw. GitHub Pages veröffentlicht werden.
+
+Abnahme
+-------
+Der isolierte Staginglauf prüft:
+- dediziertes Supabase-Ziel und Migration alter Academy-Konfigurationen
+- Push-Reconcile ohne unerlaubte Berechtigungsabfrage
+- Smartphone-Tagesansicht
+- Wunsch -> Soll -> Ist
+- Dokumente / PDF / E-Mail
+- Foto-Pipeline
+- Rollen- und Berechtigungsmatrix
+
+Der vollständige Staginglauf #3 war erfolgreich; die Rollenmatrix bestand 30/30 Prüfungen.
+
+Freigaberegel
+-------------
+Erst nach sicherem Setzen der VAPID-Secrets, einem echten Push-Test im dedizierten Projekt und erneut vollständig grüner Regression darf der Draft-PR freigegeben und V0.19.41 veröffentlicht werden.

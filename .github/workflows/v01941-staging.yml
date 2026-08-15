@@ -1,0 +1,164 @@
+name: KC DP2 V0.19.41 Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/dedicated-supabase-v01941
+    paths:
+      - 'release/v0.19.41/**'
+      - 'tests/dedicated-supabase-e2e.js'
+      - '.github/workflows/v01941-staging.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kc-dp2-v01941-staging
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Static architecture and syntax checks
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('release/v0.19.41/site')
+          integ=(root/'src/core/integrations.js').read_text(encoding='utf-8')
+          push=(root/'src/adapters/push.js').read_text(encoding='utf-8')
+          upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
+          session=(root/'src/core/session.js').read_text(encoding='utf-8')
+          sw=(root/'service-worker.js').read_text(encoding='utf-8')
+          assert "DEDICATED_REF='ptblnpiroqftcvlsrhac'" in integ
+          assert "profile:'KC_DP_DEDICATED_PROJECT'" in integ
+          assert "version:'0.19.41'" in integ
+          assert "LEGACY_REFS=['iddudrxuihdodnvejxcp'" in integ
+          assert "version:'0.19.41'" in push
+          assert 'reconcileExisting' in push
+          assert 'sameApplicationServerKey' in push
+          assert "service-worker.js?v=0.19.41" in push
+          start=push.index('async function reconcileExisting')
+          end=push.index('function hasSubscription',start)
+          assert 'Notification.requestPermission' not in push[start:end], 'Auto-Reconcile darf keine Berechtigungsabfrage auslösen'
+          sub_start=push.index('async function subscribe')
+          sub_end=push.index('async function reconcileExisting',sub_start)
+          assert 'Notification.requestPermission' in push[sub_start:sub_end], 'Manuelle Aktivierung muss Berechtigung weiterhin anfordern'
+          assert "CURRENT_RELEASE='0.19.41'" in upd
+          assert "version:'0.19.41'" in upd
+          assert 'service-worker.js?v=0.19.41-engine' in upd
+          assert "version:'0.18.1'" in session
+          assert "if(state.provider==='supabase')return false;" in session
+          assert "const ENGINE='kc-dp-update-engine-v1.1'" in sw
+          assert 'async function refreshForcedRuntime' in sw
+          assert 'x.forceRefresh===true' in sw
+          assert 'await sha256Hex(buffer)' in sw
+          assert 'meta=await refreshForcedRuntime(meta)' in sw
+          print('V0.19.41 Architektur, Push-Sicherheit, Supabase-Session und Cache-Hotfix: PASS')
+          PY
+          node --check release/v0.19.41/site/src/core/integrations.js
+          node --check release/v0.19.41/site/src/adapters/push.js
+          node --check release/v0.19.41/site/src/core/update-manager.js
+          node --check release/v0.19.41/site/src/core/session.js
+          node --check release/v0.19.41/site/service-worker.js
+          node --check tests/dedicated-supabase-e2e.js
+
+      - name: Verify V0.19.41 manifest and byte baseline
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+
+          base=Path('release/v0.19.40/site')
+          root=Path('release/v0.19.41/site')
+          manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          expected={
+            'src/core/integrations.js': (2653,'303a43ce771bbe4275cd3774fc380829f0b5dfff0f3efca00a3b78be8998b2c2'),
+            'src/adapters/push.js': (9385,'d6c8cd72b50071de744939ff09d633bc41bbe4f47b3e4582c09916a5dfb8056f'),
+            'src/core/update-manager.js': (12270,'3fa40ccf962f10c0fc177a7f7a3ff4f7b75e6c70faeac170421e6ddcfe26d477'),
+            'src/core/session.js': (2590,'1402a8021f24fb0ae38c0acb42bf8cf4802c64b0946f9aec98f9d44c56954dff'),
+          }
+          assert manifest['schema']=='KC_DP_UPDATE_MANIFEST_V1'
+          assert manifest['app']=='KC DP2'
+          assert manifest['version']=='0.19.41'
+          assert manifest['cacheName']=='kc-dp-release-0.19.41'
+          assert manifest['totalRuntimeBytes']==26898
+          files={x['path']:x for x in manifest['files'] if x.get('runtime') is not False}
+          assert set(files)==set(expected), f'Unerwartete Manifest-Dateien: {sorted(files)}'
+          assert files['src/core/session.js'].get('forceRefresh') is True, 'Session-Hotfix muss Cache-Refresh erzwingen'
+
+          actuals={}
+          for rel in expected:
+            data=(root/rel).read_bytes()
+            actuals[rel]=(len(data),hashlib.sha256(data).hexdigest())
+            print(f'KC_META {rel} bytes={len(data)} sha256={actuals[rel][1]}')
+          errors=[]
+          for rel,(size,sha) in expected.items():
+            actual_size,actual_sha=actuals[rel]
+            if actual_size!=size: errors.append(f'{rel}: bytes {actual_size} != {size}')
+            if actual_sha!=sha: errors.append(f'{rel}: SHA {actual_sha} != {sha}')
+            if files[rel]['bytes']!=size: errors.append(f'{rel}: Manifest bytes {files[rel]["bytes"]} != {size}')
+            if files[rel]['sha256']!=sha: errors.append(f'{rel}: Manifest SHA {files[rel]["sha256"]} != {sha}')
+            if files[rel]['installPath']!=rel: errors.append(f'{rel}: installPath falsch')
+          if errors: raise AssertionError('\n'.join(errors))
+
+          base_files={p.relative_to(base).as_posix() for p in base.rglob('*') if p.is_file()}
+          new_files={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
+          assert base_files==new_files, 'V0.19.41 darf keine unerwarteten Site-Dateien hinzufügen/entfernen'
+          allowed=set(expected)|{'update-manifest.json','service-worker.js'}
+          changed=[]
+          for rel in sorted(base_files):
+            if (base/rel).read_bytes()!=(root/rel).read_bytes(): changed.append(rel)
+          assert set(changed)==allowed, f'Unerwartete Abweichungen zu V0.19.40: {changed}'
+          print('V0.19.41 Manifest, Hashes, Byte-Baseline und Cache-Hotfix: PASS')
+          PY
+
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start isolated V0.19.41 server
+        shell: bash
+        run: |
+          cd release/v0.19.41/site
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/kcdp-v01941.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-v01941.log
+          exit 1
+
+      - name: Dedicated Supabase browser regression
+        run: node tests/dedicated-supabase-e2e.js
+
+      - name: Inherited smartphone regression
+        run: node tests/mobile-smoke.js
+
+      - name: Inherited Wunsch Soll Ist regression
+        run: node tests/workflow-e2e.js
+
+      - name: Inherited documents regression
+        run: node tests/documents-e2e.js
+
+      - name: Inherited photo pipeline regression
+        run: node tests/photo-pipeline-e2e.js
+
+      - name: Inherited roles regression
+        run: node tests/roles-e2e.js
+
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/kcdp-v01941.log || true
