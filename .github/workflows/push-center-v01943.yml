@@ -1,0 +1,37 @@
+name: KC DP2 V0.19.43 Push Center Gate
+
+on:
+  push:
+    branches: [feature/install-invite-v01943]
+    paths:
+      - 'release/v0.19.42/site/src/ui/push-center.js'
+      - 'release/v0.19.42/site/src/ui/push-center.css'
+      - 'release/v0.19.42/site/src/ui/source-health-ui.js'
+      - 'tests/push-center-v01943-gate.js'
+      - '.github/workflows/push-center-v01943.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'release/v0.19.42/site/src/ui/push-center.js'
+      - 'release/v0.19.42/site/src/ui/push-center.css'
+      - 'release/v0.19.42/site/src/ui/source-health-ui.js'
+      - 'tests/push-center-v01943-gate.js'
+      - '.github/workflows/push-center-v01943.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  push-center-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check release/v0.19.42/site/src/ui/push-center.js
+          node --check release/v0.19.42/site/src/ui/source-health-ui.js
+      - name: Push Center Gate
+        run: node tests/push-center-v01943-gate.js
