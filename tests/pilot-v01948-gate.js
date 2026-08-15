@@ -1,0 +1,22 @@
+const fs=require('fs'),path=require('path');
+const current=require('../release/current.json');
+if(current.version!=='0.19.48') throw new Error('current release is not V0.19.48');
+const root=path.join(__dirname,'..',current.releasePath);
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const html=read('pilot/index.html');
+const app=read('src/ui/pilot-app.js');
+const core=read('src/core/pilot-onboarding.js');
+const ios=JSON.parse(read('pilot/manifest-ios.webmanifest'));
+function must(v,m){if(!v)throw new Error(m)}
+must(/manifest-ios\.webmanifest/.test(html),'iOS manifest selector missing');
+must(!/pilotInstalledBtn/.test(html),'manual installed confirmation must not exist');
+must(!Object.prototype.hasOwnProperty.call(ios,'start_url'),'iOS manifest must preserve installing document URL');
+must(ios.scope==='./','iOS pilot scope must stay isolated');
+must(/WhatsApp\|FBAN\|FBAV\|Instagram/.test(app),'in-app browser guidance missing');
+must(/In Safari öffnen/.test(app),'Safari handoff instruction missing');
+must(/return P\.installed\(\)/.test(app),'standalone install detection missing');
+must(/Einmal neu und richtig verbinden/.test(app),'missing-token recovery flow missing');
+must(/kc_dp_pilot_token_v01948/.test(app),'V0.19.48 token persistence missing');
+must(/version:'0\.19\.48'/.test(core),'pilot core version mismatch');
+must(/Erst wenn die Browserleiste verschwunden ist/.test(app),'visual iPhone standalone cue missing');
+console.log('KC DP2 V0.19.48 guided pilot gate: PASS');
