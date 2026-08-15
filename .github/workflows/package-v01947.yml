@@ -1,0 +1,74 @@
+name: KC DP2 V0.19.47 Pilot Package
+on:
+  push:
+    branches: [feature/pilot-onboarding-v01947]
+    paths: ['.github/workflows/package-v01947.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/pilot-onboarding-v01947
+          fetch-depth: 0
+      - name: Create canonical V0.19.47 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release/v0.19.47
+          cp -a release/v0.19.46 release/v0.19.47
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,datetime
+          root=Path('release/v0.19.47/site')
+          def repl(rel,a,b):
+              p=root/rel;s=p.read_text(encoding='utf-8')
+              if a not in s: print('WARN marker missing',rel,a)
+              p.write_text(s.replace(a,b),encoding='utf-8')
+          repl('index.html','V0.19.46','V0.19.47')
+          repl('index.html',"EXPECTED='0.19.46'","EXPECTED='0.19.47'")
+          repl('src/core/model.js',"K.VERSION='0.19.46'","K.VERSION='0.19.47'")
+          repl('src/core/update-manager.js',"CURRENT_RELEASE='0.19.46'","CURRENT_RELEASE='0.19.47'")
+          repl('src/core/update-manager.js',"version:'0.19.46'","version:'0.19.47'")
+          repl('src/adapters/push.js','service-worker.js?v=0.19.46','service-worker.js?v=0.19.47')
+          repl('src/adapters/push.js',"version:'0.19.46'","version:'0.19.47'")
+          repl('src/ui/kc-ux-polish.js','0.19.46','0.19.47')
+          repl('src/ui/source-health-ui.js',"K.sourceHealthUi={version:'0.19.46'","K.sourceHealthUi={version:'0.19.47'")
+          repl('src/ui/source-health-ui.js','kc-ux-polish.css?v=0.19.46','kc-ux-polish.css?v=0.19.47')
+          repl('src/ui/source-health-ui.js','kc-ux-polish.js?v=0.19.46','kc-ux-polish.js?v=0.19.47')
+          mp=root/'update-manifest.json';m=json.loads(mp.read_text(encoding='utf-8'))
+          m['version']='0.19.47';m['cacheName']='kc-dp-release-0.19.47';m['releaseNotes']=[
+            'Pilotbetrieb für externe Testpersonen ohne Köcheclub-Mitgliedschaft',
+            'Isolierte iPhone-/Android-PWA für Installation und Push-Test',
+            'Persönliche Token-Einladung ohne Zugriff auf Dienstplan oder Mitgliederdaten',
+            'Push-Erfolg zählt erst nach tatsächlichem Öffnen der Testnachricht',
+            'Abschluss-Push mit Dank und gerätespezifischer Deinstallationshilfe'
+          ];m['generatedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          pilot=['pilot/index.html','pilot/manifest.webmanifest','pilot-sw.js','src/core/pilot-onboarding.js','src/ui/pilot-app.js','src/ui/pilot.css']
+          existing={f.get('installPath') or f['path'] for f in m['files']}
+          for p in pilot:
+              if p not in existing:m['files'].append({'path':p,'installPath':p,'runtime':True})
+          total=0;seen=set()
+          for f in m['files']:
+              install=f.get('installPath') or f['path']
+              if install in seen: raise SystemExit('duplicate manifest path '+install)
+              seen.add(install);p=root/install
+              if not p.is_file(): raise SystemExit('manifest file missing '+install)
+              b=p.read_bytes();f['bytes']=len(b);f['sha256']=hashlib.sha256(b).hexdigest()
+              if f.get('runtime',True): total+=len(b)
+          m['totalRuntimeBytes']=total;mp.write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/current.json').write_text(json.dumps({'app':'KC DP2','version':'0.19.47','mode':'verified-direct-site','baseVersion':'0.19.46','previousVersion':'0.19.46','releasePath':'release/v0.19.47/site'},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/v0.19.47/RELEASE.txt').write_text('KC DP2 V0.19.47\n================\n\nPilotbetrieb: isolierte Test-PWA für iPhone/Android, Push-Onboarding und Abschlussprozess.\n',encoding='utf-8')
+          print('SEALED V0.19.47',len(m['files']),'files',total,'runtime bytes')
+          PY
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.47/site -type f -name '*.js' -print0)
+          node tests/pilot-v01947-gate.js
+          node tests/tuev-studio-current.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.47 release/current.json
+          git commit -m 'release: create canonical KC DP2 V0.19.47 pilot tree'
+          git push origin HEAD:feature/pilot-onboarding-v01947

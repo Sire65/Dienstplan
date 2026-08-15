@@ -23,18 +23,19 @@ jobs:
         with:
           node-version: 22
 
-      - name: Resolve canonical V0.19.46 release
+      - name: Resolve canonical current release
         id: release
         shell: bash
         run: |
           set -euo pipefail
           VERSION="$(node -p "require('./release/current.json').version")"
           RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
-          test "$VERSION" = "0.19.46"
-          test "$RELEASE_PATH" = "release/v0.19.46/site"
+          test "$RELEASE_PATH" = "release/v${VERSION}/site"
+          test -f "$RELEASE_PATH/index.html"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Verify canonical V0.19.46 release
+      - name: Verify canonical current release
         shell: bash
         run: |
           set -euo pipefail
@@ -42,6 +43,7 @@ jobs:
           node tests/ux-current-gate.js
           node tests/diagnostics-v01944-gate.js
           node tests/push-center-v01943-gate.js
+          node tests/pilot-v01947-gate.js
           ROOT="${{ steps.release.outputs.path }}"
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
 

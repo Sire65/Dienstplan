@@ -1,0 +1,4 @@
+KC DP2 V0.19.47
+================
+
+Pilotbetrieb: isolierte Test-PWA für iPhone/Android, Push-Onboarding und Abschlussprozess.

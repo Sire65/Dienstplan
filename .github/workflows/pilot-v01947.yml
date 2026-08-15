@@ -1,0 +1,31 @@
+name: KC DP2 V0.19.47 Pilot Gate
+on:
+  push:
+    branches: [feature/pilot-onboarding-v01947]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  pilot-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Resolve canonical current release
+        id: release
+        shell: bash
+        run: |
+          RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Pilot syntax and security contract
+        run: |
+          ROOT="${{ steps.release.outputs.path }}"
+          node --check tests/pilot-v01947-gate.js
+          node --check "$ROOT/src/core/pilot-onboarding.js"
+          node --check "$ROOT/src/ui/pilot-app.js"
+          node --check "$ROOT/pilot-sw.js"
+          node tests/pilot-v01947-gate.js
