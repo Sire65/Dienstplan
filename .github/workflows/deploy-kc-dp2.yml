@@ -23,24 +23,25 @@ jobs:
         with:
           node-version: 22
 
-      - name: Verify canonical V0.19.44 release
+      - name: Verify canonical V0.19.45 release
         shell: bash
         run: |
           set -euo pipefail
-          node tests/release-v01944-gate.js
-          node tests/diagnostics-v01944-gate.js
-          node tests/push-center-v01943-gate.js
-          node --check release/v0.19.44/site/service-worker.js
-          node --check release/v0.19.44/site/src/adapters/push.js
-          node --check release/v0.19.44/site/src/core/update-manager.js
-          node --check release/v0.19.44/site/src/core/table-core-adapter.js
-          node --check release/v0.19.44/site/src/adapters/diagnostics.js
-          node --check release/v0.19.44/site/src/ui/diagnostics-center.js
+          node tests/release-v01945-gate.js
+          node tests/ux-polish-v01945-gate.js
+          node --check release/v0.19.45/site/service-worker.js
+          node --check release/v0.19.45/site/src/adapters/push.js
+          node --check release/v0.19.45/site/src/core/update-manager.js
+          node --check release/v0.19.45/site/src/core/table-core-adapter.js
+          node --check release/v0.19.45/site/src/adapters/diagnostics.js
+          node --check release/v0.19.45/site/src/ui/diagnostics-center.js
+          node --check release/v0.19.45/site/src/ui/kc-ux-polish.js
+          node --check release/v0.19.45/site/src/ui/source-health-ui.js
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: release/v0.19.44/site
+          path: release/v0.19.45/site
 
   deploy:
     needs: verify
