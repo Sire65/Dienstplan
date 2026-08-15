@@ -1,6 +1,6 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
-  K.VERSION='0.19.49';
+  K.VERSION='0.19.50';
 
   const peopleData=[
     ['Frank Brösel','Vorne · Flex','member'],['Hans-Joachim Koch','Vorne · Hinten · Verantwortung','member'],['Dieter Zander','Hinten · Flex','member'],['Klaus Zander','Vorne','member'],

@@ -1,6 +1,6 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
-  const CURRENT_RELEASE='0.19.49';
+  const CURRENT_RELEASE='0.19.50';
   const MANIFEST_URL='update-manifest.json';
   const SNOOZE_MS=12*60*60*1000;
   const REPORT_QUEUE_KEY='kc_dp_pending_update_reports_v1';

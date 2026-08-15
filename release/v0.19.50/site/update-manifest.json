@@ -1,23 +1,22 @@
 {
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
-  "version": "0.19.49",
-  "cacheName": "kc-dp-release-0.19.49",
+  "version": "0.19.50",
+  "cacheName": "kc-dp-release-0.19.50",
   "releaseNotes": [
-    "Pilot-Abschluss-Push kann bei Bedarf erneut gesendet werden",
-    "Pilot-Subscription bleibt bis zur echten Öffnungsbestätigung aktiv",
-    "Dankes-Push meldet Öffnung serverseitig als completion_received zurück",
-    "Digitaler Dank mit Blumenstrauß für Pilot-Tester",
-    "Pilot-Service-Worker-Cache auf V0.19.49 erneuert"
+    "Handyfunktion Kollegen suchen repariert und fest verdrahtet",
+    "Mobile Kollegensuche nach Name und Qualifikation",
+    "Direkter Anruf nur bei hinterlegter Telefonnummer",
+    "Kollegensuche bleibt read-only und verändert keine Dienstplandaten"
   ],
-  "generatedAt": "2026-08-15T20:48:46.185693+00:00",
-  "totalRuntimeBytes": 417106,
+  "generatedAt": "2026-08-15T21:40:09.142957+00:00",
+  "totalRuntimeBytes": 422425,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
       "bytes": 11201,
-      "sha256": "04267e2b3aabdbf89eec77eb4c20b33fd5573004e1cc7b1696a8de262b67a821",
+      "sha256": "9e47b49d9be8eecbac564a934ba4d77f8de78327b6d3103da821e0aa0ac64928",
       "runtime": true
     },
     {
@@ -38,7 +37,7 @@
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
       "bytes": 10360,
-      "sha256": "dd3cba07e9f6fe2f54cfc2ad0cb6a3845207ec84ad606537916b43fb781dad1f",
+      "sha256": "0538d167f51e2227b9873a8c504cc3c0fead69f2dace3724ca1d30d6b48ad8f2",
       "runtime": true
     },
     {
@@ -115,7 +114,7 @@
       "path": "src/core/update-manager.js",
       "installPath": "src/core/update-manager.js",
       "bytes": 12270,
-      "sha256": "9356121d168584af784d23c495deeda28b074eb594748857d0bee28a66f860f9",
+      "sha256": "66d4f48c9eb358cc78018d9ec476e6997a07c8d8a1f0ff81869650c0ab5fefc8",
       "runtime": true
     },
     {
@@ -177,8 +176,8 @@
     {
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
-      "bytes": 4758,
-      "sha256": "ad59c88209c0c912d95a6f54dc4a41914a132bd585bfa9145ca12d23c07b556e",
+      "bytes": 4922,
+      "sha256": "64babafc9b649ceca94c921e1b1ed0af11726a94999bee5f6a159c77e03bf74f",
       "runtime": true
     },
     {
@@ -235,7 +234,7 @@
       "installPath": "src/ui/kc-ux-polish.js",
       "runtime": true,
       "bytes": 3028,
-      "sha256": "10d84380b903d60e5741b83a6331e1e4604624a5caec5370f7a2d9ec3d76285f"
+      "sha256": "e534fb5165ffae9ad3af6a46536cd231be07e7b5301c1f28fed2435af8d760df"
     },
     {
       "path": "pilot/index.html",
@@ -285,6 +284,13 @@
       "runtime": true,
       "bytes": 389,
       "sha256": "6638b03baacd27ffd197d844370347636f3e7d608216b7373672a0042d670f08"
+    },
+    {
+      "path": "src/ui/mobile-colleague-search.js",
+      "installPath": "src/ui/mobile-colleague-search.js",
+      "bytes": 5155,
+      "sha256": "c18d70cc5603626ef64ee0a937676cc6b2bb22b9afe46ed27615aee48a4a8c11",
+      "runtime": true
     }
   ]
 }

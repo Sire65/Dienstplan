@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>KC DP2 V0.19.49</title>
+  <title>KC DP2 V0.19.50</title>
   <meta name="theme-color" content="#741521">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -76,7 +76,7 @@
         <button type="button" class="plan-chip color-legend-trigger" id="colorLegendBtn" title="Bedeutung der Dienstplanfarben">◉ Farben</button>
       </div>
       <div class="message-row plan-message-inline" id="messageRow" aria-live="polite">
-        <span id="messageText">KC DP2 V0.19.49 – Dienstplanung bereit.</span>
+        <span id="messageText">KC DP2 V0.19.50 – Dienstplanung bereit.</span>
         <button type="button" id="undoBtn" class="link-btn hidden">↶</button><button type="button" id="redoBtn" class="link-btn hidden">↷</button><button type="button" id="messagesBtn" class="link-btn">Meldungen ▾</button>
       </div>
     </div>
@@ -155,7 +155,7 @@
 
 <script>
 (function(){
-  const EXPECTED='0.19.49';
+  const EXPECTED='0.19.50';
   const actual=window.KC_DP?.VERSION||window.KCDP?.VERSION||window.KC_DP_VERSION||'';
   if(actual && actual!==EXPECTED){
     document.body.insertAdjacentHTML('afterbegin','<div id="releaseMismatch" style="position:fixed;z-index:99999;left:12px;right:12px;top:12px;padding:14px 18px;border:2px solid #c62828;border-radius:10px;background:#fff3f3;color:#8b0000;font:700 15px Arial,sans-serif;box-shadow:0 4px 18px #0003">⚠ Versionskonflikt: Oberfläche '+EXPECTED+' erwartet, geladen ist '+actual+'. Bitte diesen Ordner neu öffnen; alte Browserdateien werden nicht verwendet.</div>');
