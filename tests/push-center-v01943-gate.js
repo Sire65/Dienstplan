@@ -1,6 +1,6 @@
 const fs=require('fs');
 const path=require('path');
-const root=path.join(__dirname,'..','release','v0.19.42','site');
+const root=path.join(__dirname,'..','release','v0.19.44','site');
 const js=fs.readFileSync(path.join(root,'src','ui','push-center.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'src','ui','push-center.css'),'utf8');
 const source=fs.readFileSync(path.join(root,'src','ui','source-health-ui.js'),'utf8');
@@ -26,4 +26,4 @@ must(/appinstalled/,'Installationsabschluss fehlt');
 mustSource(/push-center\.js/,'Push-Center Loader fehlt');
 mustSource(/push-center\.css/,'Push-Center CSS Loader fehlt');
 if(!/kc-push-center/.test(css)||!/kc-install-overlay/.test(css))throw new Error('Push-Center CSS unvollständig');
-console.log('KC DP2 V0.19.43 Push Center Gate: PASS');
+console.log('KC DP2 V0.19.44 Push Center Gate: PASS');
