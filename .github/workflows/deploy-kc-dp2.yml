@@ -14,6 +14,7 @@ concurrency:
   group: kc-dp2-pages-main
   cancel-in-progress: false
 
+# Deploy source includes the verified V0.19.41 push-receipt service-worker hotfix.
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -45,6 +46,7 @@ jobs:
           node --check release/v0.19.41/site/src/core/integrations.js
           node --check release/v0.19.41/site/src/adapters/push.js
           node --check release/v0.19.41/site/src/core/update-manager.js
+          node --check release/v0.19.41/site/service-worker.js
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
