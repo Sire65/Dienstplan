@@ -1,0 +1,23 @@
+const fs=require('fs'),path=require('path');
+const current=require('../release/current.json');
+const root=path.join(__dirname,'..',current.releasePath);
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const html=read('index.html'),css=read('src/ui/kc-ux-polish.css'),js=read('src/ui/kc-ux-polish.js'),loader=read('src/ui/source-health-ui.js'),mobile=read('src/ui/mobile-day.css'),mobileJs=read('src/ui/mobile-day.js'),model=read('src/core/model.js'),update=read('src/core/update-manager.js');
+function must(cond,msg){if(!cond)throw new Error(msg)}
+const v=current.version.replaceAll('.','\\.');
+must(new RegExp(`<title>KC DP2 V${v}<\\/title>`).test(html),'HTML-Titel nicht aktuelle Version');
+must(new RegExp(`KC DP2 V${v} – Dienstplanung bereit\\.`).test(html),'Startmeldung nicht aktuelle Version');
+must(new RegExp(`EXPECTED='${v}'`).test(html),'Versionskonflikt-Guard nicht aktuelle Version');
+must(model.includes(`K.VERSION='${current.version}'`),'Globale Runtime-Version nicht aktuelle Version');
+must(update.includes(`CURRENT_RELEASE='${current.version}'`),'Update-Manager nicht aktuelle Version');
+must(!/KC DP V0\.17\.10 – kompakte Plansteuerung bereit\./.test(html),'Alte sichtbare Versionsmeldung vorhanden');
+must(/--kc-bordeaux:#7a1420/.test(css)&&/--kc-gold:#bd8d33/.test(css),'KC Bordeaux/Gold Design fehlt');
+must(/\.matrix-cell\.good|matrix/.test(css),'Planmatrix-Styles nicht berücksichtigt');
+must(/kc-tech-simple/.test(js)&&/Daten gespeichert/.test(js),'Vereinfachter Speicherstatus fehlt');
+must(/new Set\(\['admin'\]\)/.test(js),'Admin-Technikrolle fehlt');
+must(/Mitglied oder Dienst suchen/.test(js),'Verständliche Suche fehlt');
+must(loader.includes(`kc-ux-polish.css?v=${current.version}`)&&loader.includes(`kc-ux-polish.js?v=${current.version}`),'UX-Polish Loader nicht auf aktuelle Version cache-busted');
+must(/--name-w:78px/.test(mobile),'Schmale Handy-Namenspalte fehlt');
+must(/Liste/.test(mobileJs)&&/Balken/.test(mobileJs),'Handy Liste/Balken Umschaltung fehlt');
+must(/48px/.test(mobile),'Handy Touch-Navigation nicht ausreichend');
+console.log(`KC DP2 V${current.version} current UX/version-truth gate: PASS`);
