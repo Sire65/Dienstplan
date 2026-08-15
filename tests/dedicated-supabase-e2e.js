@@ -2,7 +2,9 @@ const { chromium } = require('playwright');
 const assert = require('assert');
 
 (async()=>{
-  const browser=await chromium.launch({headless:true});
+  const launchOptions={headless:true};
+  if(process.env.KC_PLAYWRIGHT_CHANNEL)launchOptions.channel=process.env.KC_PLAYWRIGHT_CHANNEL;
+  const browser=await chromium.launch(launchOptions);
   const context=await browser.newContext({viewport:{width:1280,height:800},locale:'de-DE'});
   const page=await context.newPage();
   await page.route('https://*.supabase.co/**',route=>route.abort());
