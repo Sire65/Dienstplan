@@ -10,7 +10,7 @@
     "Supabase-Anmeldungen werden nicht mehr durch den lokalen 10-Minuten-Demo-Timeout künstlich abgemeldet; die Cloud-Sitzung nutzt ihren Access-/Refresh-Token-Lebenszyklus",
     "Planung, Smartphone-Ansicht, Dokumente, Foto-Pipeline und Rollenmodell bleiben unverändert und wurden regressionsgeprüft"
   ],
-  "generatedAt": "2026-08-15T10:12:00+02:00",
+  "generatedAt": "2026-08-15T10:16:00+02:00",
   "totalRuntimeBytes": 29563,
   "files": [
     {
@@ -24,7 +24,7 @@
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
       "bytes": 12050,
-      "sha256": "513f1e27e3a1219daf5bea336b283ea4fc6041487511707fe5a392b549845947",
+      "sha256": "b8aed8bd1dcc6319db51c8441a9b5749ccd195e5739be9af64f1ee8b8c2cf732",
       "runtime": true
     },
     {
