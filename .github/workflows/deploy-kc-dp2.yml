@@ -14,7 +14,7 @@ concurrency:
   group: kc-dp2-pages-main
   cancel-in-progress: false
 
-# Deploy source includes the verified V0.19.41 push-receipt service-worker hotfix and privileged self-push test button.
+# Deploy source includes the verified V0.19.41 push-receipt service-worker hotfix, privileged self-push test button, and push-adapter cache refresh hotfix.
 jobs:
   verify:
     runs-on: ubuntu-latest
