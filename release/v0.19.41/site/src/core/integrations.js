@@ -1,5 +1,6 @@
 (function(){
  const K=window.KCDP=window.KCDP||{},clone=v=>JSON.parse(JSON.stringify(v));
+ if(!window.XLSX&&document.readyState==='loading')document.write('<script src="src/adapters/xlsx-local.js?v=0.19.42"><\/script>');
  const DEDICATED_REF='ptblnpiroqftcvlsrhac';
  const DEDICATED_URL=`https://${DEDICATED_REF}.supabase.co`;
  const DEDICATED_KEY='sb_publishable_SqXIeGN-clcZ4gjmpLdSww_4DLfyy24';
@@ -33,5 +34,5 @@
   if(migrated)sb.migratedFrom=legacy?'FUTURA_SHARED_PROJECT':'NON_DEDICATED_CONFIG';
   return {pcManager:{...defaults.pcManager,...(x.pcManager||{})},supabase:sb};
  }
- K.integrations={version:'0.19.41',defaults:clone(defaults),snapshot(){return normalize(K.integrationConfig)},restore(cfg){K.integrationConfig=normalize(cfg);return this.snapshot();},update(section,patch){if(!defaults[section])throw new Error('Unbekannte Integration.');const merged=normalize(K.integrationConfig);merged[section]={...merged[section],...clone(patch||{})};K.integrationConfig=normalize(merged);K.recordAudit?.('integration.config.update',{entity:'integration_config',entityId:section,after:{...K.integrationConfig[section],publishableKey:section==='supabase'&&K.integrationConfig[section].publishableKey?'***gesetzt***':undefined}});return clone(K.integrationConfig[section]);}};
+ K.integrations={version:'0.19.42',defaults:clone(defaults),snapshot(){return normalize(K.integrationConfig)},restore(cfg){K.integrationConfig=normalize(cfg);return this.snapshot();},update(section,patch){if(!defaults[section])throw new Error('Unbekannte Integration.');const merged=normalize(K.integrationConfig);merged[section]={...merged[section],...clone(patch||{})};K.integrationConfig=normalize(merged);K.recordAudit?.('integration.config.update',{entity:'integration_config',entityId:section,after:{...K.integrationConfig[section],publishableKey:section==='supabase'&&K.integrationConfig[section].publishableKey?'***gesetzt***':undefined}});return clone(K.integrationConfig[section]);}};
 })();
