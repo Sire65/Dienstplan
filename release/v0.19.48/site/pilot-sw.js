@@ -1,4 +1,4 @@
-const CACHE='kc-dp2-pilot-v01947';
+const CACHE='kc-dp2-pilot-v01949';
 const SHELL=['./pilot/index.html','./pilot/manifest.webmanifest','./src/ui/pilot.css','./src/ui/pilot-app.js','./src/core/pilot-onboarding.js','./assets/kc-dp2-apple-touch-icon.png'];
 self.addEventListener('install',event=>event.waitUntil((async()=>{const c=await caches.open(CACHE);await c.addAll(SHELL);await self.skipWaiting()})()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith('kc-dp2-pilot-')&&k!==CACHE)await caches.delete(k);await self.clients.claim()})()));
