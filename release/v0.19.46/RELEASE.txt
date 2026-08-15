@@ -1,0 +1,4 @@
+KC-DP2 0.19.46 – Deep Consolidation
+
+Fix: zentrale Versionswahrheit auf V0.19.46; kein falscher Versionskonflikt-Overlay.
+TÜV/Studio- und Regression-Infrastruktur versionsübergreifend konsolidiert.
