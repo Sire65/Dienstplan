@@ -18,5 +18,11 @@ jobs:
         run: |
           node --check release/v0.19.45/site/src/ui/kc-ux-polish.js
           node --check release/v0.19.45/site/src/ui/source-health-ui.js
+          node --check release/v0.19.45/site/src/ui/push-center.js
+          node --check release/v0.19.45/site/src/adapters/diagnostics.js
+          node --check release/v0.19.45/site/src/ui/diagnostics-center.js
+          node --check release/v0.19.45/site/src/core/table-core-adapter.js
       - name: UX Polish Gate
         run: node tests/ux-polish-v01945-gate.js
+      - name: Canonical release integrity
+        run: node tests/release-v01945-gate.js
