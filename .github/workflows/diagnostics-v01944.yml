@@ -1,0 +1,21 @@
+name: KC DP2 V0.19.44 Diagnostics Gate
+on:
+  push:
+    branches: [feature/error-diagnostics-v01944]
+  pull_request:
+    branches: [main]
+jobs:
+  diagnostics-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check release/v0.19.42/site/src/adapters/diagnostics.js
+          node --check release/v0.19.42/site/src/ui/diagnostics-center.js
+          node --check release/v0.19.42/site/src/ui/source-health-ui.js
+      - name: Diagnostics Gate
+        run: node tests/diagnostics-v01944-gate.js
