@@ -1,6 +1,6 @@
 # KC DP2 – Engineering-, TÜV- und Studio-Regeln
 
-Stand: V0.19.45 Produktionsstand – versionsübergreifend verbindlich
+Stand: V0.19.46 Produktionskandidat – versionsübergreifend verbindlich
 
 Diese Regeln sind verbindliche Architektur-, Qualitäts- und Freigabekriterien für KC DP2. Ein Release darf eine Regel nur ändern, wenn die Änderung bewusst dokumentiert, getestet und im TÜV-/Studio-Gate nachvollziehbar gemacht wird. Versionsspezifische Alt-Gates dürfen ergänzend bestehen bleiben, ersetzen aber niemals den TÜV des in `release/current.json` bezeichneten kanonischen Releases.
 
@@ -14,6 +14,7 @@ Diese Regeln sind verbindliche Architektur-, Qualitäts- und Freigabekriterien f
 6. `release/current.json`, Update-Manifest, Cache-Name, sichtbare Versionsangaben und Produktivdeploy müssen auf denselben kanonischen Release zeigen.
 7. Manifest-Dateien werden vor Freigabe bytegenau und per SHA-256 versiegelt; Abweichungen sind ROT.
 8. Ein Merge erfolgt nur mit fixiertem, vollständig geprüftem Head-SHA. Nach dem Merge muss der Produktiv-Verify erneut erfolgreich sein.
+9. Die globale Runtime-Version (`K.VERSION`), `K.APP_RELEASE`, Manifestversion, sichtbare Releaseversion und Update-Manager-Version müssen dieselbe kanonische Produktversion melden. Ein falscher Versionskonflikt ist ein Release-Blocker.
 
 ## 2. Supabase- und Security-Regeln
 
