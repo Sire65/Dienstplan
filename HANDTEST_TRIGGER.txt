@@ -1,3 +1,4 @@
 Temporary trigger for V0.19.41 real-device handtest deployment.
 Session-timeout hotfix and cache repair verified in staging run #17.
 Pilot thanks hotfix resealed; rerun all gates on 2026-08-15.
+Final V0.19.49 canonical release gate trigger.
