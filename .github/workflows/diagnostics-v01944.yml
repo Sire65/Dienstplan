@@ -14,8 +14,9 @@ jobs:
           node-version: 22
       - name: Syntax
         run: |
-          node --check release/v0.19.42/site/src/adapters/diagnostics.js
-          node --check release/v0.19.42/site/src/ui/diagnostics-center.js
-          node --check release/v0.19.42/site/src/ui/source-health-ui.js
-      - name: Diagnostics Gate
+          node --check release/v0.19.44/site/src/adapters/diagnostics.js
+          node --check release/v0.19.44/site/src/ui/diagnostics-center.js
+          node --check release/v0.19.44/site/src/ui/source-health-ui.js
+          node --check release/v0.19.44/site/src/core/table-core-adapter.js
+      - name: Diagnostics + TableCore Gate
         run: node tests/diagnostics-v01944-gate.js
