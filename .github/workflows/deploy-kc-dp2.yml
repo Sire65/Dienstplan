@@ -14,7 +14,7 @@ concurrency:
   group: kc-dp2-pages-main
   cancel-in-progress: false
 
-# Deploy source includes the verified V0.19.41 push-receipt service-worker hotfix.
+# Deploy source includes the verified V0.19.41 push-receipt service-worker hotfix and privileged self-push test button.
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -40,6 +40,8 @@ jobs:
           assert "profile:'KC_DP_DEDICATED_PROJECT'" in integ
           assert "version:'0.19.41'" in push
           assert 'reconcileExisting' in push
+          assert 'sendSelfTest' in push
+          assert 'kc-dp-self-push-test' in push
           assert "CURRENT_RELEASE='0.19.41'" in upd
           print('V0.19.41 real-device handtest: PASS')
           PY
