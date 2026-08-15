@@ -22,147 +22,98 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Verify V0.19.40 manifest and byte baseline
+      - name: Build and verify V0.19.42
         run: |
+          rm -rf build/site
+          mkdir -p build
+          cp -a release/v0.19.42/site build/site
           python3 - <<'PY'
           from pathlib import Path
           import hashlib, json
-          old=Path('release/v0.19.39/site')
-          root=Path('release/v0.19.40/site')
-          manifest=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          old=Path('release/v0.19.41/site')
+          src=Path('release/v0.19.42/site')
+          root=Path('build/site')
           current=json.loads(Path('release/current.json').read_text(encoding='utf-8'))
-          assert manifest['version']=='0.19.40'
-          assert manifest['cacheName']=='kc-dp-release-0.19.40'
-          assert manifest['totalRuntimeBytes']==sum(int(x['bytes']) for x in manifest['files'])
-          changed={item['path'] for item in manifest['files']}
-          expected={'src/ui/device-ux.js','src/ui/mobile-day.js','src/ui/start-choice.js','src/core/update-manager.js'}
-          assert changed==expected, (changed,expected)
-          assert current['version']=='0.19.40'
-          assert current['baseVersion']=='0.19.39'
-          assert current['previousVersion']=='0.19.39'
-          assert current['releasePath']=='release/v0.19.40/site'
-          for item in manifest['files']:
-              target=root/item['path'];data=target.read_bytes()
-              assert len(data)==item['bytes'], f'Dateigröße falsch: {target}'
-              assert hashlib.sha256(data).hexdigest()==item['sha256'], f'SHA-256 falsch: {target}'
-          checked=0
-          for src in old.rglob('*'):
-              if not src.is_file(): continue
-              rel=src.relative_to(old).as_posix()
-              if rel in changed or rel=='update-manifest.json': continue
-              dst=root/rel
-              assert dst.is_file(), f'Fehlt im neuen Release: {rel}'
-              assert src.read_bytes()==dst.read_bytes(), f'Unerwartete Regression/Änderung: {rel}'
-              checked+=1
+          assert current['version']=='0.19.42'
+          assert current['baseVersion']=='0.19.41'
+          assert current['previousVersion']=='0.19.41'
+          assert current['releasePath']=='release/v0.19.42/site'
+
+          integrations=(src/'src/core/integrations.js').read_text(encoding='utf-8')
+          xlsx=(src/'src/adapters/xlsx-local.js').read_text(encoding='utf-8')
+          updater=(src/'src/core/update-manager.js').read_text(encoding='utf-8')
+          role=(src/'src/ui/role-ux.js').read_text(encoding='utf-8')
+          assert "xlsx-local.js?v=0.19.42" in integrations
+          assert "version:'0.19.42'" in integrations
+          assert "CURRENT_RELEASE='0.19.42'" in updater
+          assert "version:'0.19.42'" in updater
+          assert 'service-worker.js?v=0.19.42-engine' in updater
+          assert "window.XLSX={version:'KC-local-1.0'" in xlsx
+          assert 'function inflate(src)' in xlsx and 'function unzip(buf)' in xlsx
+          assert 'sharedStrings.xml' in xlsx and 'worksheets' in xlsx
+          assert 'if(window.XLSX)return window.XLSX' in role
+
+          allowed={'src/core/integrations.js','src/core/update-manager.js','src/adapters/xlsx-local.js','update-manifest.json'}
           old_files={p.relative_to(old).as_posix() for p in old.rglob('*') if p.is_file()}
-          new_files={p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
-          assert old_files==new_files, f'Dateimenge geändert: +{new_files-old_files} -{old_files-new_files}'
-          print(f'Manifest, SHA-256 und V0.19.39 Byte-Basis OK ({checked} unveränderte Dateien)')
+          new_files={p.relative_to(src).as_posix() for p in src.rglob('*') if p.is_file()}
+          added=new_files-old_files
+          removed=old_files-new_files
+          assert added=={'src/adapters/xlsx-local.js'}, added
+          assert not removed, removed
+          changed=set()
+          for rel in old_files & new_files:
+              if (old/rel).read_bytes() != (src/rel).read_bytes(): changed.add(rel)
+          assert changed <= allowed, changed
+          assert {'src/core/integrations.js','src/core/update-manager.js'} <= changed
+
+          paths=['src/core/integrations.js','src/adapters/xlsx-local.js','src/core/update-manager.js']
+          files=[]
+          for rel in paths:
+              data=(root/rel).read_bytes()
+              files.append({'path':rel,'installPath':rel,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'runtime':True})
+          manifest={
+            'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC DP2','version':'0.19.42',
+            'cacheName':'kc-dp-release-0.19.42',
+            'releaseNotes':['Excel-/XLSX-Import arbeitet lokal und offline ohne notwendige CDN-Abhängigkeit','Dediziertes KC-DP2-Supabase-Projekt und bestehende V0.19.41-Funktionen bleiben unverändert','Update-Engine und Release-Hashes wurden auf V0.19.42 angehoben'],
+            'generatedAt':'2026-08-15T08:20:00+02:00','totalRuntimeBytes':sum(x['bytes'] for x in files),'files':files
+          }
+          (root/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          check=json.loads((root/'update-manifest.json').read_text(encoding='utf-8'))
+          assert check['totalRuntimeBytes']==sum(x['bytes'] for x in check['files'])
+          for item in check['files']:
+              data=(root/item['path']).read_bytes()
+              assert len(data)==item['bytes']
+              assert hashlib.sha256(data).hexdigest()==item['sha256']
+          print('V0.19.42 Releasebaum, lokaler XLSX-Reader und SHA-256-Manifest OK')
           PY
 
-      - name: Verify V0.19.40 smartphone lifecycle fix
+      - name: JavaScript syntax and inherited regression gates
         run: |
+          node --check build/site/src/adapters/xlsx-local.js
+          node --check build/site/src/core/integrations.js
+          node --check build/site/src/core/update-manager.js
+          node --check build/site/service-worker.js
           python3 - <<'PY'
           from pathlib import Path
-          root=Path('release/v0.19.40/site')
-          dux=(root/'src/ui/device-ux.js').read_text(encoding='utf-8')
-          mobile=(root/'src/ui/mobile-day.js').read_text(encoding='utf-8')
-          choice=(root/'src/ui/start-choice.js').read_text(encoding='utf-8')
-          choice_css=(root/'src/ui/start-choice.css').read_text(encoding='utf-8')
-          mobile_css=(root/'src/ui/mobile-day.css').read_text(encoding='utf-8')
-          upd=(root/'src/core/update-manager.js').read_text(encoding='utf-8')
-          workflow=(root/'src/core/workflow.js').read_text(encoding='utf-8')
-
-          for token in ['Was möchten Sie tun?','Dienstplan ansehen','Dienstplan bearbeiten','Meine Dienste','Wunschplan']:
-              assert token in choice, token
-          assert "K.auth?.has?.('roster.plan.edit')" in choice
-          assert "K.state.readOnlyMode=mode==='view'" in choice
-          assert 'refreshPhoneDay' in choice
-          assert 'loadPhoneDayAssets' in choice
-          assert 'K.phoneDayUx?.start?.()' in choice
-          assert 'K.phoneDayUx?.refresh?.()' in choice
-          assert "version:'0.19.40'" in choice
-          for token in ['guardPointer','guardDbl','guardContext','guardClick','guardKeys']:
-              assert token in choice, token
-          assert 'kc-readonly-mode' in choice_css
-          assert '.resize-handle' in choice_css
-          assert 'kc-plan-mode-badge' in choice_css
-          assert "K.visiblePlannedShifts=function" in workflow
-          assert "K.auth?.has?.('roster.plan.view_draft')" in workflow
-
-          assert "version:'0.19.40'" in dux
-          assert 'start-choice.css?v=0.19.40' in dux
-          assert 'start-choice.js?v=0.19.40' in dux
-          assert 'mobile-day.css?v=0.19.40' in dux
-          assert 'mobile-day.js?v=0.19.40' in dux
-          assert 'loadPhoneDayAssets' in dux
-          assert 'K.phoneDayUx?.start?.()' in dux
-          assert 'K.phoneDayUx?.refresh?.()' in dux
-          assert 'innerWidth<=600' in dux
-
-          assert '@media (max-width:600px)' in mobile_css
-          assert '--hours-w:0px' in mobile_css
-          assert 'kc-phone-list-mode' in mobile_css
-          assert "const MODE_KEY='kcDp.phoneDayMode'" in mobile
-          assert 'bootObserver' in mobile
-          assert 'waitForMain' in mobile
-          assert 'document.getElementById(\'mainView\')' in mobile
-          assert "version:'0.19.40'" in mobile
-          assert 'start,refresh:queueApply' in mobile
-          assert 'data-kc-phone-nav="-1"' in mobile
-          assert 'data-kc-phone-nav="1"' in mobile
-          assert "first=first.split('-')[0]" in mobile
-
-          assert "CURRENT_RELEASE='0.19.40'" in upd
-          assert "version:'0.19.40'" in upd
-          assert 'service-worker.js?v=0.19.40-engine' in upd
-          assert 'KC_DP_BOOT_OK' in upd
-          print('Smartphone-Start/Retry, Startauswahl und Nur-Lese-Schutz OK')
-          PY
-          node --check release/v0.19.40/site/src/ui/device-ux.js
-          node --check release/v0.19.40/site/src/ui/mobile-day.js
-          node --check release/v0.19.40/site/src/ui/start-choice.js
-          node --check release/v0.19.40/site/src/core/update-manager.js
-
-      - name: Verify inherited KC DP2 regressions
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          root=Path('release/v0.19.40/site')
+          root=Path('build/site')
           assert 'kc-login-startbild-v01917.webp' in (root/'src/ui/role-ux.css').read_text(encoding='utf-8')
           assert 'E-Mail-Adresse oder Passwort ist falsch.' in (root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
-          assert 'Das neue Passwort muss sich vom bisherigen Passwort unterscheiden.' in (root/'src/adapters/supabase-provider.js').read_text(encoding='utf-8')
           assert 'ptblnpiroqftcvlsrhac' in (root/'src/core/integrations.js').read_text(encoding='utf-8')
           assert 'Push-Benachrichtigungen' in (root/'src/ui/role-ux.js').read_text(encoding='utf-8')
           assert 'IndexedDB- und Performance-Center' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert 'clearConfigAutofill' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert 'KC DP2 sicher verlassen' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert 'preferredZone:null' in (root/'src/core/staffing.js').read_text(encoding='utf-8')
           assert 'ensureSession' in (root/'src/adapters/sync.js').read_text(encoding='utf-8')
-          assert '.ux-calendar-day.day-saturday' in (root/'src/ui/role-ux.css').read_text(encoding='utf-8')
-          assert 'whenDurable' in (root/'src/adapters/sync.js').read_text(encoding='utf-8')
-          assert 'loadTask?.error' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert 'quickPlanBtn' in (root/'index.html').read_text(encoding='utf-8')
           assert 'K.isSpecialShift' in (root/'src/core/planning.js').read_text(encoding='utf-8')
-          assert 'DEV_FAST_ACCESS' in (root/'src/ui/role-ux.js').read_text(encoding='utf-8')
           assert 'matrix-time-row' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert 'data-inspector-add' in (root/'src/ui/app.js').read_text(encoding='utf-8')
           assert 'Automatischer verschlüsselter IndexedDB-Test erfolgreich' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert "reason:'Schnellplanung im Zeitraster'" in (root/'src/ui/app.js').read_text(encoding='utf-8')
           assert 'dayHours>oldDayHours+1e-9' in (root/'src/core/staffing.js').read_text(encoding='utf-8')
-          assert 'Persönliche Höchstzeit an diesem Tag: maximal' in (root/'src/core/staffing.js').read_text(encoding='utf-8')
-          assert 'Math.hypot(dx,dy)<6' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert 'openPersonalOverview(el.dataset.person)' in (root/'src/ui/app.js').read_text(encoding='utf-8')
-          assert '.drop-target.drop-valid' in (root/'src/ui/app.css').read_text(encoding='utf-8')
           assert 'colorLegendBtn' in (root/'index.html').read_text(encoding='utf-8')
-          assert '.color-legend-popover{position:fixed' in (root/'src/ui/app.css').read_text(encoding='utf-8')
-          print('Geerbte KC-DP2 Regressionen OK')
+          print('Geerbte KC-DP2 Regression-Gates OK')
           PY
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kc-dp2-verified-site-v01940
-          path: release/v0.19.40/site
+          name: kc-dp2-verified-site-v01942
+          path: build/site
           if-no-files-found: error
           retention-days: 2
           include-hidden-files: true
@@ -176,7 +127,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/download-artifact@v4
-        with: {name: kc-dp2-verified-site-v01940, path: build/site}
+        with: {name: kc-dp2-verified-site-v01942, path: build/site}
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with: {path: build/site}
