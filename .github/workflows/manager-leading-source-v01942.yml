@@ -9,6 +9,7 @@ on:
       - 'release/v0.19.41/site/src/ui/app.js'
       - 'release/v0.19.41/site/src/adapters/person-provider.js'
       - 'release/v0.19.41/site/src/adapters/pc-manager.js'
+      - 'release/v0.19.41/site/src/adapters/wish-import.js'
       - 'release/v0.19.41/site/src/adapters/xlsx-local.js'
       - 'release/v0.19.41/site/src/core/integrations.js'
       - 'release/v0.19.41/site/src/core/planner-engine.js'
@@ -70,6 +71,7 @@ jobs:
           node --check release/v0.19.41/site/src/ui/app.js
           node --check release/v0.19.41/site/src/adapters/person-provider.js
           node --check release/v0.19.41/site/src/adapters/pc-manager.js
+          node --check release/v0.19.41/site/src/adapters/wish-import.js
           node --check release/v0.19.41/site/src/adapters/xlsx-local.js
           node --check release/v0.19.41/site/src/core/integrations.js
           node --check release/v0.19.41/site/src/core/planner-engine.js
