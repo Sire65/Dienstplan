@@ -9,7 +9,9 @@ const wishImport=read('src/adapters/wish-import.js');
 const role=read('src/ui/role-ux.js');
 const xlsx=read('src/adapters/xlsx-local.js');
 function ok(v,m){if(!v)throw new Error(m);}
-ok(index.indexOf('src/adapters/wish-import.js')<index.indexOf('src/ui/role-ux.js'),'wish-import.js muss vor role-ux.js geladen werden');
+const wishScript='<script src="src/adapters/wish-import.js';
+const roleScript='<script src="src/ui/role-ux.js';
+ok(index.indexOf(wishScript)>=0&&index.indexOf(roleScript)>=0&&index.indexOf(wishScript)<index.indexOf(roleScript),'wish-import.js muss als Script vor role-ux.js geladen werden');
 ok(wishImport.includes('src/adapters/xlsx-local.js?v=0.19.42'),'lokaler XLSX-Adapter wird nicht aus dem Importpfad geladen');
 ok(integrations.includes("version:'0.19.41'"),'versiegelte Integrationsbasis wurde unerwartet verändert');
 ok(!integrations.includes('xlsx-local.js'),'XLSX darf die versiegelte Integrationsbasis nicht verändern');
