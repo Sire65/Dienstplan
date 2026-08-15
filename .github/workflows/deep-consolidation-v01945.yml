@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: kc-dp2-deep-consolidation-${{ github.ref }}
+  group: kc-dp2-deep-consolidation-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 jobs:
