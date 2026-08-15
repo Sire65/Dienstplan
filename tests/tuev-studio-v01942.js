@@ -77,3 +77,4 @@ requireRule(!push.includes('kc-dp-self-push-test'),'Kein schwebender Push-Test-O
 
 console.log('TÜV Studio V0.19.42 canonical release: PASS');
 // Final canonical-release gate trigger: 2026-08-15.
+// Post-main-sync canonical rerun trigger: 2026-08-15.
