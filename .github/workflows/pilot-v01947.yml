@@ -15,10 +15,15 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Resolve canonical current release
+        id: release
+        run: |
+          echo "path=$(node -p \"require('./release/current.json').releasePath\")" >> "$GITHUB_OUTPUT"
       - name: Pilot syntax and security contract
         run: |
+          ROOT="${{ steps.release.outputs.path }}"
           node --check tests/pilot-v01947-gate.js
-          node --check release/v0.19.46/site/src/core/pilot-onboarding.js
-          node --check release/v0.19.46/site/src/ui/pilot-app.js
-          node --check release/v0.19.46/site/pilot-sw.js
+          node --check "$ROOT/src/core/pilot-onboarding.js"
+          node --check "$ROOT/src/ui/pilot-app.js"
+          node --check "$ROOT/pilot-sw.js"
           node tests/pilot-v01947-gate.js
