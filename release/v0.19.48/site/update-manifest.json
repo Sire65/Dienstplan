@@ -8,10 +8,11 @@
     "iPhone-Installation bewahrt den persönlichen Einladungslink",
     "App installiert wird nur noch bei echtem Home-Screen-Start erkannt",
     "WhatsApp-Browser und Safari werden verständlich unterschieden",
-    "Geführte Reparatur bei bereits ohne Token installierter Pilot-App"
+    "Geführte Reparatur bei bereits ohne Token installierter Pilot-App",
+    "Pilot-Abschluss wartet auf echte Dankes-Push-Öffnungsbestätigung"
   ],
-  "generatedAt": "2026-08-15T19:37:05.046120+00:00",
-  "totalRuntimeBytes": 416379,
+  "generatedAt": "2026-08-15T20:44:57.619Z",
+  "totalRuntimeBytes": 417106,
   "files": [
     {
       "path": "index.html",
@@ -241,8 +242,8 @@
       "path": "pilot/index.html",
       "installPath": "pilot/index.html",
       "runtime": true,
-      "bytes": 2563,
-      "sha256": "5db6e84c933d99f0c00bd9d1887eb24f62bb2aea7d0fdf0168de4555b43dd7ef"
+      "bytes": 2859,
+      "sha256": "9d65d6ad4340183e2424767fd0dad60e29b22aa02469f4ea1c800ac1b9729f83"
     },
     {
       "path": "pilot/manifest.webmanifest",
@@ -256,7 +257,7 @@
       "installPath": "pilot-sw.js",
       "runtime": true,
       "bytes": 1999,
-      "sha256": "121d519e7753da76228038a0dda9a31992acd1000074d76e9ac27485f2635b77"
+      "sha256": "8f4e008aeb879849c9e4274a3dd9037b89afef7b3c9997b806c10a3bd293b4e5"
     },
     {
       "path": "src/core/pilot-onboarding.js",
@@ -269,8 +270,8 @@
       "path": "src/ui/pilot-app.js",
       "installPath": "src/ui/pilot-app.js",
       "runtime": true,
-      "bytes": 8706,
-      "sha256": "9e7e8f0c95415561e780151f5cca8109413ba6c0bc375010b0a67e764eef6281"
+      "bytes": 9137,
+      "sha256": "bd1b9d3bdc431ebc508e5648c5204cfe122e2a45d05ca7a68a3ba0a6b7d75ddc"
     },
     {
       "path": "src/ui/pilot.css",
