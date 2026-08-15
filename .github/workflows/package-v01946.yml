@@ -18,51 +18,49 @@ jobs:
         with:
           ref: chore/deep-consolidation-v01945
           fetch-depth: 0
-      - name: Build canonical V0.19.46 release
+      - name: Seal canonical V0.19.46 release
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf release/v0.19.46
-          cp -a release/v0.19.45 release/v0.19.46
+          test "$(node -p "require('./release/current.json').version")" = "0.19.46"
+          test "$(node -p "require('./release/current.json').releasePath")" = "release/v0.19.46/site"
           python3 - <<'PY'
           from pathlib import Path
           import json,hashlib,datetime
           site=Path('release/v0.19.46/site')
-          def replace(rel, old, new):
-              p=site/rel
-              s=p.read_text(encoding='utf-8')
-              if old not in s: raise SystemExit(f'missing marker {old!r} in {rel}')
-              p.write_text(s.replace(old,new),encoding='utf-8')
-          replace('src/core/model.js',"K.VERSION='0.17.10';","K.VERSION='0.19.46';")
-          replace('src/core/update-manager.js',"const CURRENT_RELEASE='0.19.45';","const CURRENT_RELEASE='0.19.46';")
-          replace('src/adapters/push.js',"service-worker.js?v=0.19.45","service-worker.js?v=0.19.46")
-          replace('src/adapters/push.js',"version:'0.19.45'","version:'0.19.46'")
-          replace('src/ui/kc-ux-polish.js','KC DP2 V0.19.45 – Dienstplanung bereit.','KC DP2 V0.19.46 – Dienstplanung bereit.')
-          replace('src/ui/kc-ux-polish.js','KC DP2 V0.19.45 · Köcheclub Werne','KC DP2 V0.19.46 · Köcheclub Werne')
-          replace('src/ui/kc-ux-polish.js',"version:'0.19.45'","version:'0.19.46'")
-          p=site/'index.html'; s=p.read_text(encoding='utf-8'); p.write_text(s.replace('V0.19.45','V0.19.46').replace("EXPECTED='0.19.45'","EXPECTED='0.19.46'"),encoding='utf-8')
-          reltxt=Path('release/v0.19.46/RELEASE.txt')
-          reltxt.write_text('KC-DP2 0.19.46 – Deep Consolidation\n\nFix: zentrale Versionswahrheit auf V0.19.46; kein falscher Versionskonflikt-Overlay.\nTÜV/Studio- und Regression-Infrastruktur versionsübergreifend konsolidiert.\n',encoding='utf-8')
-          mp=site/'update-manifest.json'; m=json.loads(mp.read_text(encoding='utf-8'))
-          m['version']='0.19.46'; m['cacheName']='kc-dp-release-0.19.46'
-          m['releaseNotes']=['Deep Consolidation: zentrale Versionswahrheit korrigiert','Falscher Versionskonflikt-Overlay beseitigt','TÜV/Studio-Regelwerk und Deep-Regression konsolidiert','V0.19.45 bleibt unverändert als versiegelter Vorgänger erhalten']
+          if not site.is_dir(): raise SystemExit('canonical V0.19.46 release tree missing')
+          mp=site/'update-manifest.json'
+          m=json.loads(mp.read_text(encoding='utf-8'))
+          if m.get('version')!='0.19.46': raise SystemExit('manifest version drift')
+          m['cacheName']='kc-dp-release-0.19.46'
+          m['releaseNotes']=[
+            'Deep Consolidation: zentrale Versionswahrheit korrigiert',
+            'Falscher Versionskonflikt-Overlay beseitigt',
+            'Datenquellenstatus zeigt bei Teilfreigaben wieder die konkrete Ursache',
+            'TÜV/Studio-Regelwerk und Deep-Regression konsolidiert',
+            'V0.19.45 bleibt unverändert als versiegelter Vorgänger erhalten'
+          ]
           m['generatedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
           total=0
+          seen=set()
           for f in m['files']:
-              install=f.get('installPath') or f['path']; b=(site/install).read_bytes(); f['bytes']=len(b); f['sha256']=hashlib.sha256(b).hexdigest()
+              install=f.get('installPath') or f['path']
+              if install in seen: raise SystemExit(f'duplicate manifest path: {install}')
+              seen.add(install)
+              p=site/install
+              if not p.is_file(): raise SystemExit(f'manifest runtime missing: {install}')
+              b=p.read_bytes(); f['bytes']=len(b); f['sha256']=hashlib.sha256(b).hexdigest()
               if f.get('runtime',True): total+=len(b)
           m['totalRuntimeBytes']=total
           mp.write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          Path('release/current.json').write_text(json.dumps({'version':'0.19.46','releasePath':'release/v0.19.46/site'},indent=2)+'\n',encoding='utf-8')
-          print('V0.19.46',len(m['files']),'files',total,'runtime bytes')
+          print('SEALED V0.19.46',len(m['files']),'files',total,'runtime bytes')
           PY
-          node --check release/v0.19.46/site/src/core/model.js
-          node --check release/v0.19.46/site/src/core/update-manager.js
-          node --check release/v0.19.46/site/src/adapters/push.js
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.46/site -type f -name '*.js' -print0)
+          node tests/tuev-studio-current.js
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add release/v0.19.46 release/current.json
+          git add release/v0.19.46/site/update-manifest.json
           if ! git diff --cached --quiet; then
-            git commit -m 'release: build canonical KC DP2 V0.19.46 deep consolidation'
+            git commit -m 'release: reseal KC DP2 V0.19.46 after deep consolidation fix'
             git push origin HEAD:chore/deep-consolidation-v01945
           fi
