@@ -1,136 +1,52 @@
-name: KC DP2 Package V0.19.42
+name: KC DP2 Validate V0.19.42 Package
 
 on:
   workflow_dispatch:
   push:
     branches: [feature/pc-manager-leading-source-v01942]
     paths:
+      - 'release/v0.19.42/**'
+      - 'release/current.json'
       - '.github/workflows/package-v01942.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: kc-dp2-package-v01942
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  package:
+  validate-package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Build canonical V0.19.42 release tree
+      - name: Validate canonical V0.19.42 package
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main
-          rm -rf release/v0.19.42
-          cp -a release/v0.19.41 release/v0.19.42
-          rm -rf release/v0.19.42/site/__update
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib, json, subprocess
-
+          import hashlib, json
           root=Path('.')
-          src_prefix='release/v0.19.41/site/'
           site=root/'release/v0.19.42/site'
-
-          def replace_required(path, old, new):
-              p=site/path
-              text=p.read_text(encoding='utf-8')
-              if old not in text:
-                  raise SystemExit(f'missing version marker {old!r} in {path}')
-              p.write_text(text.replace(old,new),encoding='utf-8')
-
-          replace_required(Path('src/core/update-manager.js'), "CURRENT_RELEASE='0.19.41'", "CURRENT_RELEASE='0.19.42'")
-          replace_required(Path('src/adapters/push.js'), 'service-worker.js?v=0.19.41', 'service-worker.js?v=0.19.42')
-          replace_required(Path('src/adapters/push.js'), "version:'0.19.41'", "version:'0.19.42'")
-
-          changed=subprocess.check_output([
-              'git','diff','--name-only','origin/main...HEAD','--','release/v0.19.41/site'
-          ],text=True).splitlines()
-          rels=set()
-          for name in changed:
-              if not name.startswith(src_prefix):
-                  continue
-              rel=name[len(src_prefix):]
-              if rel in {'update-manifest.json','service-worker.js','RELEASE.txt'} or rel.startswith('__update/'):
-                  continue
-              p=site/rel
-              if p.is_file():
-                  rels.add(rel)
-          rels.update({'src/core/update-manager.js','src/adapters/push.js'})
-
-          files=[]
+          current=json.loads((root/'release/current.json').read_text(encoding='utf-8'))
+          manifest=json.loads((site/'update-manifest.json').read_text(encoding='utf-8'))
+          assert current['version']=='0.19.42'
+          assert current['releasePath']=='release/v0.19.42/site'
+          assert manifest['version']=='0.19.42'
+          assert manifest['cacheName']=='kc-dp-release-0.19.42'
           total=0
-          for rel in sorted(rels):
-              p=site/rel
-              data=p.read_bytes()
-              files.append({
-                  'path':rel,
-                  'installPath':rel,
-                  'bytes':len(data),
-                  'sha256':hashlib.sha256(data).hexdigest(),
-                  'runtime':True,
-              })
-              total+=len(data)
-
-          manifest={
-              'schema':'KC_DP_UPDATE_MANIFEST_V1',
-              'app':'KC DP2',
-              'version':'0.19.42',
-              'cacheName':'kc-dp-release-0.19.42',
-              'releaseNotes':[
-                  'PC-Manager ist führende Quelle für die vorgesehenen Stammdaten- und Planungskontexte',
-                  'Regelgebundene Planung, Empfehlungen, Ersatzplanung und Audit wurden erweitert und tiefengeprüft',
-                  'Excel-XLSX-Import arbeitet lokal/offline ohne externes SheetJS-CDN',
-                  'Push nutzt High Urgency, 6 Stunden TTL und Empfangs-/Öffnungs-Receipts; Android-End-to-End-Test bestanden',
-                  'Supabase-Sitzung wird vor geschützten Push-Aufrufen sicher wiederhergestellt bzw. erneuert',
-              ],
-              'generatedAt':'2026-08-15T10:30:00+02:00',
-              'totalRuntimeBytes':total,
-              'files':files,
-          }
-          (site/'update-manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          (site/'RELEASE.txt').write_text('KC-DP2 0.19.42\n',encoding='utf-8')
-
-          current={
-              'app':'KC DP2',
-              'version':'0.19.42',
-              'mode':'verified-direct-site',
-              'baseVersion':'0.19.41',
-              'previousVersion':'0.19.41',
-              'releasePath':'release/v0.19.42/site',
-              'releasedAt':'2026-08-15T10:30:00+02:00',
-          }
-          (root/'release/current.json').write_text(json.dumps(current,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-
-          # Package self-checks.
-          assert json.loads((site/'update-manifest.json').read_text())['version']=='0.19.42'
-          assert "CURRENT_RELEASE='0.19.42'" in (site/'src/core/update-manager.js').read_text()
-          assert 'service-worker.js?v=0.19.42' in (site/'src/adapters/push.js').read_text()
-          assert "version:'0.19.42'" in (site/'src/adapters/push.js').read_text()
-          for item in files:
-              data=(site/item['installPath']).read_bytes()
-              assert len(data)==item['bytes']
-              assert hashlib.sha256(data).hexdigest()==item['sha256']
-          print(f'V0.19.42 package built: {len(files)} delta runtime files, {total} bytes')
+          for item in manifest['files']:
+              rel=item.get('installPath') or item['path']
+              data=(site/rel).read_bytes()
+              assert len(data)==int(item['bytes']), rel
+              assert hashlib.sha256(data).hexdigest()==item['sha256'].lower(), rel
+              if item.get('runtime',True): total+=len(data)
+          assert total==int(manifest['totalRuntimeBytes'])
+          assert (site/'RELEASE.txt').read_text(encoding='utf-8').strip()=='KC-DP2 0.19.42'
+          print(f'V0.19.42 package validation PASS: {len(manifest["files"])} runtime entries, {total} bytes')
           PY
           node --check release/v0.19.42/site/service-worker.js
           node --check release/v0.19.42/site/src/adapters/push.js
           node --check release/v0.19.42/site/src/core/update-manager.js
-      - name: Commit candidate package to release branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'Sire65'
-          git config user.email 'ha-joko@web.de'
-          git add release/v0.19.42 release/current.json
-          if git diff --cached --quiet; then
-            echo 'Package already current.'
-            exit 0
-          fi
-          git commit -m 'KC-DP2: build canonical V0.19.42 release package'
-          git push origin HEAD:feature/pc-manager-leading-source-v01942
