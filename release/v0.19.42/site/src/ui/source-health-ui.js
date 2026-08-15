@@ -16,4 +16,11 @@
   document.addEventListener('click',e=>{if(e.target?.id==='prevDayBtn'||e.target?.id==='nextDayBtn'||e.target?.closest?.('[data-jump-date]')){last='';setTimeout(schedule,0);}});
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',()=>{last='';schedule();});
   K.sourceHealthUi={version:'0.19.42',refresh(){last='';schedule();}};schedule();
+
+  function loadPushCenter(){
+    if(document.getElementById('kcPushCenterCss')||window.KCDP?.pushCenter)return;
+    const css=document.createElement('link');css.id='kcPushCenterCss';css.rel='stylesheet';css.href='src/ui/push-center.css?v=0.19.43';document.head.appendChild(css);
+    const js=document.createElement('script');js.src='src/ui/push-center.js?v=0.19.43';js.async=false;document.body.appendChild(js);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadPushCenter,{once:true});else loadPushCenter();
 })();
