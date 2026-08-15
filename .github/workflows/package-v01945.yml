@@ -1,0 +1,44 @@
+name: KC DP2 V0.19.45 UX Package
+on:
+  push:
+    branches: [feature/kc-ux-polish-v01945]
+    paths: ['.github/workflows/package-v01945.yml']
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/kc-ux-polish-v01945
+          fetch-depth: 0
+      - name: Create canonical V0.19.45 tree
+        run: |
+          set -euo pipefail
+          rm -rf release/v0.19.45
+          cp -a release/v0.19.44 release/v0.19.45
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root=Path('release/v0.19.45/site')
+          p=root/'index.html'
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<title>KC DP2 V0.19.42</title>','<title>KC DP2 V0.19.45</title>')
+          s=s.replace('KC DP V0.17.10 – kompakte Plansteuerung bereit.','KC DP2 V0.19.45 – Dienstplanung bereit.')
+          s=s.replace("const EXPECTED='0.17.10'","const EXPECTED='0.19.45'")
+          p.write_text(s,encoding='utf-8')
+          up=root/'src/core/update-manager.js'
+          t=up.read_text(encoding='utf-8').replace("CURRENT_RELEASE='0.19.44'","CURRENT_RELEASE='0.19.45'").replace("version:'0.19.44'","version:'0.19.45'")
+          up.write_text(t,encoding='utf-8')
+          push=root/'src/adapters/push.js'
+          t=push.read_text(encoding='utf-8').replace('service-worker.js?v=0.19.44','service-worker.js?v=0.19.45').replace("version:'0.19.44'","version:'0.19.45'")
+          push.write_text(t,encoding='utf-8')
+          Path('release/current.json').write_text(json.dumps({'app':'KC DP2','version':'0.19.45','mode':'verified-direct-site','baseVersion':'0.19.44','previousVersion':'0.19.44','releasePath':'release/v0.19.45/site'},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/v0.19.45/RELEASE.txt').write_text('KC DP2 V0.19.45\n================\n\nKC UX Polish: Design, Bedienleiste, Rollen, Responsive und Releasebereinigung.\n',encoding='utf-8')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.45 release/current.json
+          git commit -m 'release: create canonical KC DP2 V0.19.45 tree'
+          git push origin HEAD:feature/kc-ux-polish-v01945

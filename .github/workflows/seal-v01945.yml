@@ -1,0 +1,48 @@
+name: KC DP2 V0.19.45 Seal
+on:
+  push:
+    branches: [feature/kc-ux-polish-v01945]
+    paths: ['.github/workflows/seal-v01945.yml']
+permissions:
+  contents: write
+jobs:
+  seal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/kc-ux-polish-v01945
+          fetch-depth: 0
+      - name: Seal canonical V0.19.45 release
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json,hashlib,datetime
+          root=Path('release/v0.19.45/site')
+          p=root/'update-manifest.json'
+          old=json.loads(p.read_text(encoding='utf-8'))
+          files=list(old.get('files',[]))
+          required=['src/ui/kc-ux-polish.css','src/ui/kc-ux-polish.js']
+          seen={x.get('path') for x in files}
+          for r in required:
+              if r not in seen: files.append({'path':r,'installPath':r,'runtime':True})
+          out=[];total=0
+          for x in files:
+              f=root/x['path']
+              if not f.is_file(): raise SystemExit('Manifest-Datei fehlt: '+x['path'])
+              b=f.read_bytes();y=dict(x);y['bytes']=len(b);y['sha256']=hashlib.sha256(b).hexdigest();y['runtime']=x.get('runtime',True);out.append(y)
+              if y['runtime'] is not False: total+=len(b)
+          now=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          m={'schema':'KC_DP_UPDATE_MANIFEST_V1','app':'KC DP2','version':'0.19.45','cacheName':'kc-dp-release-0.19.45','releaseNotes':['KC UX Polish: Planer in Bordeaux/Gold/Creme vereinheitlicht','Bedienleisten visuell priorisiert und seltene Werkzeuge zurückgenommen','Technische Speicheranzeigen rollenabhängig vereinfacht','Handy-, Tablet- und Touchdarstellung weiter harmonisiert','Sichtbare Versionsreste bereinigt; V0.19.45 kanonisch versiegelt'],'generatedAt':now,'totalRuntimeBytes':total,'files':out}
+          p.write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/current.json').write_text(json.dumps({'app':'KC DP2','version':'0.19.45','mode':'verified-direct-site','baseVersion':'0.19.44','previousVersion':'0.19.44','releasePath':'release/v0.19.45/site','releasedAt':now},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PY
+          node tests/ux-polish-v01945-gate.js
+          node --check release/v0.19.45/site/src/ui/kc-ux-polish.js
+          node --check release/v0.19.45/site/src/ui/source-health-ui.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.45/site/update-manifest.json release/current.json
+          git commit -m 'release: seal KC DP2 V0.19.45 manifest'
+          git push origin HEAD:feature/kc-ux-polish-v01945

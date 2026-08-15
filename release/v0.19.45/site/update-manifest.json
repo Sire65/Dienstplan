@@ -1,0 +1,241 @@
+{
+  "schema": "KC_DP_UPDATE_MANIFEST_V1",
+  "app": "KC DP2",
+  "version": "0.19.45",
+  "cacheName": "kc-dp-release-0.19.45",
+  "releaseNotes": [
+    "KC UX Polish: Planer in Bordeaux/Gold/Creme vereinheitlicht",
+    "Bedienleisten visuell priorisiert und seltene Werkzeuge zurückgenommen",
+    "Technische Speicheranzeigen rollenabhängig vereinfacht",
+    "Handy-, Tablet- und Touchdarstellung weiter harmonisiert",
+    "Sichtbare Versionsreste bereinigt; V0.19.45 kanonisch versiegelt"
+  ],
+  "generatedAt": "2026-08-15T11:41:39.138120+00:00",
+  "totalRuntimeBytes": 396741,
+  "files": [
+    {
+      "path": "index.html",
+      "installPath": "index.html",
+      "bytes": 11201,
+      "sha256": "029312f78b19e7e24108f5877e2e7f768d21c6b234a6522ba645746775724834",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/pc-manager.js",
+      "installPath": "src/adapters/pc-manager.js",
+      "bytes": 10204,
+      "sha256": "63b0adb4b3998569a7ab242dabf0732ce7a1832c53ac775ac4eaebcdf0278089",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/person-provider.js",
+      "installPath": "src/adapters/person-provider.js",
+      "bytes": 6905,
+      "sha256": "b3bd3bfff3a1d16c3e7b49c98424aa57b6e31424a17dc3362b2509a801bda8cb",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/push.js",
+      "installPath": "src/adapters/push.js",
+      "bytes": 10360,
+      "sha256": "60fed1cf2086dc38d5c4f946844c24fa145810bb15f058fa09bab4a3d17b459e",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/wish-import.js",
+      "installPath": "src/adapters/wish-import.js",
+      "bytes": 9531,
+      "sha256": "ded5644ff468a567cf9fddb142c7e7865cf81cb0bc0a94edf8b89a69954b8cb8",
+      "runtime": true
+    },
+    {
+      "path": "src/adapters/xlsx-local.js",
+      "installPath": "src/adapters/xlsx-local.js",
+      "bytes": 5149,
+      "sha256": "3a491a736276158c2934e7ae190dc7dd509971243de0617c38023014c272324e",
+      "runtime": true
+    },
+    {
+      "path": "src/core/day-availability.js",
+      "installPath": "src/core/day-availability.js",
+      "bytes": 4754,
+      "sha256": "2337e9d9cfd9c1b2d4d6c76e35ff984e98861f552f398f668b511effa1a6f897",
+      "runtime": true
+    },
+    {
+      "path": "src/core/manager-auto-sync.js",
+      "installPath": "src/core/manager-auto-sync.js",
+      "bytes": 4115,
+      "sha256": "511ac78765c51a42974aa6d52eb255f12a32505407b68a886fe97ee03400c783",
+      "runtime": true
+    },
+    {
+      "path": "src/core/planner-application-guard.js",
+      "installPath": "src/core/planner-application-guard.js",
+      "bytes": 1940,
+      "sha256": "7128c719cb083627074cddb482f069b51c4fb1803a2ea5b3ea5e28a28f3185f7",
+      "runtime": true
+    },
+    {
+      "path": "src/core/planner-audit.js",
+      "installPath": "src/core/planner-audit.js",
+      "bytes": 3594,
+      "sha256": "d15a6b0ca73690314bd76f93ed05fe4b82772c9dd1fbd9eb980ecbea7c7080a1",
+      "runtime": true
+    },
+    {
+      "path": "src/core/planner-engine.js",
+      "installPath": "src/core/planner-engine.js",
+      "bytes": 15644,
+      "sha256": "ebc6399bf2265cfd76e21bfe052424ac1aebb8d534046abdb1e25f191da697b1",
+      "runtime": true
+    },
+    {
+      "path": "src/core/planner-recommendations.js",
+      "installPath": "src/core/planner-recommendations.js",
+      "bytes": 3353,
+      "sha256": "fbf8095ddfeadee42732297dea14c7200841c4ae66cc45fecbb736428d276b19",
+      "runtime": true
+    },
+    {
+      "path": "src/core/replacement-recommendations.js",
+      "installPath": "src/core/replacement-recommendations.js",
+      "bytes": 3168,
+      "sha256": "6989a9c9b35bde6669fad7f7e79e5c7b953bbb308f7a0ecb6cd6cd2009965bbc",
+      "runtime": true
+    },
+    {
+      "path": "src/core/source-health.js",
+      "installPath": "src/core/source-health.js",
+      "bytes": 2398,
+      "sha256": "533a7cd43ab972eb9cf471c8e16554601b2b1ef6daae15d3a14630b7b0dc3cc3",
+      "runtime": true
+    },
+    {
+      "path": "src/core/update-manager.js",
+      "installPath": "src/core/update-manager.js",
+      "bytes": 12270,
+      "sha256": "5901c6da0b57c564faa1bebe63e7637240d720ba9506e5a48126ad5621378a67",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/app.js",
+      "installPath": "src/ui/app.js",
+      "bytes": 233583,
+      "sha256": "e5be124f8acc5c4596f6fa70528816559aa42edee317247b817720e365cd49a0",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/day-availability-filter.css",
+      "installPath": "src/ui/day-availability-filter.css",
+      "bytes": 593,
+      "sha256": "c0a38f0d462a3402ba3d7269b4e450a0d3852f9d09edc0f8407c1bc3dd0a490a",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/day-availability-filter.js",
+      "installPath": "src/ui/day-availability-filter.js",
+      "bytes": 5679,
+      "sha256": "119d867a8fac5a1b6f21d9964aa9b691f20e7435882bc461e7f18631fe677e54",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/planner-audit-ui.css",
+      "installPath": "src/ui/planner-audit-ui.css",
+      "bytes": 1412,
+      "sha256": "216824b53fd28de1aad10904e432ceaaec3a67bd718392512a61ef81f51edc67",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/planner-audit-ui.js",
+      "installPath": "src/ui/planner-audit-ui.js",
+      "bytes": 3727,
+      "sha256": "95a9b1255dc6a63fa5e480831381582d1274b98e197bf7778adc1f5eebdd40fb",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/quick-plan-recommendations.css",
+      "installPath": "src/ui/quick-plan-recommendations.css",
+      "bytes": 1123,
+      "sha256": "8527045b3d59072fc9962bf990cf04a51888edc0ada2db1352e70f0517716ef4",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/quick-plan-recommendations.js",
+      "installPath": "src/ui/quick-plan-recommendations.js",
+      "bytes": 5932,
+      "sha256": "ddc8277e44929ef34aeecae5de44301c1191abf0a3be6413900f7deb4d47c4fe",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/source-health-ui.css",
+      "installPath": "src/ui/source-health-ui.css",
+      "bytes": 824,
+      "sha256": "aa108fd55dfbdd962507af40da43103ccf5984b7fe6809acc836e02f396e0872",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/source-health-ui.js",
+      "installPath": "src/ui/source-health-ui.js",
+      "bytes": 4564,
+      "sha256": "2d4d2201589a49440da7a205ffb57592e3bdf947f86be8f91f81a7d3c4658188",
+      "runtime": true
+    },
+    {
+      "path": "src/ui/push-center.js",
+      "installPath": "src/ui/push-center.js",
+      "runtime": true,
+      "bytes": 11181,
+      "sha256": "93cc0e6cc4885157ee6f451b0460d0f2f09417b6731e11ea90ceb8d076de4880"
+    },
+    {
+      "path": "src/ui/push-center.css",
+      "installPath": "src/ui/push-center.css",
+      "runtime": true,
+      "bytes": 2404,
+      "sha256": "cd82ccc828445db3fd432bf7cbd5aa57925102622b107976dba94327fce4cdd0"
+    },
+    {
+      "path": "src/adapters/diagnostics.js",
+      "installPath": "src/adapters/diagnostics.js",
+      "runtime": true,
+      "bytes": 4729,
+      "sha256": "b0cebb104eb44500affab9679b561358d3ee9306279b33119afdb13412f55b8e"
+    },
+    {
+      "path": "src/ui/diagnostics-center.js",
+      "installPath": "src/ui/diagnostics-center.js",
+      "runtime": true,
+      "bytes": 4716,
+      "sha256": "9dd63880853796336cc2abe0908135a0bb20453adcb430caf4de560317739f8a"
+    },
+    {
+      "path": "src/ui/diagnostics-center.css",
+      "installPath": "src/ui/diagnostics-center.css",
+      "runtime": true,
+      "bytes": 1642,
+      "sha256": "492e816b88247c5840fd8b74fe9d9386fa1a3a222536116f3c7518b55ff69b3c"
+    },
+    {
+      "path": "src/core/table-core-adapter.js",
+      "installPath": "src/core/table-core-adapter.js",
+      "runtime": true,
+      "bytes": 2596,
+      "sha256": "df39740b6c517a7618eacc93747c539115a4cc498a52eea1827e9e84efaba569"
+    },
+    {
+      "path": "src/ui/kc-ux-polish.css",
+      "installPath": "src/ui/kc-ux-polish.css",
+      "runtime": true,
+      "bytes": 4422,
+      "sha256": "944c71937ebc9886fe941d89f3fb61baba6433c61ba35129f00745f8ad19b8b7"
+    },
+    {
+      "path": "src/ui/kc-ux-polish.js",
+      "installPath": "src/ui/kc-ux-polish.js",
+      "runtime": true,
+      "bytes": 3028,
+      "sha256": "39998dda2807b2413c26a5e2d61383d524f9c061cf28ca7469063e2c225e9e2b"
+    }
+  ]
+}
