@@ -1,8 +1,8 @@
-name: KC DP2 V0.19.46 Deep Consolidation TÜV
+name: KC DP2 Current Deep Consolidation TÜV
 
 on:
   push:
-    branches: [chore/deep-consolidation-v01945]
+    branches: [feature/pilot-onboarding-v01947]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -30,8 +30,7 @@ jobs:
         run: |
           RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
           VERSION="$(node -p "require('./release/current.json').version")"
-          test "$VERSION" = "0.19.46"
-          test "$RELEASE_PATH" = "release/v0.19.46/site"
+          test "$RELEASE_PATH" = "release/v${VERSION}/site"
           test -f "$RELEASE_PATH/index.html"
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -49,6 +48,8 @@ jobs:
         run: node tests/tuev-studio-current.js
       - name: Current UX and responsive version-truth contract
         run: node tests/ux-current-gate.js
+      - name: Pilot onboarding isolation and PWA contract
+        run: node tests/pilot-v01947-gate.js
       - name: Immutable V0.19.45 release regression
         shell: bash
         run: |
@@ -125,8 +126,8 @@ jobs:
 
       - name: Deep consolidation result
         run: |
-          echo 'KC DP2 V0.19.46 DEEP CONSOLIDATION: GREEN'
-          echo 'Release + version truth + Security + Architecture + Rules + Manager + Planner + UX + Mobile + Roles + Push + Diagnostics + PWA + Documents + Photo: PASS'
+          echo 'KC DP2 CURRENT DEEP CONSOLIDATION: GREEN'
+          echo 'Release + version truth + Security + Architecture + Rules + Manager + Planner + UX + Mobile + Roles + Push + Pilot + Diagnostics + PWA + Documents + Photo: PASS'
 
       - name: Test server log on failure
         if: failure()
