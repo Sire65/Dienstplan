@@ -36,6 +36,9 @@ jobs:
           repl('src/adapters/push.js','service-worker.js?v=0.19.46','service-worker.js?v=0.19.47')
           repl('src/adapters/push.js',"version:'0.19.46'","version:'0.19.47'")
           repl('src/ui/kc-ux-polish.js','0.19.46','0.19.47')
+          repl('src/ui/source-health-ui.js',"K.sourceHealthUi={version:'0.19.46'","K.sourceHealthUi={version:'0.19.47'")
+          repl('src/ui/source-health-ui.js','kc-ux-polish.css?v=0.19.46','kc-ux-polish.css?v=0.19.47')
+          repl('src/ui/source-health-ui.js','kc-ux-polish.js?v=0.19.46','kc-ux-polish.js?v=0.19.47')
           mp=root/'update-manifest.json';m=json.loads(mp.read_text(encoding='utf-8'))
           m['version']='0.19.47';m['cacheName']='kc-dp-release-0.19.47';m['releaseNotes']=[
             'Pilotbetrieb für externe Testpersonen ohne Köcheclub-Mitgliedschaft',
