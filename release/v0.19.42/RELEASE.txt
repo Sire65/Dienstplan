@@ -1,59 +1,33 @@
-KC DP2 V0.19.41
+KC DP2 V0.19.42
 =================
 
 Basis
 -----
-Basisversion: V0.19.40
-Ziel: KC DP2 wieder vollständig auf das dedizierte Supabase-Projekt ptblnpiroqftcvlsrhac zurückführen, ohne den Live-Stand V0.19.40 vor einer vollständigen Abnahme zu überschreiben.
+Basisversion: V0.19.41
+Ziel: Den geprüften KC-DP2-Stand als kanonischen V0.19.42-Release freigabefähig verpacken und die Manager-/Planer- sowie Push-Härtungen ohne Regressionen veröffentlichen.
 
-Runtime-Änderungen
-------------------
-Es wurden gegenüber V0.19.40 ausschließlich drei Runtime-Dateien geändert:
-- src/core/integrations.js
-- src/adapters/push.js
-- src/core/update-manager.js
-
-Supabase-Ziel
+Freigabestand
 -------------
-- Das dedizierte KC-DP2-Projekt ist ptblnpiroqftcvlsrhac.
-- Future Academy (iddudrxuihdodnvejxcp) ist kein KC-DP2-Runtime-Ziel mehr.
-- Bereits lokal gespeicherte Academy-Konfigurationen werden beim Laden automatisch auf das dedizierte KC-DP2-Projekt migriert.
+- Dediziertes KC-DP2-Supabase-Projekt bleibt das alleinige Runtime-Ziel.
+- Manager bleibt führende Quelle für die vorgesehenen Stammdaten und Regeln.
+- Planer-, Empfehlungs-, Verfügbarkeits- und Auditpfade wurden im V0.19.42-Tiefen-TÜV geprüft.
+- Smartphone-, Wunsch -> Soll -> Ist-, Rollen-, Dokument/PDF/E-Mail- und Foto-Pipeline-Regressionen wurden geprüft.
 
-Datenbank-Rückführung
----------------------
-- Fehlende spätere KC-DP2-Schemabausteine wurden im dedizierten Projekt ergänzt: Mehrgeräte-Sync, Konfliktjournal, Push-Basis, Push-Bestätigungen, Nacht-Push-Datentabellen und Vertretungsworkflow.
-- Der verschlüsselte Syncbestand wurde kontrolliert abgeglichen.
-- Ergebnis im dedizierten Projekt: 54 Sync-Operationen, Sequenzbereich 1 bis 56 und 27 Entity-Versionen.
-- Die acht fehlenden verschlüsselten Operationen wurden anhand ihrer stabilen operation_id übernommen; die projektspezifische Auth-UUID wurde auf den vorhandenen KC-DP2-Admin gemappt.
-- Testkonflikte, eine abgelaufene Test-Vertretungsanfrage und alte Push-Abonnements wurden bewusst nicht übernommen.
+Push-Härtung
+------------
+- Zeitkritische Push-Nachrichten werden mit High Urgency und definierter TTL versendet.
+- Die Push-Kette kann Anzeige, Öffnen und Verwerfen getrennt protokollieren.
+- Der Android-End-to-End-Test wurde erfolgreich nachgewiesen: gesendet -> angezeigt -> geöffnet.
+- Die Supabase-Sitzung wird vor geschützten Push-Aufrufen wiederhergestellt bzw. bei Bedarf per Refresh-Token erneuert.
+- Die geschützte Self-Test-Funktion bleibt als Diagnosepfad erhalten; ein schwebender Testbutton ist nicht Bestandteil der normalen Oberfläche.
 
-Push
-----
-- Die Edge Function kc-dp-push ist im dedizierten Projekt installiert; ihr Code entspricht der geprüften bisherigen Funktion.
-- Alte Browser-Push-Abonnements werden nicht zwischen Supabase-Projekten kopiert.
-- V0.19.41 prüft nach Anmeldung bei bereits erteilter Push-Berechtigung still den aktuellen VAPID-Key. Bei einem Key-Wechsel wird das Geräteabo automatisch erneuert, ohne eine neue Browser-Berechtigungsabfrage auszulösen.
-- Die manuelle Push-Aktivierung fordert weiterhin regulär die Browserberechtigung an.
-
-Sicherheitsgrenze vor Produktivfreigabe
----------------------------------------
-- Der private VAPID-Schlüssel wurde nicht in GitHub, Quellcode oder Migrationen geschrieben.
-- Die produktiven VAPID-Secrets des dedizierten Projekts sind noch nicht gesetzt.
-- Der Nacht-Push-Cron ist im dedizierten Projekt noch nicht aktiviert.
-- Deshalb darf V0.19.41 noch nicht auf main bzw. GitHub Pages veröffentlicht werden.
+Releaseintegrität
+-----------------
+- V0.19.42 besitzt einen eigenen kanonischen Releasebaum unter release/v0.19.42/site.
+- Runtime-Dateien werden über Bytezahl und SHA-256 im Update-Manifest versiegelt.
+- Manifest- und Push-Dateiänderungen lösen den V0.19.42-Tiefen-TÜV aus.
+- Der produktive Stand darf erst nach vollständig grüner Prüfung des tatsächlichen V0.19.42-Releasebaums auf main/GitHub Pages übernommen werden.
 
 Abnahme
 -------
-Der isolierte Staginglauf prüft:
-- dediziertes Supabase-Ziel und Migration alter Academy-Konfigurationen
-- Push-Reconcile ohne unerlaubte Berechtigungsabfrage
-- Smartphone-Tagesansicht
-- Wunsch -> Soll -> Ist
-- Dokumente / PDF / E-Mail
-- Foto-Pipeline
-- Rollen- und Berechtigungsmatrix
-
-Der vollständige Staginglauf #3 war erfolgreich; die Rollenmatrix bestand 30/30 Prüfungen.
-
-Freigaberegel
--------------
-Erst nach sicherem Setzen der VAPID-Secrets, einem echten Push-Test im dedizierten Projekt und erneut vollständig grüner Regression darf der Draft-PR freigegeben und V0.19.41 veröffentlicht werden.
+Vor dem finalen Merge müssen insbesondere Release-/Security-/Architekturregeln, Offline-XLSX, Push-Receipts, Manager Leading Source, Auto-Sync, Planner, Smartphone, Wunsch -> Soll -> Ist, Rollen/Berechtigungen, Dokumente/PDF/E-Mail und Foto-Pipeline vollständig grün sein.
