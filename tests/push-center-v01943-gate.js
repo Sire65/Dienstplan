@@ -23,7 +23,7 @@ must(/new URLSearchParams\(location\.search\)/,'URL-Parameter-Auswertung fehlt')
 must(/get\('install'\)==='1'/,'Install-Deep-Link fehlt');
 must(/beforeinstallprompt/,'PWA Installationsdialog fehlt');
 must(/appinstalled/,'Installationsabschluss fehlt');
-mustSource(/pushCenter\.js/,'Push-Center Loader fehlt');
-mustSource(/pushCenter\.css/,'Push-Center CSS Loader fehlt');
+mustSource(/push-center\.js/,'Push-Center Loader fehlt');
+mustSource(/push-center\.css/,'Push-Center CSS Loader fehlt');
 if(!/kc-push-center/.test(css)||!/kc-install-overlay/.test(css))throw new Error('Push-Center CSS unvollständig');
 console.log('KC DP2 V0.19.43 Push Center Gate: PASS');
