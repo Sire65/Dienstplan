@@ -59,7 +59,7 @@
     if(!privilegedSelfTestRole()){btn?.remove();return;}
     if(btn)return;
     btn=document.createElement('button');btn.id=id;btn.type='button';btn.textContent='🔔 Push-Test an mich';btn.setAttribute('aria-label','Push-Test an mich senden');
-    Object.assign(btn.style,{position:'fixed',right:'12px',bottom:'12px',zIndex:'2147483000',padding:'10px 12px',borderRadius:'10px',border:'1px solid rgba(0,0,0,.25)',background:'#fff',color:'#111',font:'600 14px system-ui,sans-serif',boxShadow:'0 2px 10px rgba(0,0,0,.18)'});
+    Object.assign(btn.style,{position:'fixed',right:'12px',bottom:'72px',zIndex:'2147483000',padding:'10px 12px',borderRadius:'10px',border:'1px solid rgba(0,0,0,.25)',background:'#fff',color:'#111',font:'600 14px system-ui,sans-serif',boxShadow:'0 2px 10px rgba(0,0,0,.18)'});
     btn.addEventListener('click',async()=>{const old=btn.textContent;btn.disabled=true;btn.textContent='Sende …';try{const r=await sendSelfTest();btn.textContent='✓ Gesendet';btn.title=`Test-ID ${r.id}`;}catch(e){btn.textContent='✕ Push-Test';btn.title=e?.message||String(e);alert(`Push-Test nicht gesendet: ${e?.message||e}`);}finally{setTimeout(()=>{btn.disabled=false;btn.textContent=old;},2500);}});
     document.body.appendChild(btn);
   }
