@@ -1,0 +1,45 @@
+(function(){
+ const K=window.KCDP=window.KCDP||{},P=K.pilotOnboarding;
+ const ENDPOINT='https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/kc-dp-pilot';
+ const TOKEN_KEY='kc_dp_pilot_token_v01948';
+ let deferredInstall=null,server=null,verified=false;
+ const $=id=>document.getElementById(id);
+ const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+ function token(){const u=new URL(location.href),t=u.searchParams.get('pilot');if(t&&t.length>=32)localStorage.setItem(TOKEN_KEY,t);return t||localStorage.getItem(TOKEN_KEY)||''}
+ function clearError(){$('pilotError').classList.add('pilot-hidden');$('pilotError').textContent=''}
+ function fail(e){$('pilotError').textContent=e?.message||String(e);$('pilotError').classList.remove('pilot-hidden')}
+ function deviceLabel(){return P.device()==='ios'?'iPhone / iOS':P.device()==='android'?'Android':'dieses Gerät'}
+ function standalone(){return P.installed()}
+ function inAppBrowser(){const u=navigator.userAgent||'';return /WhatsApp|FBAN|FBAV|Instagram|Line\//i.test(u)}
+ function pushGranted(){return typeof Notification!=='undefined'&&Notification.permission==='granted'}
+ function snapshot(){return P.snapshot()}
+ function statusRows(){const s=snapshot();const rows=[['Einladung geöffnet',verified],['Pilot-App installiert',standalone()],['Benachrichtigungen aktiviert',pushGranted()||!!s.pushEnabledAt],['Server-Test-Push geöffnet',!!s.testReceivedAt]];$('pilotSteps').innerHTML=rows.map(([label,ok],i)=>`<div class="pilot-step ${ok?'ok':(!rows.slice(0,i).some(x=>!x[1])?'current':'')}"><span class="pilot-dot">${ok?'✓':i+1}</span><span>${esc(label)}</span></div>`).join('')}
+ async function call(action,payload={}){const t=token();if(!t)throw new Error('Dein persönlicher Testzugang ist in dieser App noch nicht verbunden.');const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:t,device:P.device(),installed:standalone(),notification:typeof Notification==='undefined'?'unsupported':Notification.permission,...payload})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Pilot-Service HTTP ${r.status}`);return data}
+ function b64u(s){const pad='='.repeat((4-s.length%4)%4),raw=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')),a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);return a}
+ function hideActions(){['pilotInstallBtn','pilotPushBtn','pilotTestBtn'].forEach(id=>$(id).classList.add('pilot-hidden'))}
+ function next(title,html){$('pilotNext').classList.remove('pilot-hidden');$('pilotNextTitle').textContent=title;$('pilotDeviceHelp').innerHTML=html}
+ function recovery(){verified=false;statusRows();hideActions();$('pilotIntro').className='pilot-note warn';$('pilotIntro').innerHTML='<b>Die App ist installiert, aber der persönliche Zugang wurde beim ersten Installieren nicht übernommen.</b>';$('pilotNext').classList.remove('pilot-hidden');$('pilotNextTitle').textContent='Einmal neu und richtig verbinden';$('pilotDeviceHelp').innerHTML='1. Dieses <b>KC DP2 Pilot</b>-Symbol vom Home-Bildschirm entfernen.<br>2. Deinen persönlichen Link in WhatsApp erneut antippen.<br>3. Dort <b>In Safari öffnen</b> wählen.<br>4. Erst in Safari: <b>Teilen → Zum Home-Bildschirm → Hinzufügen</b>.<br>5. Danach KC DP2 Pilot vom Home-Bildschirm öffnen.'}
+ function render(){clearError();statusRows();hideActions();$('pilotNext').classList.add('pilot-hidden');const s=snapshot();if(!token()&&standalone()){recovery();return}if(!verified)return;
+   if(!standalone()){
+     if(P.device()==='ios'){
+       next('Schritt 2 – Pilot-App installieren',inAppBrowser()?'<b>Du bist noch im WhatsApp-Browser.</b><br><br>1. Öffne das Menü unten.<br>2. Wähle <b>In Safari öffnen</b>.<br>3. In Safari: <b>Teilen → Zum Home-Bildschirm → Hinzufügen</b>.<br>4. Danach dieses Browserfenster schließen.<br>5. Auf dem Home-Bildschirm <b>KC DP2 Pilot</b> öffnen.<br><br><b>Wichtig:</b> Erst wenn die Browserleiste verschwunden ist, ist die App wirklich gestartet.':'1. In Safari auf <b>Teilen</b> tippen.<br>2. <b>Zum Home-Bildschirm</b> wählen.<br>3. <b>Hinzufügen</b> bestätigen.<br>4. Safari schließen.<br>5. Auf dem Home-Bildschirm <b>KC DP2 Pilot</b> öffnen.');
+     } else {
+       next('Schritt 2 – Pilot-App installieren',deferredInstall?'Tippe unten auf <b>Pilot-App installieren</b>. Danach die neue KC-DP2-Pilot-App vom Startbildschirm öffnen.':'Öffne das Browser-Menü und wähle <b>App installieren</b> oder <b>Zum Startbildschirm hinzufügen</b>. Danach KC DP2 Pilot vom Startbildschirm öffnen.');if(deferredInstall)$('pilotInstallBtn').classList.remove('pilot-hidden');
+     }
+     return;
+   }
+   if(!pushGranted()&&!s.pushEnabledAt){next('Schritt 3 – Benachrichtigungen aktivieren','Jetzt läuft die installierte Pilot-App richtig. Tippe auf <b>Benachrichtigungen aktivieren</b> und bestätige die Systemabfrage mit <b>Erlauben</b>.');$('pilotPushBtn').classList.remove('pilot-hidden');return}
+   if(!s.testReceivedAt){next('Schritt 4 – Test-Push prüfen','Tippe auf <b>Test-Push senden</b>. Sobald die Benachrichtigung erscheint, <b>tippe sie an</b>. Erst dann ist der Test vollständig bestanden.');$('pilotTestBtn').classList.remove('pilot-hidden');return}
+   $('pilotNext').classList.add('pilot-hidden');$('pilotComplete').classList.remove('pilot-hidden');$('pilotRemoveHelp').textContent='Bitte die Pilot-App bis zum Ende der gemeinsamen Testphase installiert lassen.'
+ }
+ async function registerPush(){if(!standalone()&&P.device()==='ios')throw new Error('Bitte zuerst die Pilot-App vom Home-Bildschirm öffnen.');if(!('serviceWorker'in navigator)||!('PushManager'in window)||typeof Notification==='undefined')throw new Error(P.device()==='ios'?'Push ist in dieser iPhone-Web-App nicht verfügbar. Benötigt wird iOS 16.4 oder neuer und der Start über das Home-Bildschirm-Symbol.':'Web-Push wird von diesem Browser nicht unterstützt.');const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();if(permission!=='granted')throw new Error('Benachrichtigungen wurden nicht erlaubt. Bitte in den Geräteeinstellungen für KC DP2 Pilot freigeben.');if(!server?.vapidPublicKey)server=await call('bootstrap');const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.48',{scope:'./',updateViaCache:'none'});await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(server.vapidPublicKey)});await call('subscribe',{subscription:sub.toJSON?sub.toJSON():sub,userAgent:navigator.userAgent});P.markPushEnabled();render()}
+ async function boot(){try{if(!token()&&standalone()){recovery();return}server=await call('bootstrap');verified=true;$('pilotIntro').className='pilot-note success';$('pilotIntro').innerHTML=`Hallo <b>${esc(server.firstName||'')}</b>. Dein persönlicher Pilotzugang ist verbunden.`;if(standalone()){P.markInstalled();await call('installed').catch(()=>{})}render();await call('heartbeat').catch(()=>{})}catch(e){if(!token()&&standalone())recovery();else{fail(e);hideActions()}}}
+ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;render()});
+ window.addEventListener('appinstalled',()=>{deferredInstall=null;render()});
+ $('pilotInstallBtn').onclick=async()=>{try{clearError();if(!deferredInstall)throw new Error('Bitte das Browser-Menü verwenden und „App installieren“ wählen.');await deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;render()}catch(e){fail(e)}};
+ $('pilotPushBtn').onclick=async()=>{try{clearError();$('pilotPushBtn').disabled=true;await registerPush()}catch(e){fail(e)}finally{$('pilotPushBtn').disabled=false}};
+ $('pilotTestBtn').onclick=async()=>{try{clearError();$('pilotTestBtn').disabled=true;const out=await call('send_test');if(out.sent>0){$('pilotIntro').className='pilot-note success';$('pilotIntro').textContent='Test-Push ist unterwegs. Bitte die Benachrichtigung antippen.'}else throw new Error('Der Test-Push konnte noch nicht zugestellt werden.')}catch(e){fail(e)}finally{setTimeout(()=>{$('pilotTestBtn').disabled=false},2500)}};
+ navigator.serviceWorker?.addEventListener?.('message',e=>{if(e.data?.type==='KC_DP_NOTIFICATION_OPEN'&&e.data?.data?.pilot){if(e.data.data.type==='test'){P.markTestReceived();call('test_received').catch(()=>{})}if(e.data.data.type==='complete')P.markCompleted();render()}});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')render()});
+ boot();
+})();

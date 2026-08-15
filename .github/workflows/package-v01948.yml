@@ -1,0 +1,79 @@
+name: KC DP2 V0.19.48 Pilot UX Package
+on:
+  push:
+    branches: [feature/pilot-ux-fix-v01948]
+    paths: ['.github/workflows/package-v01948.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/pilot-ux-fix-v01948
+          fetch-depth: 0
+      - name: Create canonical V0.19.48 release
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf release/v0.19.48
+          cp -a release/v0.19.47 release/v0.19.48
+          cp candidate/v0.19.48/pilot/index.html release/v0.19.48/site/pilot/index.html
+          cp candidate/v0.19.48/pilot/manifest-ios.webmanifest release/v0.19.48/site/pilot/manifest-ios.webmanifest
+          cp candidate/v0.19.48/src/core/pilot-onboarding.js release/v0.19.48/site/src/core/pilot-onboarding.js
+          cp candidate/v0.19.48/src/ui/pilot-app.js release/v0.19.48/site/src/ui/pilot-app.js
+          cp candidate/v0.19.48/src/ui/pilot.css release/v0.19.48/site/src/ui/pilot.css
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,datetime
+          root=Path('release/v0.19.48/site')
+          def repl(rel,a,b):
+              p=root/rel;s=p.read_text(encoding='utf-8')
+              if a not in s: print('WARN marker missing',rel,a)
+              p.write_text(s.replace(a,b),encoding='utf-8')
+          repl('index.html','V0.19.47','V0.19.48')
+          repl('index.html',"EXPECTED='0.19.47'","EXPECTED='0.19.48'")
+          repl('src/core/model.js',"K.VERSION='0.19.47'","K.VERSION='0.19.48'")
+          repl('src/core/update-manager.js',"CURRENT_RELEASE='0.19.47'","CURRENT_RELEASE='0.19.48'")
+          repl('src/core/update-manager.js',"version:'0.19.47'","version:'0.19.48'")
+          repl('src/adapters/push.js','service-worker.js?v=0.19.47','service-worker.js?v=0.19.48')
+          repl('src/adapters/push.js',"version:'0.19.47'","version:'0.19.48'")
+          repl('src/ui/kc-ux-polish.js','0.19.47','0.19.48')
+          repl('src/ui/source-health-ui.js',"K.sourceHealthUi={version:'0.19.47'","K.sourceHealthUi={version:'0.19.48'")
+          repl('src/ui/source-health-ui.js','kc-ux-polish.css?v=0.19.47','kc-ux-polish.css?v=0.19.48')
+          repl('src/ui/source-health-ui.js','kc-ux-polish.js?v=0.19.47','kc-ux-polish.js?v=0.19.48')
+          mp=root/'update-manifest.json';m=json.loads(mp.read_text(encoding='utf-8'))
+          m['version']='0.19.48';m['cacheName']='kc-dp-release-0.19.48';m['releaseNotes']=[
+            'Pilot-Onboarding als eindeutiger Schritt-für-Schritt-Assistent',
+            'iPhone-Installation bewahrt den persönlichen Einladungslink',
+            'App installiert wird nur noch bei echtem Home-Screen-Start erkannt',
+            'WhatsApp-Browser und Safari werden verständlich unterschieden',
+            'Geführte Reparatur bei bereits ohne Token installierter Pilot-App'
+          ];m['generatedAt']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+          pilot=['pilot/manifest-ios.webmanifest']
+          existing={f.get('installPath') or f['path'] for f in m['files']}
+          for p in pilot:
+              if p not in existing:m['files'].append({'path':p,'installPath':p,'runtime':True})
+          total=0;seen=set()
+          for f in m['files']:
+              install=f.get('installPath') or f['path']
+              if install in seen: raise SystemExit('duplicate manifest path '+install)
+              seen.add(install);p=root/install
+              if not p.is_file(): raise SystemExit('manifest file missing '+install)
+              b=p.read_bytes();f['bytes']=len(b);f['sha256']=hashlib.sha256(b).hexdigest()
+              if f.get('runtime',True): total+=len(b)
+          m['totalRuntimeBytes']=total;mp.write_text(json.dumps(m,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/current.json').write_text(json.dumps({'app':'KC DP2','version':'0.19.48','mode':'verified-direct-site','baseVersion':'0.19.47','previousVersion':'0.19.47','releasePath':'release/v0.19.48/site'},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          Path('release/v0.19.48/RELEASE.txt').write_text('KC DP2 V0.19.48\n================\n\nPilot UX Fix: eindeutige iPhone/Android Schritt-für-Schritt-Installation und Token-Erhalt.\n',encoding='utf-8')
+          print('SEALED V0.19.48',len(m['files']),'files',total,'runtime bytes')
+          PY
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.48/site -type f -name '*.js' -print0)
+          node tests/pilot-v01948-gate.js
+          node tests/tuev-studio-current.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.48 release/current.json
+          git commit -m 'release: create canonical KC DP2 V0.19.48 pilot UX fix'
+          git push origin HEAD:feature/pilot-ux-fix-v01948

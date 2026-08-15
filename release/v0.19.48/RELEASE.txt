@@ -1,0 +1,4 @@
+KC DP2 V0.19.48
+================
+
+Pilot UX Fix: eindeutige iPhone/Android Schritt-für-Schritt-Installation und Token-Erhalt.

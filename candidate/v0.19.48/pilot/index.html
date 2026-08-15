@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#741521">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="KC DP2 Pilot">
+  <title>KC DP2 Pilot-Test</title>
+  <script>
+    (function(){
+      const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent||'');
+      const link=document.createElement('link');
+      link.rel='manifest';
+      link.href=(ios?'manifest-ios.webmanifest':'manifest.webmanifest')+'?v=0.19.48';
+      document.head.appendChild(link);
+    })();
+  </script>
+  <link rel="apple-touch-icon" href="../assets/kc-dp2-apple-touch-icon.png?v=0.19.48">
+  <link rel="stylesheet" href="../src/ui/pilot.css?v=0.19.48">
+</head>
+<body>
+  <main class="pilot-shell">
+    <section class="pilot-card">
+      <div class="pilot-brand">
+        <img src="../assets/kc-dp2-apple-touch-icon.png" alt="KC DP2">
+        <div><h1>KC DP2 Pilot-Test</h1><p>Köcheclub Werne · Schritt für Schritt</p></div>
+      </div>
+      <div id="pilotIntro" class="pilot-note">Dein persönlicher Testzugang wird geprüft …</div>
+      <div id="pilotError" class="pilot-error pilot-hidden"></div>
+      <div id="pilotSteps" class="pilot-status"></div>
+      <section id="pilotNext" class="pilot-next pilot-hidden">
+        <div class="pilot-next-kicker">Jetzt als Nächstes</div>
+        <h2 id="pilotNextTitle"></h2>
+        <div id="pilotDeviceHelp" class="pilot-note"></div>
+        <div class="pilot-actions">
+          <button id="pilotInstallBtn" class="pilot-btn secondary pilot-hidden">Pilot-App installieren</button>
+          <button id="pilotPushBtn" class="pilot-btn pilot-hidden">Benachrichtigungen aktivieren</button>
+          <button id="pilotTestBtn" class="pilot-btn pilot-hidden">Test-Push senden</button>
+        </div>
+      </section>
+      <p class="pilot-small">Dieser Pilotzugang enthält keine Köcheclub-Mitgliederdaten und keine Dienstpläne. Getestet werden nur Installation und Push.</p>
+    </section>
+    <section id="pilotComplete" class="pilot-card pilot-complete pilot-hidden" style="margin-top:16px">
+      <h2>✅ Test erfolgreich</h2>
+      <p>Die Installation und der Push-Test funktionieren auf diesem Gerät.</p>
+      <div id="pilotRemoveHelp" class="pilot-note"></div>
+    </section>
+  </main>
+  <script src="../src/core/pilot-onboarding.js?v=0.19.48"></script>
+  <script src="../src/ui/pilot-app.js?v=0.19.48"></script>
+</body>
+</html>
