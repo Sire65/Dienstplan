@@ -46,22 +46,14 @@ jobs:
 
       - name: TÜV Studio – current release, security, architecture, rules
         run: node tests/tuev-studio-current.js
-
       - name: Release integrity V0.19.45
         run: node tests/release-v01945-gate.js
-
       - name: KC UX Polish and responsive contract
         run: node tests/ux-polish-v01945-gate.js
-
       - name: Diagnostics and TableCore contract
         run: node tests/diagnostics-v01944-gate.js
-
       - name: Push Center contract
         run: node tests/push-center-v01943-gate.js
-
-      - name: Dedicated Supabase contract
-        run: node tests/dedicated-supabase-e2e.js
-
       - name: Legacy sealed release regression gates
         shell: bash
         run: |
@@ -92,6 +84,8 @@ jobs:
           cat /tmp/kcdp-deep-http.log
           exit 1
 
+      - name: Dedicated Supabase contract
+        run: node tests/dedicated-supabase-e2e.js
       - name: Manager Core leading-source and completeness
         run: node tests/manager-leading-source-e2e.js
       - name: Manager auto-sync permissions and failure safety
