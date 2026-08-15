@@ -9,7 +9,7 @@
     "TÜV/Studio-Regelwerk und Deep-Regression konsolidiert",
     "V0.19.45 bleibt unverändert als versiegelter Vorgänger erhalten"
   ],
-  "generatedAt": "2026-08-15T12:33:10.583449+00:00",
+  "generatedAt": "2026-08-15T12:35:41.137063+00:00",
   "totalRuntimeBytes": 396741,
   "files": [
     {
@@ -177,7 +177,7 @@
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
       "bytes": 4564,
-      "sha256": "2d4d2201589a49440da7a205ffb57592e3bdf947f86be8f91f81a7d3c4658188",
+      "sha256": "30f3933303d3249e74b3e6716855ae8e60b32d9e9bd49ed23bdb1c48727f3d0f",
       "runtime": true
     },
     {
