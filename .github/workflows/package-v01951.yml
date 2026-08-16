@@ -24,7 +24,9 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.51/site -type f -name '*.js' -print0)
       - name: Diagnostics regression gate
-        run: node tests/diagnostics-tablecore-gate.js
+        run: node tests/diagnostics-v01944-gate.js
+      - name: Mobile smoke
+        run: node tests/mobile-smoke.js
       - name: TÜV Studio
         run: node tests/tuev-studio-current.js
       - name: Commit sealed release
