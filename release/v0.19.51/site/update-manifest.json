@@ -4,20 +4,19 @@
   "version": "0.19.51",
   "cacheName": "kc-dp-release-0.19.51",
   "releaseNotes": [
-    "Fehler & Diagnose: kein endloses Laden mehr",
-    "12-Sekunden-Timeout und verständliche Supabase-/Anmeldefehler",
-    "Erneut-versuchen-Funktion direkt im Diagnosefenster",
-    "Fallback-Tabelle, falls TableCore verzögert lädt",
-    "Smartphone-Diagnose robuster und cache-sicher aktualisiert"
+    "Fehler & Diagnose: kein endloses Laden mehr; Timeout, Retry und verständlicher Fehlerzustand",
+    "Fallback-Tabelle falls TableCore verzögert lädt",
+    "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
+    "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-16T12:29:00.343818+00:00",
+  "generatedAt": "2026-08-16T16:18:21.613904+00:00",
   "totalRuntimeBytes": 425266,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
       "bytes": 11201,
-      "sha256": "25edecc673295af02ad72bd02bea34468c62d2d7134dcdb8af843fe299c703b0",
+      "sha256": "01fdce8f57dafd94ac6cf8cac889e60721095672cc35274552c104956331740d",
       "runtime": true
     },
     {
@@ -178,7 +177,7 @@
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
       "bytes": 4922,
-      "sha256": "261f95faa7b2018855acc4cbef890f663225cef34858e191e51dc835464ac14d",
+      "sha256": "35ae3e6e84724c646f8223f9bb01b81d99a41cfe169243c7cf5791b782a6e785",
       "runtime": true
     },
     {
