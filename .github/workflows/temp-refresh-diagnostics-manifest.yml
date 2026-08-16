@@ -1,0 +1,39 @@
+name: TEMP Refresh Diagnostics Manifest
+on:
+  push:
+    branches: [feature/diagnostics-manager-center-v01951]
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: feature/diagnostics-manager-center-v01951
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Refresh manifest hashes
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),crypto=require('crypto');
+          const root='release/v0.19.51/site', path=root+'/update-manifest.json';
+          const m=JSON.parse(fs.readFileSync(path,'utf8'));
+          for(const f of m.files){
+            const p=root+'/'+f.path;
+            if(!fs.existsSync(p)) continue;
+            const b=fs.readFileSync(p);
+            f.bytes=b.length;
+            f.sha256=crypto.createHash('sha256').update(b).digest('hex');
+          }
+          m.totalRuntimeBytes=m.files.filter(f=>f.runtime).reduce((n,f)=>n+Number(f.bytes||0),0);
+          m.generatedAt=new Date().toISOString();
+          fs.writeFileSync(path,JSON.stringify(m,null,2)+'\n');
+          NODE
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.51/site/update-manifest.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Release: Diagnose-Manifest Integrität aktualisieren'
+          git push origin HEAD:feature/diagnostics-manager-center-v01951
