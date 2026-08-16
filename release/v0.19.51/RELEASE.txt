@@ -1,0 +1,4 @@
+KC DP2 V0.19.51
+================
+
+Diagnose-Hotfix: Fehlerprotokoll lädt robust mit Timeout, Retry und Fallback-Tabelle.
