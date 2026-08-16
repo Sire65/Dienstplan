@@ -11,7 +11,7 @@
     "Smartphone-Diagnose robuster und cache-sicher aktualisiert"
   ],
   "generatedAt": "2026-08-16T12:29:00.343818+00:00",
-  "totalRuntimeBytes": 425266,
+  "totalRuntimeBytes": 429428,
   "files": [
     {
       "path": "index.html",
@@ -37,8 +37,8 @@
     {
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
-      "bytes": 10360,
-      "sha256": "55d294e4772d245e1f4b2102f857dd643bf6b2e4513f5b88cdde7ecd92a585ab",
+      "bytes": 10756,
+      "sha256": "b7ab19d06cb06a93bf7b6e18956ceb48a2a7ef8724d529836058705e5b49fa26",
       "runtime": true
     },
     {
@@ -199,8 +199,8 @@
       "path": "src/adapters/diagnostics.js",
       "installPath": "src/adapters/diagnostics.js",
       "runtime": true,
-      "bytes": 4729,
-      "sha256": "b0cebb104eb44500affab9679b561358d3ee9306279b33119afdb13412f55b8e"
+      "bytes": 8495,
+      "sha256": "4bb0a90d448b726bdfd829d2e76f2b6921039cbd42529fd841f377fd4af423ef"
     },
     {
       "path": "src/ui/diagnostics-center.js",
