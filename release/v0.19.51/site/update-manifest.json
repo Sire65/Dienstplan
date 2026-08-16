@@ -9,8 +9,8 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-16T17:18:46.259Z",
-  "totalRuntimeBytes": 429174,
+  "generatedAt": "2026-08-16T19:01:43.074Z",
+  "totalRuntimeBytes": 427989,
   "files": [
     {
       "path": "index.html",
@@ -198,22 +198,22 @@
       "path": "src/adapters/diagnostics.js",
       "installPath": "src/adapters/diagnostics.js",
       "runtime": true,
-      "bytes": 8146,
-      "sha256": "d73601a14e7353256ddc717de3737de74633895edba9228cb76f4a9a90ca7518"
+      "bytes": 7714,
+      "sha256": "3216ca3e56e31222e849d7c4703935290d52df112a89ebd4fc67d4c450d4b2fc"
     },
     {
       "path": "src/ui/diagnostics-center.js",
       "installPath": "src/ui/diagnostics-center.js",
       "runtime": true,
-      "bytes": 7381,
-      "sha256": "17e554d68115145c1cb5c27c492482a0ea5e463393ddcd931515fae57dbda27e"
+      "bytes": 6010,
+      "sha256": "fe14910b5c5314e12b889bb62e154df0814c7e0a8ee163c689f62c7e6ac1f793"
     },
     {
       "path": "src/ui/diagnostics-center.css",
       "installPath": "src/ui/diagnostics-center.css",
       "runtime": true,
-      "bytes": 1913,
-      "sha256": "1e27df19259057ecaeeddeaef521817ce7f45e4def230af02069378276b73cab"
+      "bytes": 2531,
+      "sha256": "84610cac758560cd633bae401240e72725e99fe9aa58c8511f28bfa21b866058"
     },
     {
       "path": "src/core/table-core-adapter.js",
