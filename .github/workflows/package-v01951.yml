@@ -1,0 +1,40 @@
+name: KC DP2 V0.19.51 Diagnostics Hotfix Package
+on:
+  push:
+    branches:
+      - "fix/diagnostics-v01951"
+    paths:
+      - ".github/workflows/package-v01951.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: "fix/diagnostics-v01951"
+          fetch-depth: 0
+      - name: Build canonical V0.19.51
+        run: python3 scripts/package-v01951.py
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.51/site -type f -name '*.js' -print0)
+      - name: Diagnostics regression gate
+        run: node tests/diagnostics-tablecore-gate.js
+      - name: TÜV Studio
+        run: node tests/tuev-studio-current.js
+      - name: Commit sealed release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/v0.19.51 release/current.json
+          git commit -m 'release: create KC DP2 V0.19.51 diagnostics hotfix'
+          git fetch origin fix/diagnostics-v01951
+          git rebase origin/fix/diagnostics-v01951
+          git push origin HEAD:fix/diagnostics-v01951
