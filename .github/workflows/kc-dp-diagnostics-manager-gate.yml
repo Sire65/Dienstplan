@@ -1,0 +1,23 @@
+name: KC DP2 Diagnostics Manager Gate
+on:
+  pull_request:
+    paths:
+      - 'release/v0.19.51/site/src/adapters/diagnostics.js'
+      - 'release/v0.19.51/site/src/ui/diagnostics-center.js'
+      - 'release/v0.19.51/site/src/ui/diagnostics-center.css'
+      - 'release/v0.19.51/tests/diagnostics-manager-center-contract.mjs'
+      - 'release/v0.19.51/site/update-manifest.json'
+jobs:
+  diagnostics-manager:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check release/v0.19.51/site/src/adapters/diagnostics.js
+          node --check release/v0.19.51/site/src/ui/diagnostics-center.js
+      - name: Manager diagnostics contract
+        run: node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
