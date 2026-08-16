@@ -20,6 +20,8 @@ const rules=fs.readFileSync(RULES,'utf8');
 for(const m of ['Release- und Branch-Regeln','Supabase- und Security-Regeln','Datenquellen- und Stammdatenregeln','Planungsregeln','Tagesauswahl „Alle“ / „Verfügbar“','Rollen- und Bedienregeln','Offline-, PWA- und Update-Regeln','Push-Regeln','Diagnose-, TableCore- und Fehlerprotokoll-Regeln','Pflicht-Regression vor Freigabe','GRÜN:','GELB:','ROT:'])ok(rules.includes(m),'rulebook contains '+m);
 ok(rules.includes(`V${current.version}`)||rules.includes('versionsübergreifend verbindlich'),'rulebook covers current production generation');
 
+for(const p of ['src/adapters/push.js','src/adapters/diagnostics.js']){const b=fs.readFileSync(path.join(SITE,p));console.log(`HOTFIX_INTEGRITY ${p} bytes=${b.length} sha256=${sha(b)}`)}
+
 const manifest=JSON.parse(read('update-manifest.json'));
 ok(manifest.schema==='KC_DP_UPDATE_MANIFEST_V1','manifest schema correct');
 ok(manifest.version===current.version,'manifest version equals current release');
