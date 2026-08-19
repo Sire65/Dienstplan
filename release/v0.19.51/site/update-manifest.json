@@ -4,6 +4,9 @@
   "version": "0.19.51",
   "cacheName": "kc-dp-release-0.19.51",
   "releaseNotes": [
+    "Supabase-Verbindung: automatischer Start-Healthcheck, laufender Heartbeat und Reconnect; Rot erst nach drei bestätigten Fehlern",
+    "Fehlerdiagnose: offene Meldungen, Historie und Tests strikt getrennt",
+    "Alt-Excel-Migration: mehrere Wunschlisten gesammelt prüfen, Mitglied über Name/ID zuordnen und Dubletten verhindern",
     "Pilot-Installtest: einmal PC, Handy oder Tablet auswählen; Installation, Push-Einrichtung und Test laufen danach automatisch soweit das Betriebssystem es erlaubt",
     "Pilot-Push: Empfang wird vom Service Worker automatisch an den Testserver bestätigt; kein Antippen des Test-Push mehr nötig",
     "Fehlerprotokoll mobil: Kartenansicht wird auf Handys zwingend verwendet; eine gespeicherte Tabellenansicht kann sie nicht mehr überschreiben",
@@ -12,14 +15,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-19T19:09:20.566Z",
-  "totalRuntimeBytes": 482305,
+  "generatedAt": "2026-08-19T19:59:38.641Z",
+  "totalRuntimeBytes": 496563,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 11719,
-      "sha256": "9b0cc2811025d1d0a2f0fa92280bcd6f5aefc4e74efcb150a4850ccaee4905ba",
+      "bytes": 11770,
+      "sha256": "def9e7ae4540c80a8d0b7084d94de53268b2cbf1d5805f3c8e3bf48ecae529f0",
       "runtime": true,
       "forceRefresh": true
     },
@@ -210,8 +213,8 @@
       "installPath": "src/ui/diagnostics-center.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 11624,
-      "sha256": "27daadc666d500c7e6d832ecf91ae256e8b633fb643094ad0e5bb50f78c8ac5b"
+      "bytes": 11724,
+      "sha256": "c8494d4f64de38f52455c9c663ddc850a99c157e97345990b056fdc615662955"
     },
     {
       "path": "src/ui/diagnostics-center.css",
@@ -411,16 +414,24 @@
       "installPath": "src/core/supabase-connection-monitor.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 5278,
-      "sha256": "2273c7e38095ac3c2852e70beb1cd43e7dd7104d2c3905578edde9068a2f03df"
+      "bytes": 6595,
+      "sha256": "30052b0e5f89cb4274c195412b0f621dfccbcdd0621b324bd362100af4301f27"
     },
     {
       "path": "src/ui/diagnostics-history-view.js",
       "installPath": "src/ui/diagnostics-history-view.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 2198,
-      "sha256": "f75b8aaa669cee93d010f04f192e417e54490a303a0805ca34833c3ab78e59f6"
+      "bytes": 2254,
+      "sha256": "e23979ca9f42bbb352961764e59a9941dcc1df4d595c077437751205b19d8ed1"
+    },
+    {
+      "path": "src/ui/excel-migration-center.js",
+      "installPath": "src/ui/excel-migration-center.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 12734,
+      "sha256": "fd0f4231881f46ff44d8a1c9ab270cf9c0dd08b0b710b997e9fafc2c97a0533e"
     }
   ]
 }

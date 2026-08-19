@@ -50,7 +50,7 @@
    './src/ui/app.js?v=0.17.10' legacy regression marker
    './templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx'
 */
-const ENGINE='kc-dp-update-engine-v1.3';
+const ENGINE='kc-dp-update-engine-v1.4';
 const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const UPDATE_MANIFEST='./update-manifest.json';

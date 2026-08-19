@@ -1,0 +1,22 @@
+'use strict';
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert');
+const ROOT=path.resolve(__dirname,'..');
+const src=fs.readFileSync(path.join(ROOT,'release/v0.19.51/site/src/ui/excel-migration-center.js'),'utf8');
+const wish=fs.readFileSync(path.join(ROOT,'release/v0.19.51/site/src/adapters/wish-import.js'),'utf8');
+for(const needle of ['extractIdentity','resolvePerson','classifyEntries','excelMigrations','fingerprint','multiple','excel_migration','Nur Administratoren','Dubletten'])assert.ok(src.includes(needle),'Excel-Migrationsvertrag fehlt: '+needle);
+for(const needle of ['Sperrtag','Nur wenn nötig','Wunschzeit muss vollständig innerhalb','aktuellen KC-DP-Zeitraum','legacyFrom'])assert.ok(wish.includes(needle),'Wunschimport-Plausibilitätsregel fehlt: '+needle);
+class MO{constructor(cb){this.cb=cb}observe(){}disconnect(){}}
+const people=[{personId:'KC-P-001',name:'Anna Beispiel',email:'anna@example.de',active:true,personType:'member'},{personId:'KC-P-002',name:'Bernd König',email:'bernd@example.de',active:true,personType:'member'}];
+const wishes=[{personId:'KC-P-001',date:'2026-12-04',start:12,end:18,wishType:'available',status:'confirmed'}];
+const K={people,wishes,currentUser:{role:'admin'},memberUxData:{},wishImport:{},roleUx:{},longTask:{},mutations:{},persistAll:async()=>{}};
+const context={window:{KCDP:K,XLSX:{}},document:{body:{},getElementById:()=>null,querySelectorAll:()=>[],querySelector:()=>null},MutationObserver:MO,setTimeout:()=>0,clearTimeout(){},crypto:{subtle:{}},Intl,Date,console,confirm:()=>true,alert(){},Promise,Uint8Array};
+vm.createContext(context);vm.runInContext(src,context,{filename:'excel-migration-center.js'});
+const m=K.excelMigrationCenter;assert.ok(m,'Excel migration center not registered');
+const matrix=Array.from({length:8},()=>[]);matrix[3][3]='Anna Beispiel';matrix[3][7]='KC-P-001';matrix[4][3]='anna@example.de';
+const identity=m.extractIdentity(matrix,'KC_DP2_Wunschzeiten_Anna_KC-P-001.xlsx');assert.equal(identity.personId,'KC-P-001');assert.equal(identity.name,'Anna Beispiel');
+let r=m.resolvePerson(identity,people);assert.equal(r.person.personId,'KC-P-001');assert.equal(r.method,'person_id');
+r=m.resolvePerson({name:'Bernd König',personId:'',email:''},people);assert.equal(r.person.personId,'KC-P-002');assert.equal(r.method,'name');
+r=m.resolvePerson({name:'Unbekannt',personId:'KC-P-999',email:''},people);assert.equal(r.person,null);assert.equal(r.method,'unknown_id');
+const entries=[{date:'2026-12-04',start:12,end:18,wishType:'available'},{date:'2026-12-05',start:14,end:18,wishType:'preferred'},{date:'2026-12-05',start:14,end:18,wishType:'preferred'}];
+const c=m.classifyEntries('KC-P-001',entries);assert.equal(c.duplicates.length,1,'Bestehende Angabe muss als Dublette erkannt werden');assert.equal(c.fresh.length,1,'Genau eine neue Angabe erwartet');assert.equal(c.withinFileDuplicates.length,1,'Doppelte Zeile innerhalb Datei muss erkannt werden');
+console.log('KC DP2 old Excel migration identity/deduplication gate: OK');

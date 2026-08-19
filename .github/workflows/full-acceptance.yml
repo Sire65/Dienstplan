@@ -84,6 +84,15 @@ jobs:
       - name: Rollen und Berechtigungen Praxisabnahme
         run: node tests/roles-e2e.js
 
+      - name: Supabase startup heartbeat and reconnect regression
+        run: node tests/supabase-connection-monitor-v01951-gate.js
+
+      - name: Diagnostics history regression
+        run: node tests/diagnostics-history-v01951-gate.js
+
+      - name: Old Excel migration regression
+        run: node tests/excel-migration-v01951-gate.js
+
       - name: Testserver log on failure
         if: failure()
         run: cat /tmp/kcdp-e2e-server.log || true
