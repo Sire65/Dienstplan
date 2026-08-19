@@ -43,6 +43,7 @@ jobs:
           node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
           node tests/push-center-v01943-gate.js
           node tests/pilot-v01948-gate.js
+          node tests/pilot-mobile-secure-gate.js
           ROOT="${{ steps.release.outputs.path }}"
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
       - uses: actions/configure-pages@v6
