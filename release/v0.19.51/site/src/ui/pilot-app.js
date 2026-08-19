@@ -1,7 +1,7 @@
 (function(){
  const K=window.KCDP=window.KCDP||{},P=K.pilotOnboarding;
  const ENDPOINT='https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/kc-dp-pilot';
- const TARGET_VERSION='0.19.51',PILOT_BUILD='0.19.51-auto2';
+ const TARGET_VERSION='0.19.51',PILOT_BUILD='0.19.51-auto3';
  const TOKEN_KEY='kc_dp_pilot_token_v01948',DEVICE_KEY='kc_dp_pilot_device_class_v01951';
  let deferredInstall=null,server=null,verified=false,flowRunning=false,installConfirmed=false,testSent=false,pollTimer=null,versionInventory=null,versionChecked=false;
  const $=id=>document.getElementById(id);
@@ -21,6 +21,20 @@
  function pilotVersionFromCacheKey(k){const m=String(k||'').match(/^kc-dp2-pilot-v(\d)(\d{2})(\d{2})/i);return m?`${Number(m[1])}.${Number(m[2])}.${Number(m[3])}`:''}
  function releaseVersionFromCacheKey(k){const m=String(k||'').match(/^kc-dp-release-(\d+\.\d+\.\d+)/i);return m?m[1]:''}
  async function call(action,payload={}){const t=token();if(!t)throw new Error('Persönlicher Testzugang fehlt.');const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,token:t,device:deviceReport(),deviceClass:deviceClass(),installed:standalone()||installConfirmed,notification:typeof Notification==='undefined'?'unsupported':Notification.permission,...payload})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||`Pilot-Service HTTP ${r.status}`);return data}
+ async function requestHandyPushPermissionNow(){
+   if(deviceClass()!=='handy')return true;
+   if(pushGranted())return true;
+   if(P.device()==='ios'&&!standalone()){
+     await call('heartbeat',{phase:'push_permission_deferred_ios',targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD}).catch(()=>{});
+     return true
+   }
+   if(typeof Notification==='undefined')throw new Error('Push-Freigabe ist auf diesem Handy nicht verfügbar.');
+   setIntro('Push-Freigabe bestätigen …','success');
+   const permission=await Notification.requestPermission();
+   await call('heartbeat',{phase:'push_permission_first_screen',pushPermission:permission,targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD}).catch(()=>{});
+   if(permission!=='granted')throw new Error('Push wurde nicht genehmigt. Bitte „Erlauben“ wählen.');
+   return true
+ }
  async function detectExistingInstallation(){
    const s=snapshot(),out={targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD,found:false,reliable:false,pilotVersion:'',mainVersion:'',hasPilotWorker:false,hasMainWorker:false,hasPushSubscription:false,standalone:standalone(),localInstalled:!!s.installedAt,disposition:'new'};
    if('serviceWorker'in navigator){
@@ -61,24 +75,24 @@
      installConfirmed=true;
      if(versionInventory.disposition==='update')setIntro(`Vorhandene KC DP2 Version ${esc(versionInventory.pilotVersion||'alt')} erkannt. Aktualisierung läuft automatisch …`,'success');
      else setIntro(`Vorhandene KC DP2 Installation erkannt${versionInventory.pilotVersion?' · V'+esc(versionInventory.pilotVersion):''}. Sie wird weiterverwendet.`,'success');
-     try{const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.51-auto2&kc_update=pilot-auto2',{scope:'./',updateViaCache:'none'});await reg.update().catch(()=>{});await navigator.serviceWorker.ready}catch(_){}
+     try{const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.51-auto3&kc_update=pilot-auto3',{scope:'./',updateViaCache:'none'});await reg.update().catch(()=>{});await navigator.serviceWorker.ready}catch(_){}
    }else if(versionInventory.mainVersion){setIntro(`KC DP2 V${esc(versionInventory.mainVersion)} wurde auf diesem Gerät gefunden. Der Install-Test prüft die Testumgebung weiter.`,'success')}
    return versionInventory
  }
  function saveSwContext(sw){return new Promise(resolve=>{if(!sw?.postMessage){resolve(false);return}const ch=new MessageChannel(),timer=setTimeout(()=>resolve(false),1200);ch.port1.onmessage=()=>{clearTimeout(timer);resolve(true)};sw.postMessage({type:'KC_DP_PILOT_CONTEXT',token:token(),deviceClass:deviceClass(),device:deviceReport(),targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD},[ch.port2])})}
  function b64u(s){const pad='='.repeat((4-s.length%4)%4),raw=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')),a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);return a}
- function statusRows(){const s=snapshot(),installed=standalone()||installConfirmed||!!s.installedAt,rows=[['Gerät gewählt',!!deviceClass()],['Version geprüft',versionChecked],['KC DP2 installiert',installed],['Push aktiviert',pushGranted()||!!s.pushEnabledAt],['Test-Push bestätigt',!!s.testReceivedAt]];$('pilotSteps').classList.toggle('pilot-hidden',!deviceClass());$('pilotSteps').innerHTML=rows.map(([label,ok],i)=>`<div class="pilot-step ${ok?'ok':(!rows.slice(0,i).some(x=>!x[1])?'current':'')}"><span class="pilot-dot">${ok?'✓':i+1}</span><span>${esc(label)}</span></div>`).join('')}
+ function statusRows(){const s=snapshot(),installed=standalone()||installConfirmed||!!s.installedAt,rows=[['Gerät gewählt',!!deviceClass()],['Push genehmigt',pushGranted()||!!s.pushEnabledAt],['Version geprüft',versionChecked],['KC DP2 installiert',installed],['Test-Push bestätigt',!!s.testReceivedAt]];$('pilotSteps').classList.toggle('pilot-hidden',!deviceClass());$('pilotSteps').innerHTML=rows.map(([label,ok],i)=>`<div class="pilot-step ${ok?'ok':(!rows.slice(0,i).some(x=>!x[1])?'current':'')}"><span class="pilot-dot">${ok?'✓':i+1}</span><span>${esc(label)}</span></div>`).join('')}
  function hideNext(){$('pilotNext').classList.add('pilot-hidden')}
- function systemStep(title,text,handler){$('pilotNextTitle').textContent=title;$('pilotDeviceHelp').innerHTML=text;$('pilotNext').classList.remove('pilot-hidden');$('pilotContinueBtn').classList.remove('pilot-hidden');$('pilotContinueBtn').onclick=handler}
+ function systemStep(title,text,handler,label='Weiter'){$('pilotNextTitle').textContent=title;$('pilotDeviceHelp').innerHTML=text;$('pilotNext').classList.remove('pilot-hidden');$('pilotContinueBtn').classList.remove('pilot-hidden');$('pilotContinueBtn').textContent=label;$('pilotContinueBtn').onclick=handler}
  async function recordInstalled(){if(!(standalone()||installConfirmed))return false;const s=snapshot();if(!s.installedAt)P.markInstalled?.({version:TARGET_VERSION,pilotBuild:PILOT_BUILD});await call('installed',{installedVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD,installDisposition:versionInventory?.disposition||'new',previousVersion:versionInventory?.pilotVersion||null}).catch(()=>{});statusRows();return true}
  async function ensurePush(userGesture=false){
    if(!('serviceWorker'in navigator)||!('PushManager'in window)||typeof Notification==='undefined')throw new Error('Web-Push wird von diesem Gerät nicht unterstützt.');
    if(Notification.permission!=='granted'){
-     if(!userGesture){systemStep('Benachrichtigungen freigeben','Nur noch die Systemfreigabe bestätigen.',async()=>{clearError();hideNext();await ensurePush(true);await runAutoFlow(false)});return false}
-     const permission=await Notification.requestPermission();if(permission!=='granted')throw new Error('Benachrichtigungen wurden nicht erlaubt.');
+     if(!userGesture){systemStep('Push genehmigen','',async()=>{clearError();hideNext();await ensurePush(true);await runAutoFlow(false)},'Push genehmigen');return false}
+     const permission=await Notification.requestPermission();if(permission!=='granted')throw new Error('Push wurde nicht genehmigt. Bitte „Erlauben“ wählen.');
    }
    if(!server?.vapidPublicKey)server=await call('bootstrap');
-   const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.51-auto2&kc_update=pilot-auto2',{scope:'./',updateViaCache:'none'});await navigator.serviceWorker.ready;
+   const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.51-auto3&kc_update=pilot-auto3',{scope:'./',updateViaCache:'none'});await navigator.serviceWorker.ready;
    let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(server.vapidPublicKey)});
    const sw=reg.active||navigator.serviceWorker.controller;await saveSwContext(sw);
    await call('subscribe',{subscription:sub.toJSON?sub.toJSON():sub,userAgent:navigator.userAgent,targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD});P.markPushEnabled();statusRows();return true
@@ -115,9 +129,9 @@
    }catch(e){fail(e)}finally{flowRunning=false;statusRows()}
  }
  async function boot(){
-   try{server=await call('bootstrap');verified=true;setIntro(`Hallo <b>${esc(server.firstName||'')}</b>. Gerät auswählen – danach läuft alles automatisch.`,'success');const dc=deviceClass();if(dc){chooseDevice(dc);$('pilotDeviceChoice').classList.add('pilot-hidden');await ensureVersionCheck();if(standalone())installConfirmed=true;statusRows();runAutoFlow(false)}else statusRows();await call('heartbeat',{phase:'boot',targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD}).catch(()=>{})}catch(e){fail(e)}
+   try{server=await call('bootstrap');verified=true;setIntro(`Hallo <b>${esc(server.firstName||'')}</b>. Gerät auswählen – danach läuft alles automatisch.`,'success');const dc=deviceClass();if(dc){chooseDevice(dc);$('pilotDeviceChoice').classList.add('pilot-hidden');if(dc==='handy'&&P.device()==='ios'&&standalone()&&!pushGranted()){systemStep('Push genehmigen','',async()=>{clearError();hideNext();await requestHandyPushPermissionNow();runAutoFlow(true)},'Push genehmigen');return}await ensureVersionCheck();if(standalone())installConfirmed=true;statusRows();runAutoFlow(false)}else statusRows();await call('heartbeat',{phase:'boot',targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD}).catch(()=>{})}catch(e){fail(e)}
  }
- document.querySelectorAll('[data-pilot-device]').forEach(b=>b.onclick=async()=>{if(!verified)return;chooseDevice(b.dataset.pilotDevice);$('pilotDeviceChoice').classList.add('pilot-hidden');setIntro('Vorhandene Version wird geprüft …','success');statusRows();await ensureVersionCheck();await call('heartbeat',{phase:'device_selected',selectedDeviceClass:deviceClass(),targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD}).catch(()=>{});runAutoFlow(true)});
+ document.querySelectorAll('[data-pilot-device]').forEach(b=>b.onclick=async()=>{if(!verified)return;clearError();chooseDevice(b.dataset.pilotDevice);try{if(b.dataset.pilotDevice==='handy')await requestHandyPushPermissionNow();$('pilotDeviceChoice').classList.add('pilot-hidden');setIntro('Vorhandene Version wird geprüft …','success');statusRows();await ensureVersionCheck();await call('heartbeat',{phase:'device_selected',selectedDeviceClass:deviceClass(),targetVersion:TARGET_VERSION,pilotBuild:PILOT_BUILD}).catch(()=>{});runAutoFlow(true)}catch(e){fail(e)}});
  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(deviceClass()&&verified&&!standalone()&&!versionInventory?.reliable)systemStep('KC DP2 installieren','Installationsdialog öffnen und einmal bestätigen.',async()=>{clearError();hideNext();await runAutoFlow(true)})});
  window.addEventListener('appinstalled',async()=>{installConfirmed=true;deferredInstall=null;versionChecked=false;await ensureVersionCheck();await recordInstalled();setIntro('Installiert. Push wird automatisch eingerichtet …','success');runAutoFlow(false)});
  navigator.serviceWorker?.addEventListener?.('message',e=>{if(e.data?.type==='KC_DP_PILOT_PUSH_RECEIVED'&&e.data?.data?.type==='test'){P.markTestReceived();finishUi()}if(e.data?.type==='KC_DP_NOTIFICATION_OPEN'&&e.data?.data?.pilot&&e.data.data.type==='test'){P.markTestReceived();finishUi()}});
