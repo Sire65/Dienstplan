@@ -106,7 +106,10 @@
   if(!modal||modal.classList.contains('hidden'))return;
   const b=document.createElement('button');b.id='kcDiagnosticsAdminEntry';b.type='button';b.className='kc-push-admin-entry';b.textContent='🛠 Zentrale Fehlerdiagnose';b.onclick=open;modal.appendChild(b)
  }
+ function loadCompanion(id,src){if(document.getElementById(id))return;const s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
  document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
  new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
- K.diagnosticsCenter={version:'0.19.51h',open,allowed,isTest,friendlyTitle};
+ loadCompanion('kcDpSupabaseConnectionMonitor','src/core/supabase-connection-monitor.js?v=0.19.51-monitor1');
+ loadCompanion('kcDpDiagnosticsHistoryView','src/ui/diagnostics-history-view.js?v=0.19.51-history1');
+ K.diagnosticsCenter={version:'0.19.51i',open,allowed,isTest,friendlyTitle};
 })();
