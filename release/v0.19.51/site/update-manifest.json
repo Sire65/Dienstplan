@@ -12,8 +12,8 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-19T19:03:03.675Z",
-  "totalRuntimeBytes": 474445,
+  "generatedAt": "2026-08-19T19:06:24.926Z",
+  "totalRuntimeBytes": 481884,
   "files": [
     {
       "path": "index.html",
@@ -210,8 +210,8 @@
       "installPath": "src/ui/diagnostics-center.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 11240,
-      "sha256": "59dba847e3e7dc84e5ca2f695cab5ff96481b385f29600d529876eff4f6d5d71"
+      "bytes": 11624,
+      "sha256": "27daadc666d500c7e6d832ecf91ae256e8b633fb643094ad0e5bb50f78c8ac5b"
     },
     {
       "path": "src/ui/diagnostics-center.css",
@@ -405,6 +405,22 @@
       "forceRefresh": true,
       "bytes": 2736,
       "sha256": "e2061564de395f3d9311536c931683b1c6e45f678df241ec0a679e9210a59752"
+    },
+    {
+      "path": "src/core/supabase-connection-monitor.js",
+      "installPath": "src/core/supabase-connection-monitor.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 4857,
+      "sha256": "eaa9e9b8d60602c9461911454e317f26304bb39aa09b6fec1152acac47fcfc11"
+    },
+    {
+      "path": "src/ui/diagnostics-history-view.js",
+      "installPath": "src/ui/diagnostics-history-view.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 2198,
+      "sha256": "f75b8aaa669cee93d010f04f192e417e54490a303a0805ca34833c3ab78e59f6"
     }
   ]
 }
