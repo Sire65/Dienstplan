@@ -1,0 +1,32 @@
+name: KC DP2 Web Release Verify PR
+on:
+  pull_request:
+    paths:
+      - 'release/v*/site/**'
+      - 'scripts/refresh-update-manifest.js'
+      - 'tests/**'
+      - '.github/workflows/web-release-verify-pr.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Refresh deterministic release manifest
+        run: node scripts/refresh-update-manifest.js
+      - name: Verify canonical current release
+        run: |
+          set -euo pipefail
+          node tests/tuev-studio-current.js
+          node tests/ux-current-gate.js
+          node tests/diagnostics-v01944-gate.js
+          node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
+          node tests/push-center-v01943-gate.js
+          node tests/pilot-v01948-gate.js
+          node tests/pilot-mobile-secure-gate.js
+          node tests/installation-history-gate.js
+          node tests/admin-push-settings-gate.js
+          ROOT="release/v$(node -p "require('./release/current.json').version")/site"
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
