@@ -4,14 +4,16 @@
   "version": "0.19.51",
   "cacheName": "kc-dp-release-0.19.51",
   "releaseNotes": [
+    "Pilot-Installtest: einmal PC, Handy oder Tablet auswählen; Installation, Push-Einrichtung und Test laufen danach automatisch soweit das Betriebssystem es erlaubt",
+    "Pilot-Push: Empfang wird vom Service Worker automatisch an den Testserver bestätigt; kein Antippen des Test-Push mehr nötig",
     "Fehlerprotokoll mobil: Kartenansicht wird auf Handys zwingend verwendet; eine gespeicherte Tabellenansicht kann sie nicht mehr überschreiben",
     "Fehler & Diagnose: kein endloses Laden mehr; Timeout, Retry und verständlicher Fehlerzustand",
     "Fallback-Tabelle falls TableCore verzögert lädt",
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-19T10:12:00.000Z",
-  "totalRuntimeBytes": 430120,
+  "generatedAt": "2026-08-19T10:52:00.000Z",
+  "totalRuntimeBytes": 433323,
   "files": [
     {"path":"index.html","installPath":"index.html","bytes":11201,"sha256":"01fdce8f57dafd94ac6cf8cac889e60721095672cc35274552c104956331740d","runtime":true},
     {"path":"src/adapters/pc-manager.js","installPath":"src/adapters/pc-manager.js","bytes":10204,"sha256":"63b0adb4b3998569a7ab242dabf0732ce7a1832c53ac775ac4eaebcdf0278089","runtime":true},
@@ -45,12 +47,12 @@
     {"path":"src/core/table-core-adapter.js","installPath":"src/core/table-core-adapter.js","runtime":true,"bytes":2596,"sha256":"df39740b6c517a7618eacc93747c539115a4cc498a52eea1827e9e84efaba569"},
     {"path":"src/ui/kc-ux-polish.css","installPath":"src/ui/kc-ux-polish.css","runtime":true,"bytes":4422,"sha256":"944c71937ebc9886fe941d89f3fb61baba6433c61ba35129f00745f8ad19b8b7"},
     {"path":"src/ui/kc-ux-polish.js","installPath":"src/ui/kc-ux-polish.js","runtime":true,"bytes":3028,"sha256":"a9bc3bf42353255530dfd0ae8e1826a8168064bf6d6c0a37e5c9c92be36b84fe"},
-    {"path":"pilot/index.html","installPath":"pilot/index.html","runtime":true,"bytes":2859,"sha256":"9d65d6ad4340183e2424767fd0dad60e29b22aa02469f4ea1c800ac1b9729f83"},
+    {"path":"pilot/index.html","installPath":"pilot/index.html","runtime":true,"forceRefresh":true,"bytes":2592,"sha256":"93192502cc83ac4398d1ef5d2b4701a09d31b4cb5b46b86178d16b4f5127e7ad"},
     {"path":"pilot/manifest.webmanifest","installPath":"pilot/manifest.webmanifest","runtime":true,"bytes":408,"sha256":"43528b344f94a715a0e52c7fa563e07c9069200a9682d68af6670f6f837a4000"},
-    {"path":"pilot-sw.js","installPath":"pilot-sw.js","runtime":true,"bytes":1999,"sha256":"8f4e008aeb879849c9e4274a3dd9037b89afef7b3c9997b806c10a3bd293b4e5"},
+    {"path":"pilot-sw.js","installPath":"pilot-sw.js","runtime":true,"forceRefresh":true,"bytes":3568,"sha256":"6c5cf522cc3bc3937aeceeef6863c7fd5f7ee2e3bbadf7bcd662370c649937eb"},
     {"path":"src/core/pilot-onboarding.js","installPath":"src/core/pilot-onboarding.js","runtime":true,"bytes":2911,"sha256":"c34a91744f665fe091eec7f456d6f364affce561ff46923592ec06f547b118cd"},
-    {"path":"src/ui/pilot-app.js","installPath":"src/ui/pilot-app.js","runtime":true,"bytes":9137,"sha256":"bd1b9d3bdc431ebc508e5648c5204cfe122e2a45d05ca7a68a3ba0a6b7d75ddc"},
-    {"path":"src/ui/pilot.css","installPath":"src/ui/pilot.css","runtime":true,"bytes":2468,"sha256":"e9a2c72610e54c399c4130da3e6c5ed6e6a29c225b26f3d552c9f2e5901b98ed"},
+    {"path":"src/ui/pilot-app.js","installPath":"src/ui/pilot-app.js","runtime":true,"forceRefresh":true,"bytes":10400,"sha256":"569e5f7aabe23490a3388e115fba80bdc5b205c545ba4f11092e90e3b5af9831"},
+    {"path":"src/ui/pilot.css","installPath":"src/ui/pilot.css","runtime":true,"forceRefresh":true,"bytes":3106,"sha256":"379024bdf1746efdd2c3af864a649c6ce87efa6f92de6505277f13b51bad4218"},
     {"path":"pilot/manifest-ios.webmanifest","installPath":"pilot/manifest-ios.webmanifest","runtime":true,"bytes":389,"sha256":"6638b03baacd27ffd197d844370347636f3e7d608216b7373672a0042d670f08"},
     {"path":"src/ui/mobile-colleague-search.js","installPath":"src/ui/mobile-colleague-search.js","bytes":5155,"sha256":"c18d70cc5603626ef64ee0a937676cc6b2bb22b9afe46ed27615aee48a4a8c11","runtime":true}
   ]
