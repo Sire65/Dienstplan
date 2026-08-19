@@ -1,0 +1,26 @@
+name: KC DP2 Admin Push Settings Gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release/v0.19.51/site/src/adapters/admin-push-settings.js'
+      - 'release/v0.19.51/site/src/ui/admin-push-settings.js'
+      - 'release/v0.19.51/site/src/ui/admin-push-settings.css'
+      - 'release/v0.19.51/site/src/core/planner-application-guard.js'
+      - 'tests/admin-push-settings-gate.js'
+      - '.github/workflows/admin-push-settings-gate.yml'
+jobs:
+  admin-push-settings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          node --check release/v0.19.51/site/src/adapters/admin-push-settings.js
+          node --check release/v0.19.51/site/src/ui/admin-push-settings.js
+          node --check release/v0.19.51/site/src/core/planner-application-guard.js
+      - name: Contract
+        run: node tests/admin-push-settings-gate.js
