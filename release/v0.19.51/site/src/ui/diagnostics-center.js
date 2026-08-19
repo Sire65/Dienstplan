@@ -1,13 +1,73 @@
 (function(){
- const K=window.KCDP=window.KCDP||{},roles=new Set(['planner','duty_manager','admin']),LOAD_TIMEOUT_MS=12000;const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),allowed=()=>roles.has(String(K.currentUser?.role||'')),fmt=v=>v?new Date(v).toLocaleString('de-DE'):'–';
+ const K=window.KCDP=window.KCDP||{},roles=new Set(['planner','duty_manager','admin']),LOAD_TIMEOUT_MS=12000,VIEW_KEY='kc_dp2_diagnostics_view';
+ const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),allowed=()=>roles.has(String(K.currentUser?.role||'')),fmt=v=>v?new Date(v).toLocaleString('de-DE'):'–';
  const compact=()=>matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)').matches;
- const withTimeout=(p,ms,label)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(`${label} hat nicht geantwortet.`)),ms))]);function close(){document.getElementById('kcDiagOverlay')?.remove()}
- async function open(){if(!allowed()||!K.diagnostics)return;let host=document.getElementById('kcDiagOverlay');if(!host){host=document.createElement('div');host.id='kcDiagOverlay';host.className='kc-diag-overlay';document.body.appendChild(host)}host.innerHTML='<div class="kc-diag-card"><div class="kc-diag-head"><div><h2>🛠 Zentrale Fehlerdiagnose</h2><p>Handys, PWA und KC DP2</p></div><button id="kcDiagClose">✕</button></div><div class="kc-diag-toolbar"><select id="kcDiagFilter"><option value="open">Offen</option><option value="new">Nur neu</option><option value="critical">Kritisch</option><option value="resolved">Behoben</option><option value="all">Alle</option></select><input id="kcDiagSearch" type="search" placeholder="Fehler, Mitglied, Gerät …"><button id="kcDiagReload">Aktualisieren</button></div><div id="kcDiagSummary"></div><div id="kcDiagTable">Lade …</div></div>';host.querySelector('#kcDiagClose').onclick=close;let allRows=[],loading=false;
-  function filtered(){const f=host.querySelector('#kcDiagFilter').value,q=host.querySelector('#kcDiagSearch').value.trim().toLowerCase();return allRows.filter(r=>{const ok=f==='all'||(f==='open'?['new','reviewed'].includes(r.status):f==='critical'?r.severity==='critical'&&['new','reviewed'].includes(r.status):r.status===f);return ok&&(!q||[r.member_name,r.device_id,r.error_code,r.message,r.app_version].some(v=>String(v||'').toLowerCase().includes(q)))})}
-  function summary(){const o=allRows.filter(r=>['new','reviewed'].includes(r.status)),c=o.filter(r=>r.severity==='critical');host.querySelector('#kcDiagSummary').innerHTML=`<div class="kc-diag-stats"><div><b>${o.length}</b><span>offen</span></div><div><b>${c.length}</b><span>kritisch</span></div><div><b>${new Set(o.map(r=>r.device_id).filter(Boolean)).size}</b><span>Geräte</span></div><div><b>${new Set(o.map(r=>r.person_id).filter(Boolean)).size}</b><span>Mitglieder</span></div></div>`}
+ const storedView=()=>{try{const v=localStorage.getItem(VIEW_KEY);return v==='table'||v==='cards'?v:null}catch(_){return null}};
+ const saveView=v=>{try{localStorage.setItem(VIEW_KEY,v)}catch(_){}}
+ const withTimeout=(p,ms,label)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(`${label} hat nicht geantwortet.`)),ms))]);
+ function close(){document.getElementById('kcDiagOverlay')?.remove()}
+ async function open(){
+  if(!allowed()||!K.diagnostics)return;
+  let host=document.getElementById('kcDiagOverlay');
+  if(!host){host=document.createElement('div');host.id='kcDiagOverlay';host.className='kc-diag-overlay';document.body.appendChild(host)}
+  host.innerHTML='<div class="kc-diag-card"><div class="kc-diag-head"><div><h2>🛠 Zentrale Fehlerdiagnose</h2><p>Handys, PWA und KC DP2</p></div><button id="kcDiagClose">✕</button></div><div class="kc-diag-toolbar"><select id="kcDiagFilter"><option value="open">Offen</option><option value="new">Nur neu</option><option value="critical">Kritisch</option><option value="resolved">Behoben</option><option value="all">Alle</option></select><input id="kcDiagSearch" type="search" placeholder="Fehler, Mitglied, Gerät …"><div class="kc-diag-view-toggle" role="group" aria-label="Ansicht"><button type="button" data-diag-view="table">Tabelle</button><button type="button" data-diag-view="cards">Karten</button></div><button id="kcDiagReload">Aktualisieren</button></div><div id="kcDiagSummary"></div><div id="kcDiagTable">Lade …</div></div>';
+  host.querySelector('#kcDiagClose').onclick=close;
+  let allRows=[],loading=false,viewMode=storedView();
+  const effectiveView=()=>viewMode||(compact()?'cards':'table');
+  function updateViewToggle(){
+   const current=effectiveView();
+   host.querySelectorAll('[data-diag-view]').forEach(b=>{
+    const active=b.dataset.diagView===current;
+    b.classList.toggle('active',active);
+    b.setAttribute('aria-pressed',String(active));
+   });
+  }
+  function filtered(){
+   const f=host.querySelector('#kcDiagFilter').value,q=host.querySelector('#kcDiagSearch').value.trim().toLowerCase();
+   return allRows.filter(r=>{const ok=f==='all'||(f==='open'?['new','reviewed'].includes(r.status):f==='critical'?r.severity==='critical'&&['new','reviewed'].includes(r.status):r.status===f);return ok&&(!q||[r.member_name,r.device_id,r.error_code,r.message,r.app_version].some(v=>String(v||'').toLowerCase().includes(q)))})
+  }
+  function summary(){
+   const o=allRows.filter(r=>['new','reviewed'].includes(r.status)),c=o.filter(r=>r.severity==='critical');
+   host.querySelector('#kcDiagSummary').innerHTML=`<div class="kc-diag-stats"><div><b>${o.length}</b><span>offen</span></div><div><b>${c.length}</b><span>kritisch</span></div><div><b>${new Set(o.map(r=>r.device_id).filter(Boolean)).size}</b><span>Geräte</span></div><div><b>${new Set(o.map(r=>r.person_id).filter(Boolean)).size}</b><span>Mitglieder</span></div></div>`
+  }
   async function setOne(id,status){await withTimeout(K.diagnostics.setStatus(id,status),LOAD_TIMEOUT_MS,'Statusänderung');await load()}
-  function cards(rows,thost){thost.className='kc-diag-card-list';thost.innerHTML=rows.length?rows.map(r=>`<article class="kc-diag-mobile-card ${esc(r.severity)}"><div class="kc-diag-mobile-top"><span class="kc-diag-severity">${r.severity==='critical'||r.severity==='error'?'🔴':'🟡'} ${esc(r.severity)}</span><span class="kc-diag-status">${esc(r.status)}</span></div><h3>${esc(r.error_code||'Fehler')}</h3><p class="kc-diag-message">${esc(r.message||'')}</p><div class="kc-diag-mobile-meta"><span><b>Version</b>${esc(r.app_version||'–')}</span><span><b>Anzahl</b>${Number(r.occurrence_count||1)}×</span><span><b>Zuletzt</b>${fmt(r.last_seen_at)}</span></div><p class="kc-diag-device"><b>${esc(r.member_name||r.person_id||'Unbekannt')}</b><br><span>${esc(r.device_id||'–')}</span> · ${esc(r.platform||'')} · ${r.online===false?'offline':'online'}</p><details><summary>Technische Details</summary><p><b>Erstmals:</b> ${fmt(r.first_seen_at)}<br><b>Quelle:</b> ${esc(r.source||'–')}<br><b>Route:</b> ${esc(r.route||'–')}<br><b>Browser:</b> ${esc(r.browser||'–')}</p><pre>${esc(r.stack||'Kein Stacktrace')}</pre></details><div class="kc-diag-mobile-actions">${r.status==='new'?`<button data-id="${r.id}" data-status="reviewed">Geprüft</button>`:''}${!['resolved','archived'].includes(r.status)?`<button data-id="${r.id}" data-status="resolved" class="primary">Behoben</button>`:''}</div></article>`).join(''):'<p class="kc-diag-empty">Keine Fehler für diesen Filter.</p>';thost.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>setOne(b.dataset.id,b.dataset.status))}
-  function render(){summary();const rows=filtered(),thost=host.querySelector('#kcDiagTable');thost.className='';if(compact()){cards(rows,thost);return}const columns=[{key:'severity',label:'Stufe'},{key:'status',label:'Status'},{key:'member_name',label:'Mitglied'},{key:'message',label:'Fehler',render:r=>`<b>${esc(r.error_code||'Fehler')}</b><br>${esc(r.message||'')}`},{key:'app_version',label:'Version'},{key:'occurrence_count',label:'Anzahl'},{key:'last_seen_at',label:'Zuletzt',render:r=>fmt(r.last_seen_at)},{key:'device_id',label:'Gerät / Browser',render:r=>`${esc(r.platform||'')}<br><small>${esc(r.device_id||'–')}</small>`}];if(K.tableCore)K.tableCore.create(thost,{rows,columns});else cards(rows,thost)}
-  async function load(){if(loading)return;loading=true;try{if(!navigator.onLine)throw new Error('Dieses Gerät ist offline.');allRows=await withTimeout(K.diagnostics.adminList(500),LOAD_TIMEOUT_MS,'Supabase-Diagnose');render()}catch(e){host.querySelector('#kcDiagTable').innerHTML=`<div class="kc-diag-load-error"><b>Diagnose konnte nicht geladen werden.</b><p>${esc(e.message)}</p></div>`}finally{loading=false}}host.querySelector('#kcDiagReload').onclick=load;host.querySelector('#kcDiagFilter').onchange=render;host.querySelector('#kcDiagSearch').oninput=render;const mq=matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)');mq.addEventListener?.('change',render);await load()}
- function inject(){if(!allowed()||document.getElementById('kcDiagnosticsAdminEntry'))return;const modal=document.getElementById('modal');if(!modal||modal.classList.contains('hidden'))return;const b=document.createElement('button');b.id='kcDiagnosticsAdminEntry';b.type='button';b.className='kc-push-admin-entry';b.textContent='🛠 Zentrale Fehlerdiagnose';b.onclick=open;modal.appendChild(b)}document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});K.diagnosticsCenter={version:'0.19.51e',open,allowed};
+  function cards(rows,thost){
+   thost.className='kc-diag-card-list';
+   thost.innerHTML=rows.length?rows.map(r=>`<article class="kc-diag-mobile-card ${esc(r.severity)}"><div class="kc-diag-mobile-top"><span class="kc-diag-severity">${r.severity==='critical'||r.severity==='error'?'🔴':'🟡'} ${esc(r.severity)}</span><span class="kc-diag-status">${esc(r.status)}</span></div><h3>${esc(r.error_code||'Fehler')}</h3><p class="kc-diag-message">${esc(r.message||'')}</p><div class="kc-diag-mobile-meta"><span><b>Version</b>${esc(r.app_version||'–')}</span><span><b>Anzahl</b>${Number(r.occurrence_count||1)}×</span><span><b>Zuletzt</b>${fmt(r.last_seen_at)}</span></div><p class="kc-diag-device"><b>${esc(r.member_name||r.person_id||'Unbekannt')}</b><br><span>${esc(r.device_id||'–')}</span> · ${esc(r.platform||'')} · ${r.online===false?'offline':'online'}</p><details><summary>Technische Details</summary><p><b>Erstmals:</b> ${fmt(r.first_seen_at)}<br><b>Quelle:</b> ${esc(r.source||'–')}<br><b>Route:</b> ${esc(r.route||'–')}<br><b>Browser:</b> ${esc(r.browser||'–')}</p><pre>${esc(r.stack||'Kein Stacktrace')}</pre></details><div class="kc-diag-mobile-actions">${r.status==='new'?`<button data-id="${r.id}" data-status="reviewed">Geprüft</button>`:''}${!['resolved','archived'].includes(r.status)?`<button data-id="${r.id}" data-status="resolved" class="primary">Behoben</button>`:''}</div></article>`).join(''):'<p class="kc-diag-empty">Keine Fehler für diesen Filter.</p>';
+   thost.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>setOne(b.dataset.id,b.dataset.status))
+  }
+  function render(){
+   summary();
+   updateViewToggle();
+   const rows=filtered(),thost=host.querySelector('#kcDiagTable');
+   thost.className='';
+   if(effectiveView()==='cards'){cards(rows,thost);return}
+   const columns=[{key:'severity',label:'Stufe'},{key:'status',label:'Status'},{key:'member_name',label:'Mitglied'},{key:'message',label:'Fehler',render:r=>`<b>${esc(r.error_code||'Fehler')}</b><br>${esc(r.message||'')}`},{key:'app_version',label:'Version'},{key:'occurrence_count',label:'Anzahl'},{key:'last_seen_at',label:'Zuletzt',render:r=>fmt(r.last_seen_at)},{key:'device_id',label:'Gerät / Browser',render:r=>`${esc(r.platform||'')}<br><small>${esc(r.device_id||'–')}</small>`}];
+   if(K.tableCore)K.tableCore.create(thost,{rows,columns});else cards(rows,thost)
+  }
+  async function load(){
+   if(loading)return;
+   loading=true;
+   try{if(!navigator.onLine)throw new Error('Dieses Gerät ist offline.');allRows=await withTimeout(K.diagnostics.adminList(500),LOAD_TIMEOUT_MS,'Supabase-Diagnose');render()}
+   catch(e){host.querySelector('#kcDiagTable').innerHTML=`<div class="kc-diag-load-error"><b>Diagnose konnte nicht geladen werden.</b><p>${esc(e.message)}</p></div>`}
+   finally{loading=false}
+  }
+  host.querySelector('#kcDiagReload').onclick=load;
+  host.querySelector('#kcDiagFilter').onchange=render;
+  host.querySelector('#kcDiagSearch').oninput=render;
+  host.querySelectorAll('[data-diag-view]').forEach(b=>b.onclick=()=>{viewMode=b.dataset.diagView;saveView(viewMode);render()});
+  const mq=matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)');
+  mq.addEventListener?.('change',()=>{if(!viewMode)render()});
+  updateViewToggle();
+  await load()
+ }
+ function inject(){
+  if(!allowed()||document.getElementById('kcDiagnosticsAdminEntry'))return;
+  const modal=document.getElementById('modal');
+  if(!modal||modal.classList.contains('hidden'))return;
+  const b=document.createElement('button');b.id='kcDiagnosticsAdminEntry';b.type='button';b.className='kc-push-admin-entry';b.textContent='🛠 Zentrale Fehlerdiagnose';b.onclick=open;modal.appendChild(b)
+ }
+ document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
+ new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
+ K.diagnosticsCenter={version:'0.19.51f',open,allowed};
 })();
