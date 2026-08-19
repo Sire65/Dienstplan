@@ -1,0 +1,52 @@
+name: KC DP2 External Security Audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: kc-dp2-external-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codeql:
+    name: GitHub CodeQL JavaScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: CodeQL analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+
+  semgrep:
+    name: Semgrep independent static scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install Semgrep
+        run: python -m pip install --disable-pip-version-check 'semgrep>=1.130,<2'
+      - name: Semgrep security scan
+        run: |
+          semgrep scan \
+            --config p/javascript \
+            --config p/security-audit \
+            --severity ERROR \
+            --error \
+            --metrics=off \
+            release/v0.19.51/site/src supabase
