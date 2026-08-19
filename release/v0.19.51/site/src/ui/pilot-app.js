@@ -29,7 +29,7 @@
      const permission=await Notification.requestPermission();if(permission!=='granted')throw new Error('Benachrichtigungen wurden nicht erlaubt.');
    }
    if(!server?.vapidPublicKey)server=await call('bootstrap');
-   const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.51-auto1',{scope:'./',updateViaCache:'none'});await navigator.serviceWorker.ready;
+   const reg=await navigator.serviceWorker.register('../pilot-sw.js?v=0.19.51-auto1&kc_update=pilot-auto1',{scope:'./',updateViaCache:'none'});await navigator.serviceWorker.ready;
    let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(server.vapidPublicKey)});
    const sw=reg.active||navigator.serviceWorker.controller;await saveSwContext(sw);
    await call('subscribe',{subscription:sub.toJSON?sub.toJSON():sub,userAgent:navigator.userAgent});P.markPushEnabled();statusRows();return true
