@@ -1,11 +1,16 @@
 import fs from 'node:fs';
-// Mobile Diagnosekarten und Service-Worker-Rauschfilter bleiben Release-Vertrag.
+// Mobile Diagnosekarten, verständliche Filter und Service-Worker-Rauschfilter bleiben Release-Vertrag.
 const ui=fs.readFileSync(new URL('../site/src/ui/diagnostics-center.js',import.meta.url),'utf8');
+const css=fs.readFileSync(new URL('../site/src/ui/diagnostics-center.css',import.meta.url),'utf8');
 const adapter=fs.readFileSync(new URL('../site/src/adapters/diagnostics.js',import.meta.url),'utf8');
 for(const needle of ['Zentrale Fehlerdiagnose','kcDiagSearch','member_name','device_id','occurrence_count','first_seen_at','last_seen_at','reviewed','resolved','kc-diag-mobile-card','Technische Details'])if(!ui.includes(needle))throw new Error('Diagnostics Manager contract fehlt: '+needle);
 if(!ui.includes("const effectiveView=()=>compact()?'cards':"))throw new Error('Mobile Ansicht muss Karten erzwingen');
 if(!ui.includes("b.disabled=compact()&&b.dataset.diagView==='table'"))throw new Error('Tabellenmodus muss mobil gesperrt sein');
 if(!ui.includes("if(compact()&&b.dataset.diagView==='table'){return}"))throw new Error('Mobil darf Tabelle nicht manuell erzwungen werden');
+for(const needle of ['value="tests"','Alle ohne Tests','Alle inkl. Tests','const isTest=','friendlyTitle','severityLabel','statusLabel','Kontrollierte Testmeldung','Fensterfehler','Technischer Hintergrundfehler','kc-diag-housekeeping'])if(!ui.includes(needle))throw new Error('Neue Diagnosefilter-/Lesbarkeitsregel fehlt: '+needle);
+if(!ui.includes("f==='open'?!test&&isOpen(r)"))throw new Error('Offene Standardansicht muss Testmeldungen ausblenden');
+if(!ui.includes("f==='resolved'?!test&&r.status==='resolved'"))throw new Error('Behobene Meldungen müssen separat filterbar sein');
+for(const needle of ['.kc-diag-test-badge','.kc-diag-housekeeping','.kc-diag-mobile-meta em','.kc-diag-table-actions'])if(!css.includes(needle))throw new Error('Diagnose-CSS Vertrag fehlt: '+needle);
 if(!adapter.includes("kc_dp_error_admin_list_v2"))throw new Error('V2 Adminliste fehlt');
 if(!adapter.includes("kc_dp_error_admin_list'"))throw new Error('Fallback auf V1 fehlt');
 if(adapter.includes('pwa.service_worker.redundant'))throw new Error('Service-Worker redundant darf nicht pauschal als Warnung gemeldet werden');
