@@ -12,8 +12,14 @@ function setOptions(select,scope){
   select.value=list[0][0];
   select.dispatchEvent(new Event('change',{bubbles:true}));
 }
+function patchNote(host){
+  const note=host?.querySelector?.('.kc-diag-housekeeping');
+  if(note)note.innerHTML='Standardansicht: <b>nur offene Meldungen</b>. Erledigte Einträge stehen ausschließlich unter <b>Historie</b>; Testmeldungen ausschließlich unter <b>Tests</b>.';
+}
 function decorate(host){
-  if(!host||host.dataset.kcHistoryView==='1')return;
+  if(!host)return;
+  patchNote(host);
+  if(host.dataset.kcHistoryView==='1')return;
   const toolbar=host.querySelector('.kc-diag-toolbar'),select=host.querySelector('#kcDiagFilter');
   if(!toolbar||!select)return;
   host.dataset.kcHistoryView='1';
@@ -30,14 +36,13 @@ function decorate(host){
       b.setAttribute('aria-pressed',String(active));
     });
     setOptions(select,scope);
+    patchNote(host);
   }
   tabs.querySelectorAll('[data-kc-diag-scope]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.kcDiagScope)));
   choose('open');
-  const note=host.querySelector('.kc-diag-housekeeping');
-  if(note)note.innerHTML='Standardansicht: <b>nur offene Meldungen</b>. Erledigte Einträge stehen ausschließlich unter <b>Historie</b>; Testmeldungen ausschließlich unter <b>Tests</b>.';
 }
 function scan(){document.querySelectorAll('#kcDiagOverlay').forEach(decorate);}
 new MutationObserver(scan).observe(document.body,{subtree:true,childList:true});
 scan();
-K.diagnosticsHistoryView={version:'0.19.51-history2',decorate};
+K.diagnosticsHistoryView={version:'0.19.51-history3',decorate};
 })();
