@@ -1,0 +1,43 @@
+name: KC DP2 Installation History Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release/v0.19.51/site/index.html'
+      - 'release/v0.19.51/site/src/core/table-core-adapter.js'
+      - 'release/v0.19.51/site/src/adapters/installations.js'
+      - 'release/v0.19.51/site/src/ui/installation-center.js'
+      - 'release/v0.19.51/site/src/ui/installation-center.css'
+      - 'release/v0.19.51/site/pilot-mobile/**'
+      - 'tests/installation-history-gate.js'
+      - 'scripts/refresh-update-manifest.js'
+      - '.github/workflows/kc-dp-installation-history-gate.yml'
+  pull_request:
+    paths:
+      - 'release/v0.19.51/site/index.html'
+      - 'release/v0.19.51/site/src/core/table-core-adapter.js'
+      - 'release/v0.19.51/site/src/adapters/installations.js'
+      - 'release/v0.19.51/site/src/ui/installation-center.js'
+      - 'release/v0.19.51/site/src/ui/installation-center.css'
+      - 'release/v0.19.51/site/pilot-mobile/**'
+      - 'tests/installation-history-gate.js'
+      - 'scripts/refresh-update-manifest.js'
+
+jobs:
+  installation-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check release/v0.19.51/site/src/core/table-core-adapter.js
+          node --check release/v0.19.51/site/src/adapters/installations.js
+          node --check release/v0.19.51/site/src/ui/installation-center.js
+          node --check release/v0.19.51/site/pilot-mobile/app-v4.js
+          node --check release/v0.19.51/site/pilot-mobile/sw.js
+      - name: Installation history regression
+        run: node tests/installation-history-gate.js
