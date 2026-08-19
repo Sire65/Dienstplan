@@ -7,6 +7,9 @@ const manifest=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const extras=[
   ['pilot-mobile/index.html',false,true],
+  ['pilot-mobile/app-v4.js',false,true],
+  ['pilot-mobile/app-v4.css',false,true],
+  ['pilot-mobile/test.html',false,true],
   ['pilot-mobile/manifest-android.webmanifest',false,false],
   ['pilot-mobile/manifest-ios.webmanifest',false,false],
   ['pilot-mobile/sw.js',false,true]
