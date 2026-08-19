@@ -20,9 +20,10 @@ const extras=[
   ['src/ui/admin-push-settings.js',true,true],
   ['src/ui/admin-push-settings.css',true,true]
 ];
+const forceRefreshPaths=new Set(['index.html','src/ui/diagnostics-center.js','src/ui/diagnostics-center.css']);
 for(const [p,runtime,forceRefresh] of extras){if(!manifest.files.some(x=>(x.installPath||x.path)===p))manifest.files.push({path:p,installPath:p,runtime,forceRefresh});}
 let total=0;
-for(const f of manifest.files){const install=f.installPath||f.path,full=path.join(SITE,install);if(!fs.existsSync(full))throw new Error('Manifest-Datei fehlt: '+install);const b=fs.readFileSync(full);f.bytes=b.length;f.sha256=sha(b);if(f.runtime!==false)total+=b.length;if(f.forceRefresh===undefined)delete f.forceRefresh;}
+for(const f of manifest.files){const install=f.installPath||f.path,full=path.join(SITE,install);if(!fs.existsSync(full))throw new Error('Manifest-Datei fehlt: '+install);const b=fs.readFileSync(full);f.bytes=b.length;f.sha256=sha(b);if(forceRefreshPaths.has(install))f.forceRefresh=true;if(f.runtime!==false)total+=b.length;if(f.forceRefresh===undefined)delete f.forceRefresh;}
 manifest.version=current.version;manifest.cacheName=`kc-dp-release-${current.version}`;manifest.totalRuntimeBytes=total;manifest.generatedAt=new Date().toISOString();
 fs.writeFileSync(manifestPath,JSON.stringify(manifest,null,2)+'\n');
 console.log(`update-manifest refreshed: ${manifest.files.length} files, ${total} runtime bytes`);
