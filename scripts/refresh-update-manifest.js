@@ -18,9 +18,11 @@ const extras=[
   ['src/ui/installation-center.css',true,true],
   ['src/adapters/admin-push-settings.js',true,true],
   ['src/ui/admin-push-settings.js',true,true],
-  ['src/ui/admin-push-settings.css',true,true]
+  ['src/ui/admin-push-settings.css',true,true],
+  ['src/core/supabase-connection-monitor.js',true,true],
+  ['src/ui/diagnostics-history-view.js',true,true]
 ];
-const forceRefreshPaths=new Set(['index.html','src/ui/diagnostics-center.js','src/ui/diagnostics-center.css']);
+const forceRefreshPaths=new Set(['index.html','src/ui/diagnostics-center.js','src/ui/diagnostics-center.css','src/core/supabase-connection-monitor.js','src/ui/diagnostics-history-view.js']);
 for(const [p,runtime,forceRefresh] of extras){if(!manifest.files.some(x=>(x.installPath||x.path)===p))manifest.files.push({path:p,installPath:p,runtime,forceRefresh});}
 let total=0;
 for(const f of manifest.files){const install=f.installPath||f.path,full=path.join(SITE,install);if(!fs.existsSync(full))throw new Error('Manifest-Datei fehlt: '+install);const b=fs.readFileSync(full);f.bytes=b.length;f.sha256=sha(b);if(forceRefreshPaths.has(install))f.forceRefresh=true;if(f.runtime!==false)total+=b.length;if(f.forceRefresh===undefined)delete f.forceRefresh;}
