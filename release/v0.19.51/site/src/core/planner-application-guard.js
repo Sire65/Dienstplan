@@ -33,3 +33,11 @@
     let tries=0;const timer=setInterval(()=>{tries++;if(install()||tries>=50)clearInterval(timer);},20);
   }
 })();
+
+(function(){
+  if(window.__kcAdminPushSettingsLoaded)return;window.__kcAdminPushSettingsLoaded=true;
+  const css='src/ui/admin-push-settings.css?v=0.19.51-adminpush-1';
+  if(!document.querySelector(`link[href^="src/ui/admin-push-settings.css"]`)){const l=document.createElement('link');l.rel='stylesheet';l.href=css;document.head.appendChild(l)}
+  const load=src=>new Promise((resolve,reject)=>{if(document.querySelector(`script[src^="${src.split('?')[0]}"]`))return resolve(true);const s=document.createElement('script');s.src=src;s.async=false;s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Admin-Push-Erweiterung konnte nicht geladen werden.'));document.head.appendChild(s)});
+  load('src/adapters/admin-push-settings.js?v=0.19.51-adminpush-1').then(()=>load('src/ui/admin-push-settings.js?v=0.19.51-adminpush-1')).catch(e=>console.warn(e.message));
+})();
