@@ -1,5 +1,6 @@
 name: KC DP2 Verified Web Release
 
+# Manual notification test trigger 2026-08-19
 on:
   push:
     branches: [main]
