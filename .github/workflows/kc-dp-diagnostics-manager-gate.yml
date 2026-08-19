@@ -1,12 +1,8 @@
 name: KC DP2 Diagnostics Manager Gate
+
 on:
-  pull_request:
-    paths:
-      - 'release/v0.19.51/site/src/adapters/diagnostics.js'
-      - 'release/v0.19.51/site/src/ui/diagnostics-center.js'
-      - 'release/v0.19.51/site/src/ui/diagnostics-center.css'
-      - 'release/v0.19.51/tests/diagnostics-manager-center-contract.mjs'
-      - 'release/v0.19.51/site/update-manifest.json'
+  workflow_dispatch:
+
 jobs:
   diagnostics-manager:
     runs-on: ubuntu-latest
