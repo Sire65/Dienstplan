@@ -12,8 +12,8 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-19T19:07:23.623Z",
-  "totalRuntimeBytes": 481884,
+  "generatedAt": "2026-08-19T19:09:20.566Z",
+  "totalRuntimeBytes": 482305,
   "files": [
     {
       "path": "index.html",
@@ -411,8 +411,8 @@
       "installPath": "src/core/supabase-connection-monitor.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 4857,
-      "sha256": "eaa9e9b8d60602c9461911454e317f26304bb39aa09b6fec1152acac47fcfc11"
+      "bytes": 5278,
+      "sha256": "2273c7e38095ac3c2852e70beb1cd43e7dd7104d2c3905578edde9068a2f03df"
     },
     {
       "path": "src/ui/diagnostics-history-view.js",
