@@ -6,7 +6,12 @@ on:
     paths: ['.github/workflows/post-merge-acceptance-once.yml']
 
 permissions:
-  contents: write
+  contents: read
+  issues: write
+
+concurrency:
+  group: kc-dp2-post-merge-acceptance-once
+  cancel-in-progress: true
 
 jobs:
   accept:
@@ -77,34 +82,18 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
-      - name: Write acceptance evidence to isolated evidence branch
+      - name: Report post-merge acceptance result
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
         shell: bash
         run: |
-          cat > docs/KC-DP2-V01951-MAIN-ACCEPTANCE-RESULT.md <<EOF
-          # KC DP2 V0.19.51 – Main-/Live-Abnahme
-
-          Ergebnis: **GRÜN**
-
-          Geprüfter Main-Commit: $(git rev-parse HEAD)
-          Abnahmezeit (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-          Bestanden:
-          - TÜV / Manifest-Dateigrößen / SHA-256 / Runtime-Summe
-          - Security-, Architektur- und Versionsregeln
-          - Supabase Start-Heartbeat/Reconnect Regression
-          - Diagnose Offen/Historie/Tests
-          - Alt-Excel Personen-Zuordnung und Dublettenschutz
-          - Rollen/Berechtigungen
-          - Mobile 390x844
-          - Wunsch/Soll/Freigabe/Ist
-          - Dokument/PDF/E-Mail-Export
-          - Planfoto-Pipeline
-          - GitHub Pages live: V0.19.51, monitor3, history4, Excel-Migrationsmodul und aktuelles Manifest ausgeliefert
-
-          Externe PR-Sicherheitsprüfung vor Merge: CodeQL + Semgrep **GRÜN**.
-          EOF
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/KC-DP2-V01951-MAIN-ACCEPTANCE-RESULT.md
-          git commit -m 'Record green DP2 V0.19.51 main and live acceptance'
-          git push --force origin HEAD:refs/heads/acceptance/v01951-main-live
+          if [ "$JOB_STATUS" = "success" ]; then
+            TITLE='KC DP2 V0.19.51 Main Live Acceptance GREEN'
+            BODY="Ergebnis: GREEN\n\nMain-Commit: $GITHUB_SHA\nRun: $GITHUB_RUN_ID\n\nBestanden: Main TÜV/Manifest/SHA-256, Security-/Architekturregeln, Supabase Heartbeat/Reconnect, Diagnose-Historie, Alt-Excel-Migration, Rollen, Mobile, Wunsch/Soll/Ist, Dokumente, Planfoto und GitHub-Pages-Liveprüfung.\n\nExterne PR-Prüfung vor Merge: CodeQL + Semgrep GREEN."
+          else
+            TITLE='KC DP2 V0.19.51 Main Live Acceptance RED'
+            BODY="Ergebnis: RED\n\nMain-Commit: $GITHUB_SHA\nRun: $GITHUB_RUN_ID\n\nMindestens ein Main-/Live-Abnahmeschritt ist fehlgeschlagen. Der Workflow-Run muss vor einer Echtbetriebsfreigabe ausgewertet werden."
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/issues" -f title="$TITLE" -f body="$BODY" >/dev/null
