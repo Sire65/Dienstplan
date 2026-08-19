@@ -4,13 +4,14 @@
   "version": "0.19.51",
   "cacheName": "kc-dp-release-0.19.51",
   "releaseNotes": [
+    "Fehlerprotokoll mobil: Kartenansicht wird auf Handys zwingend verwendet; eine gespeicherte Tabellenansicht kann sie nicht mehr überschreiben",
     "Fehler & Diagnose: kein endloses Laden mehr; Timeout, Retry und verständlicher Fehlerzustand",
     "Fallback-Tabelle falls TableCore verzögert lädt",
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-16T19:35:00.000Z",
-  "totalRuntimeBytes": 428770,
+  "generatedAt": "2026-08-19T10:12:00.000Z",
+  "totalRuntimeBytes": 430120,
   "files": [
     {"path":"index.html","installPath":"index.html","bytes":11201,"sha256":"01fdce8f57dafd94ac6cf8cac889e60721095672cc35274552c104956331740d","runtime":true},
     {"path":"src/adapters/pc-manager.js","installPath":"src/adapters/pc-manager.js","bytes":10204,"sha256":"63b0adb4b3998569a7ab242dabf0732ce7a1832c53ac775ac4eaebcdf0278089","runtime":true},
@@ -39,7 +40,7 @@
     {"path":"src/ui/push-center.js","installPath":"src/ui/push-center.js","runtime":true,"bytes":11181,"sha256":"93cc0e6cc4885157ee6f451b0460d0f2f09417b6731e11ea90ceb8d076de4880"},
     {"path":"src/ui/push-center.css","installPath":"src/ui/push-center.css","runtime":true,"bytes":2404,"sha256":"cd82ccc828445db3fd432bf7cbd5aa57925102622b107976dba94327fce4cdd0"},
     {"path":"src/adapters/diagnostics.js","installPath":"src/adapters/diagnostics.js","runtime":true,"bytes":7714,"sha256":"3216ca3e56e31222e849d7c4703935290d52df112a89ebd4fc67d4c450d4b2fc"},
-    {"path":"src/ui/diagnostics-center.js","installPath":"src/ui/diagnostics-center.js","runtime":true,"bytes":6360,"sha256":"39651f8a653a7f048502b5221dd7eec69c3044ae65292af003b51d27d2d3d626"},
+    {"path":"src/ui/diagnostics-center.js","installPath":"src/ui/diagnostics-center.js","runtime":true,"forceRefresh":true,"bytes":7710,"sha256":"573a3947e7afa50523f732d5e3db7279ae9dbb3547242943b462b40330de1f8e"},
     {"path":"src/ui/diagnostics-center.css","installPath":"src/ui/diagnostics-center.css","runtime":true,"bytes":2962,"sha256":"201c93831d7eb5f5df18bb70b75c5afa25e32714704aabb62b8b52aaf6a6d58a"},
     {"path":"src/core/table-core-adapter.js","installPath":"src/core/table-core-adapter.js","runtime":true,"bytes":2596,"sha256":"df39740b6c517a7618eacc93747c539115a4cc498a52eea1827e9e84efaba569"},
     {"path":"src/ui/kc-ux-polish.css","installPath":"src/ui/kc-ux-polish.css","runtime":true,"bytes":4422,"sha256":"944c71937ebc9886fe941d89f3fb61baba6433c61ba35129f00745f8ad19b8b7"},
