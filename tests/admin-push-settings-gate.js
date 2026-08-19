@@ -1,4 +1,5 @@
 'use strict';
+// PR verification trigger for the V0.19.51 admin-push settings release.
 const fs=require('fs'),path=require('path');
 const root=path.join(__dirname,'..','release','v0.19.51','site');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
