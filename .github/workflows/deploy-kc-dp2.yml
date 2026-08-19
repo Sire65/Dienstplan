@@ -33,6 +33,8 @@ jobs:
           test -f "$RELEASE_PATH/index.html"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Refresh deterministic release manifest
+        run: node scripts/refresh-update-manifest.js
       - name: Verify canonical current release
         shell: bash
         run: |
