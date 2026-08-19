@@ -1,4 +1,5 @@
 /* KC-DP2 stable PWA/update engine V1.
+   Runtime refresh trigger: diagnostics-history + resilient Supabase monitor, 2026-08-19.
    Releases are switched only after explicit user approval in the app.
    Legacy regression markers retained intentionally:
    const CACHE='kc-dp-v0-17-10-shell'
