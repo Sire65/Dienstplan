@@ -12,7 +12,10 @@ const extras=[
   ['pilot-mobile/test.html',false,true],
   ['pilot-mobile/manifest-android.webmanifest',false,false],
   ['pilot-mobile/manifest-ios.webmanifest',false,false],
-  ['pilot-mobile/sw.js',false,true]
+  ['pilot-mobile/sw.js',false,true],
+  ['src/adapters/installations.js',true,true],
+  ['src/ui/installation-center.js',true,true],
+  ['src/ui/installation-center.css',true,true]
 ];
 for(const [p,runtime,forceRefresh] of extras){if(!manifest.files.some(x=>(x.installPath||x.path)===p))manifest.files.push({path:p,installPath:p,runtime,forceRefresh});}
 let total=0;
