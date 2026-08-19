@@ -1,0 +1,110 @@
+name: KC DP2 Post-Merge Acceptance Once
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/post-merge-acceptance-once.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Prepare Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Resolve current release and start local server
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          VERSION="$(node -p "require('./release/current.json').version")"
+          test "$VERSION" = "0.19.51"
+          test "$RELEASE_PATH" = "release/v0.19.51/site"
+          cd "$RELEASE_PATH"
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/kcdp-postmerge-http.log 2>&1 &
+          echo $! >/tmp/kcdp-postmerge-http.pid
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/kcdp-postmerge-http.log
+          exit 1
+      - name: Main TÜV, manifest, security architecture and readiness gates
+        run: |
+          node tests/tuev-studio-current.js
+          node tests/ux-current-gate.js
+          node tests/diagnostics-v01944-gate.js
+          node tests/diagnostics-history-v01951-gate.js
+          node tests/supabase-connection-monitor-v01951-gate.js
+          node tests/excel-migration-v01951-gate.js
+          node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
+          node tests/push-center-v01943-gate.js
+          node tests/pilot-v01948-gate.js
+          node tests/roles-e2e.js
+      - name: Main practical E2E regression
+        run: |
+          node tests/mobile-smoke.js
+          node tests/workflow-e2e.js
+          node tests/documents-e2e.js
+          node tests/photo-pipeline-e2e.js
+      - name: Verify live GitHub Pages release
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://sire65.github.io/Dienstplan'
+          ok=0
+          for i in {1..24}; do
+            if curl -fsSL --no-cache "$BASE/index.html?acceptance=$GITHUB_SHA-$i" -o /tmp/live-index.html \
+              && grep -q 'KC DP2 V0.19.51' /tmp/live-index.html \
+              && curl -fsSL --no-cache "$BASE/src/ui/diagnostics-center.js?acceptance=$GITHUB_SHA-$i" -o /tmp/live-diag.js \
+              && grep -q '0.19.51-monitor3' /tmp/live-diag.js \
+              && grep -q '0.19.51-history4' /tmp/live-diag.js \
+              && grep -q 'excel-migration-center.js?v=0.19.51-migration1' /tmp/live-diag.js \
+              && curl -fsSL --no-cache "$BASE/update-manifest.json?acceptance=$GITHUB_SHA-$i" -o /tmp/live-manifest.json \
+              && grep -q '"version": "0.19.51"' /tmp/live-manifest.json \
+              && grep -q 'src/ui/excel-migration-center.js' /tmp/live-manifest.json; then
+                ok=1; break
+            fi
+            sleep 5
+          done
+          test "$ok" = 1
+      - name: Write immutable acceptance evidence
+        shell: bash
+        run: |
+          cat > docs/KC-DP2-V01951-MAIN-ACCEPTANCE-RESULT.md <<EOF
+          # KC DP2 V0.19.51 – Main-/Live-Abnahme
+
+          Ergebnis: **GRÜN**
+
+          Geprüfter Main-Commit: \\`$(git rev-parse HEAD)\\`
+          Abnahmezeit (UTC): \\`$(date -u +%Y-%m-%dT%H:%M:%SZ)\\`
+
+          Bestanden:
+          - TÜV / Manifest-Dateigrößen / SHA-256 / Runtime-Summe
+          - Security-, Architektur- und Versionsregeln
+          - Supabase Start-Heartbeat/Reconnect Regression
+          - Diagnose Offen/Historie/Tests
+          - Alt-Excel Personen-Zuordnung und Dublettenschutz
+          - Rollen/Berechtigungen
+          - Mobile 390x844
+          - Wunsch/Soll/Freigabe/Ist
+          - Dokument/PDF/E-Mail-Export
+          - Planfoto-Pipeline
+          - GitHub Pages live: V0.19.51, monitor3, history4, Excel-Migrationsmodul und aktuelles Manifest ausgeliefert
+
+          Externe PR-Sicherheitsprüfung vor Merge: CodeQL + Semgrep **GRÜN**.
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/KC-DP2-V01951-MAIN-ACCEPTANCE-RESULT.md
+          git commit -m 'Record green DP2 V0.19.51 main and live acceptance'
+          git push origin HEAD:main
