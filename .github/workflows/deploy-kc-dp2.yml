@@ -3,6 +3,13 @@ name: KC DP2 Verified Web Release
 on:
   push:
     branches: [main]
+    paths:
+      - 'release/current.json'
+      - 'release/v*/site/**'
+      - 'scripts/refresh-update-manifest.js'
+      - 'tests/**'
+      - 'docs/KC-DP2-ENGINEERING-RULES.md'
+      - '.github/workflows/deploy-kc-dp2.yml'
   workflow_dispatch:
 
 permissions:
