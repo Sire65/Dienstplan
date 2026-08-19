@@ -1,0 +1,11 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const ROOT=path.resolve(__dirname,'..');
+const history=fs.readFileSync(path.join(ROOT,'release/v0.19.51/site/src/ui/diagnostics-history-view.js'),'utf8');
+const center=fs.readFileSync(path.join(ROOT,'release/v0.19.51/site/src/ui/diagnostics-center.js'),'utf8');
+for(const needle of ["open:[['open','Alle offenen']","history:[['resolved','Behoben'],['archived','Archiviert']]","tests:[['tests','Testmeldungen']]","choose('open')",'patchNote(host)','nur offene Meldungen','ausschließlich unter <b>Historie</b>'])assert.ok(history.includes(needle),'Diagnose-Historienvertrag fehlt: '+needle);
+assert.ok(!history.includes("['all','"),'Historienumschaltung darf keine vermischte Alle-Ansicht anbieten');
+assert.ok(center.includes("f==='open'?!test&&isOpen(r)"),'Basisfilter für offene Meldungen fehlt');
+assert.ok(center.includes("!test&&r.status===f"),'Basisfilter muss Archiviert/Statusfilter unterstützen');
+assert.ok(center.includes("if(['resolved','archived'].includes(r.status))"),'Behobene/archivierte Meldungen dürfen keine Aktion verlangen');
+console.log('KC DP2 diagnostics open/history/test separation gate: OK');
