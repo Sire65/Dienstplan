@@ -2,6 +2,7 @@
   'use strict';
   const K=window.KCDP=window.KCDP||{};
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const EVENT_KEYS=new Set(['install_success','install_error']);
   let settingsWindowUntil=0,lastData=null,saving=false;
   const allowed=()=>String(K.currentUser?.role||'')==='admin';
   function close(){document.getElementById('kcAdminPushSettingsOverlay')?.remove()}
@@ -17,7 +18,7 @@
     return `<div class="kc-admin-push-event"><div class="kc-admin-push-event-text"><b>${icon} ${esc(label)}</b><span>${esc(info)}</span></div><label class="kc-switch"><input type="checkbox" data-admin-push-event="${esc(key)}" ${enabled?'checked':''} ${masterActive?'':'disabled'}><span></span></label></div>`
   }
   function render(host,data){
-    lastData=data||{};const active=!!data?.active,events=Array.isArray(data?.events)?data.events:[];
+    lastData=data||{};const active=!!data?.active,events=(Array.isArray(data?.events)?data.events:[]).filter(e=>EVENT_KEYS.has(String(e?.key||'')));
     host.querySelector('#kcApsBody').innerHTML=`<div class="kc-admin-push-summary"><div><b>Admin-Pushs</b><span>${active?'aktiv':'ausgeschaltet'}</span></div><div><b>Push-Ziel</b><span>${Number(data?.activeEndpoints||0)} aktives Gerät${Number(data?.activeEndpoints||0)===1?'':'e'}</span></div><div><b>Speicherung</b><span>serverseitig</span></div></div><div class="kc-admin-push-master"><div><b>Alle Admin-Pushs</b><span>Hauptschalter. Einzelne Ereignisse bleiben gespeichert.</span></div><label class="kc-switch master"><input id="kcApsMaster" type="checkbox" ${active?'checked':''}><span></span></label></div><div class="kc-admin-push-events ${active?'':'disabled'}">${events.map(e=>eventRow({...e,masterActive:active})).join('')||'<p>Keine Push-Ereignisse verfügbar.</p>'}</div><div class="kc-admin-push-foot"><span id="kcApsState">${data?.updatedAt?'Zuletzt gespeichert: '+new Date(data.updatedAt).toLocaleString('de-DE'):'Bereit'}</span><button id="kcApsReload" type="button">Aktualisieren</button></div>`;
     const master=host.querySelector('#kcApsMaster');
     async function change(patch,control){
@@ -27,7 +28,7 @@
     }
     master.onchange=()=>change({active:master.checked},master);
     host.querySelectorAll('[data-admin-push-event]').forEach(x=>x.onchange=()=>{
-      const key=x.dataset.adminPushEvent;change(key==='install_success'?{successEnabled:x.checked}:{errorEnabled:x.checked},x)
+      const key=x.dataset.adminPushEvent;if(key==='install_success')change({successEnabled:x.checked},x);else if(key==='install_error')change({errorEnabled:x.checked},x)
     });
     host.querySelector('#kcApsReload').onclick=()=>load(host);
   }
