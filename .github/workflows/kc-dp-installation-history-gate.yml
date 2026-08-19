@@ -1,28 +1,7 @@
 name: KC DP2 Installation History Gate
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'release/v0.19.51/site/index.html'
-      - 'release/v0.19.51/site/src/core/table-core-adapter.js'
-      - 'release/v0.19.51/site/src/adapters/installations.js'
-      - 'release/v0.19.51/site/src/ui/installation-center.js'
-      - 'release/v0.19.51/site/src/ui/installation-center.css'
-      - 'release/v0.19.51/site/pilot-mobile/**'
-      - 'tests/installation-history-gate.js'
-      - 'scripts/refresh-update-manifest.js'
-      - '.github/workflows/kc-dp-installation-history-gate.yml'
-  pull_request:
-    paths:
-      - 'release/v0.19.51/site/index.html'
-      - 'release/v0.19.51/site/src/core/table-core-adapter.js'
-      - 'release/v0.19.51/site/src/adapters/installations.js'
-      - 'release/v0.19.51/site/src/ui/installation-center.js'
-      - 'release/v0.19.51/site/src/ui/installation-center.css'
-      - 'release/v0.19.51/site/pilot-mobile/**'
-      - 'tests/installation-history-gate.js'
-      - 'scripts/refresh-update-manifest.js'
+  workflow_dispatch:
 
 jobs:
   installation-history:
