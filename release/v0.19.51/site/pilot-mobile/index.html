@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#741521">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="KC DP2">
+  <title>KC DP2</title>
+  <script>
+    (()=>{const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);const l=document.createElement('link');l.rel='manifest';l.href=ios?'./manifest-ios.webmanifest?v=3':'./manifest-android.webmanifest?v=3';document.head.appendChild(l)})();
+  </script>
+  <link rel="apple-touch-icon" href="../assets/kc-dp2-apple-touch-icon.png?v=3">
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#fff8ee;color:#281d1d}.shell{min-height:100svh;display:flex;align-items:center;justify-content:center;padding:18px}.card{width:min(520px,100%);background:#fff;border:1px solid #ead7d7;border-radius:24px;padding:26px;text-align:center;box-shadow:0 10px 30px #0001}.title{font-size:34px;margin:0 0 4px}.sub{font-size:18px;color:#766;margin-bottom:22px}.big{width:100%;border:0;border-radius:18px;padding:22px;background:#741521;color:#fff;font-size:24px;font-weight:900}.secondary{width:100%;border:1px solid #ccbcbc;border-radius:15px;padding:15px;background:#fff;color:#4d3434;font-size:18px;font-weight:800}.hide{display:none}.info{font-size:23px;line-height:1.45;font-weight:800;background:#fff3e8;border-radius:18px;padding:22px}.hint{font-size:17px;line-height:1.45;margin-top:14px;color:#554}.load{font-size:21px;font-weight:750}.ok{font-size:70px}.error{background:#fff0f0;color:#6f1720;border-radius:16px;padding:18px;text-align:left}.error h2{margin:0 0 8px}.error p{font-size:18px}.actions{display:grid;gap:10px;margin-top:16px}.sent{margin-top:10px;padding:10px;border-radius:10px;background:#eef8ee;color:#225c2a;font-weight:700}
+  </style>
+</head>
+<body>
+<main class="shell"><section class="card">
+  <h1 class="title">KC DP2</h1><div class="sub" id="name">Install-Test</div>
+  <div id="load" class="load">Wird vorbereitet …</div>
+  <div id="iosInstall" class="hide"><div class="info">Unten auf <b>Teilen</b> bzw. <b>•••</b> tippen<br>→ <b>Zum Home-Bildschirm</b><br>→ <b>Hinzufügen</b></div><div class="hint">Danach das neue <b>KC DP2</b>-Symbol einmal öffnen.</div></div>
+  <div id="androidInstall" class="hide"><button class="big" id="installBtn">INSTALLIEREN</button><div class="hint">Einmal bestätigen.</div></div>
+  <div id="push" class="hide"><button class="big" id="pushBtn">PUSH ERLAUBEN</button><div class="hint">Danach läuft alles automatisch.</div></div>
+  <div id="done" class="hide"><div class="ok">✅</div><h2>Fertig</h2><p>Alles erledigt.</p></div>
+  <div id="cancelled" class="hide"><h2>Vorgang abgebrochen</h2><p>Du kannst die Seite jetzt schließen.</p></div>
+  <div id="error" class="hide error"><h2>Das hat noch nicht geklappt</h2><p id="errorText"></p><div class="actions"><button class="big" id="retry">Nochmal versuchen</button><button class="secondary" id="abort">Abbrechen</button><button class="secondary" id="report">Meldung senden</button></div><div id="reportState" class="hide sent"></div></div>
+</section></main>
+<script>
+(()=>{
+ const STORE='kc_dp_mobile_entry_v1',BUILD='0.19.51-mobile-secure3',SUPA='https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/';
+ const $=id=>document.getElementById(id),show=id=>$(id).classList.remove('hide'),hide=id=>$(id).classList.add('hide');
+ const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),android=/Android/i.test(navigator.userAgent||'');
+ const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+ const q=new URL(location.href).searchParams.get('entry')||'',valid=/^kc-dp-i-[a-z0-9]{12,40}$/.test(q);if(valid)localStorage.setItem(STORE,q);const entry=valid?q:(localStorage.getItem(STORE)||'');
+ let END='',server=null,deferred=null,lastError=null,lastStep='start';
+ function device(){return ios?'handy:ios':android?'handy:android':'handy:other'}
+ function friendly(e){const m=String(e?.message||e||'');if(/Erlauben|genehmigt|permission/i.test(m))return'Benachrichtigungen sind noch nicht erlaubt. Bitte noch einmal versuchen und „Erlauben“ wählen.';if(/Installation|install/i.test(m))return'Die Installation konnte noch nicht abgeschlossen werden. Bitte noch einmal versuchen.';if(/Push|Testnachricht/i.test(m))return'Die Testnachricht konnte gerade nicht gesendet oder bestätigt werden.';if(/Verbindung|fetch|Netz|502|503|504/i.test(m))return'Die Verbindung zum DP2-Server hat gerade nicht funktioniert.';return'DP2 konnte diesen Schritt noch nicht abschließen.'}
+ function allHide(){['load','iosInstall','androidInstall','push','done','cancelled','error'].forEach(hide)}
+ function fail(e,step=lastStep){lastError=e;lastStep=step;allHide();$('errorText').textContent=friendly(e);$('reportState').textContent='';hide('reportState');$('report').style.display=navigator.onLine?'block':'none';show('error')}
+ async function call(action,p={}){const r=await fetch(END,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,device:device(),deviceClass:'handy',installed:standalone(),notification:typeof Notification==='undefined'?'unsupported':Notification.permission,targetVersion:'0.19.51',pilotBuild:BUILD,...p})});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||`Verbindung fehlgeschlagen (${r.status})`);return d}
+ function b64u(s){const pad='='.repeat((4-s.length%4)%4),raw=atob((s+pad).replace(/-/g,'+').replace(/_/g,'/')),a=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)a[i]=raw.charCodeAt(i);return a}
+ async function registerWorker(){if(!('serviceWorker'in navigator))throw Error('Service Worker nicht verfügbar.');const reg=await navigator.serviceWorker.register(`./sw.js?entry=${encodeURIComponent(entry)}&v=3`,{scope:'./',updateViaCache:'none'});await navigator.serviceWorker.ready;return reg}
+ async function subscribe(){lastStep='push_anmelden';const reg=await registerWorker();let s=await reg.pushManager.getSubscription();if(!s)s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(server.vapidPublicKey)});await call('subscribe',{subscription:s.toJSON?s.toJSON():s,userAgent:navigator.userAgent})}
+ async function poll(){lastStep='push_pruefen';for(let i=0;i<25;i++){await new Promise(r=>setTimeout(r,1200));const x=await call('bootstrap');if(['test_received','completed'].includes(String(x.status||''))){allHide();show('done');return}}throw Error('Die Testnachricht wurde noch nicht bestätigt.')}
+ async function allowPush(){lastStep='push_freigeben';try{allHide();show('load');$('load').textContent='Bitte „Erlauben“ wählen …';if(typeof Notification==='undefined')throw Error('Benachrichtigungen sind auf diesem Gerät nicht verfügbar.');if(Notification.permission!=='granted'){const p=await Notification.requestPermission();if(p!=='granted')throw Error('Bitte „Erlauben“ wählen.')}$('load').textContent='Wird automatisch fertiggestellt …';await call('installed',{installedVersion:'0.19.51',installDisposition:standalone()?'standalone':'installed'});await subscribe();lastStep='test_push_senden';const r=await call('send_test');if(!(r.sent>0))throw Error('Push konnte nicht gesendet werden.');$('load').textContent='Push wird geprüft …';await poll()}catch(e){fail(e,lastStep)}}
+ async function installAndroid(){lastStep='installation';try{allHide();show('load');if(standalone()){allHide();show('push');return}if(!deferred){await new Promise(r=>setTimeout(r,700));if(!deferred)throw Error('Installation ist noch nicht bereit. Bitte noch einmal versuchen.')}await deferred.prompt();const c=await deferred.userChoice;if(c?.outcome!=='accepted')throw Error('Installation wurde nicht bestätigt.');deferred=null;$('load').textContent='Installation abgeschlossen.';setTimeout(()=>{allHide();show('push')},350)}catch(e){fail(e,'installation')}}
+ async function boot(){lastStep='start';try{if(!entry)throw Error('Persönlicher Testzugang fehlt.');END=SUPA+entry+'/';allHide();show('load');await registerWorker();server=await call('bootstrap');$('name').textContent='Hallo '+(server.firstName||'');await call('heartbeat',{phase:'mobile_secure_boot',selectedDeviceClass:'handy'}).catch(()=>{});allHide();if(standalone())show('push');else if(ios)show('iosInstall');else if(android)show('androidInstall');else throw Error('Dieser Testlink ist für ein Handy vorgesehen.')}catch(e){fail(e,'start')}}
+ async function report(){if(!lastError)return;try{$('report').disabled=true;const r=await call('report_error',{step:lastStep,errorCode:lastError?.name||'client_error',errorMessage:String(lastError?.message||lastError).slice(0,300),userAgent:navigator.userAgent,online:navigator.onLine});$('reportState').textContent=r.reported?'Meldung wurde gesendet.':'Meldung konnte nicht gesendet werden.';show('reportState')}catch(_){$('reportState').textContent='Meldung konnte gerade nicht gesendet werden.';show('reportState')}finally{$('report').disabled=false}}
+ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e});
+ window.addEventListener('appinstalled',()=>{allHide();show('push')});
+ $('installBtn').onclick=installAndroid;$('pushBtn').onclick=allowPush;$('retry').onclick=()=>{hide('error');lastStep==='start'?boot():(lastStep==='installation'?installAndroid():allowPush())};$('abort').onclick=()=>{allHide();show('cancelled')};$('report').onclick=report;
+ boot();
+})();
+</script>
+</body></html>
