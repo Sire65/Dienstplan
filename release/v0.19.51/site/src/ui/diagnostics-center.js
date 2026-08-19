@@ -1,6 +1,6 @@
 (function(){
  const K=window.KCDP=window.KCDP||{},roles=new Set(['planner','duty_manager','admin']),LOAD_TIMEOUT_MS=12000,VIEW_KEY='kc_dp2_diagnostics_view';
- const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),allowed=()=>roles.has(String(K.currentUser?.role||'')),fmt=v=>v?new Date(v).toLocaleString('de-DE'):'–';
+ const esc=v=>String(v??'').replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m])),allowed=()=>roles.has(String(K.currentUser?.role||'')),fmt=v=>v?new Date(v).toLocaleString('de-DE'):'–';
  const compact=()=>matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)').matches;
  const storedView=()=>{try{const v=localStorage.getItem(VIEW_KEY);return v==='table'||v==='cards'?v:null}catch(_){return null}};
  const saveView=v=>{try{localStorage.setItem(VIEW_KEY,v)}catch(_){}}
@@ -13,13 +13,15 @@
   host.innerHTML='<div class="kc-diag-card"><div class="kc-diag-head"><div><h2>🛠 Zentrale Fehlerdiagnose</h2><p>Handys, PWA und KC DP2</p></div><button id="kcDiagClose">✕</button></div><div class="kc-diag-toolbar"><select id="kcDiagFilter"><option value="open">Offen</option><option value="new">Nur neu</option><option value="critical">Kritisch</option><option value="resolved">Behoben</option><option value="all">Alle</option></select><input id="kcDiagSearch" type="search" placeholder="Fehler, Mitglied, Gerät …"><div class="kc-diag-view-toggle" role="group" aria-label="Ansicht"><button type="button" data-diag-view="table">Tabelle</button><button type="button" data-diag-view="cards">Karten</button></div><button id="kcDiagReload">Aktualisieren</button></div><div id="kcDiagSummary"></div><div id="kcDiagTable">Lade …</div></div>';
   host.querySelector('#kcDiagClose').onclick=close;
   let allRows=[],loading=false,viewMode=storedView();
-  const effectiveView=()=>viewMode||(compact()?'cards':'table');
+  const effectiveView=()=>compact()?'cards':(viewMode||'table');
   function updateViewToggle(){
    const current=effectiveView();
    host.querySelectorAll('[data-diag-view]').forEach(b=>{
     const active=b.dataset.diagView===current;
     b.classList.toggle('active',active);
     b.setAttribute('aria-pressed',String(active));
+    b.disabled=compact()&&b.dataset.diagView==='table';
+    b.title=compact()&&b.dataset.diagView==='table'?'Auf Handy wird automatisch die Kartenansicht verwendet.':'';
    });
   }
   function filtered(){
@@ -55,9 +57,9 @@
   host.querySelector('#kcDiagReload').onclick=load;
   host.querySelector('#kcDiagFilter').onchange=render;
   host.querySelector('#kcDiagSearch').oninput=render;
-  host.querySelectorAll('[data-diag-view]').forEach(b=>b.onclick=()=>{viewMode=b.dataset.diagView;saveView(viewMode);render()});
+  host.querySelectorAll('[data-diag-view]').forEach(b=>b.onclick=()=>{if(compact()&&b.dataset.diagView==='table'){return}viewMode=b.dataset.diagView;saveView(viewMode);render()});
   const mq=matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)');
-  mq.addEventListener?.('change',()=>{if(!viewMode)render()});
+  mq.addEventListener?.('change',render);
   updateViewToggle();
   await load()
  }
@@ -69,5 +71,5 @@
  }
  document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
  new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
- K.diagnosticsCenter={version:'0.19.51f',open,allowed};
+ K.diagnosticsCenter={version:'0.19.51g',open,allowed};
 })();
