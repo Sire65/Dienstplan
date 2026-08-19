@@ -14,7 +14,7 @@ if(!ui.includes("f==='open'?!test&&isOpen(r)"))throw new Error('Offene Standarda
 if(!ui.includes("f==='resolved'?!test&&r.status==='resolved'"))throw new Error('Behobene Meldungen müssen separat filterbar sein');
 for(const needle of ['.kc-diag-test-badge','.kc-diag-housekeeping','.kc-diag-mobile-meta em','.kc-diag-table-actions'])if(!css.includes(needle))throw new Error('Diagnose-CSS Vertrag fehlt: '+needle);
 for(const needle of ['src/adapters/diagnostics.js?v=0.19.51h','src/ui/diagnostics-center.js?v=0.19.51h','src/ui/diagnostics-center.css?v=0.19.51h'])if(!index.includes(needle))throw new Error('Diagnose muss im kanonischen Startdokument geladen werden: '+needle);
-if(!sw.includes("kc-dp-update-engine-v1.3"))throw new Error('PWA-Engine muss Diagnose-Refresh aktivieren');
+if(!sw.includes("kc-dp-update-engine-v1.4"))throw new Error('PWA-Engine muss Diagnose-Refresh aktivieren');
 if(!adapter.includes("kc_dp_error_admin_list_v2"))throw new Error('V2 Adminliste fehlt');
 if(!adapter.includes("kc_dp_error_admin_list'"))throw new Error('Fallback auf V1 fehlt');
 if(adapter.includes('pwa.service_worker.redundant'))throw new Error('Service-Worker redundant darf nicht pauschal als Warnung gemeldet werden');

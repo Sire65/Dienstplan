@@ -109,7 +109,8 @@
  function loadCompanion(id,src){if(document.getElementById(id))return;const s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
  document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
  new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
- loadCompanion('kcDpSupabaseConnectionMonitor','src/core/supabase-connection-monitor.js?v=0.19.51-monitor1');
- loadCompanion('kcDpDiagnosticsHistoryView','src/ui/diagnostics-history-view.js?v=0.19.51-history1');
+ loadCompanion('kcDpSupabaseConnectionMonitor','src/core/supabase-connection-monitor.js?v=0.19.51-monitor3');
+ loadCompanion('kcDpDiagnosticsHistoryView','src/ui/diagnostics-history-view.js?v=0.19.51-history4');
+ loadCompanion('kcDpExcelMigrationCenter','src/ui/excel-migration-center.js?v=0.19.51-migration1');
  K.diagnosticsCenter={version:'0.19.51i',open,allowed,isTest,friendlyTitle};
 })();
