@@ -63,13 +63,13 @@ jobs:
           BASE='https://sire65.github.io/Dienstplan'
           ok=0
           for i in {1..24}; do
-            if curl -fsSL --no-cache "$BASE/index.html?acceptance=$GITHUB_SHA-$i" -o /tmp/live-index.html \
+            if curl -fsSL -H 'Cache-Control: no-cache' "$BASE/index.html?acceptance=$GITHUB_SHA-$i" -o /tmp/live-index.html \
               && grep -q 'KC DP2 V0.19.51' /tmp/live-index.html \
-              && curl -fsSL --no-cache "$BASE/src/ui/diagnostics-center.js?acceptance=$GITHUB_SHA-$i" -o /tmp/live-diag.js \
+              && curl -fsSL -H 'Cache-Control: no-cache' "$BASE/src/ui/diagnostics-center.js?acceptance=$GITHUB_SHA-$i" -o /tmp/live-diag.js \
               && grep -q '0.19.51-monitor3' /tmp/live-diag.js \
               && grep -q '0.19.51-history4' /tmp/live-diag.js \
               && grep -q 'excel-migration-center.js?v=0.19.51-migration1' /tmp/live-diag.js \
-              && curl -fsSL --no-cache "$BASE/update-manifest.json?acceptance=$GITHUB_SHA-$i" -o /tmp/live-manifest.json \
+              && curl -fsSL -H 'Cache-Control: no-cache' "$BASE/update-manifest.json?acceptance=$GITHUB_SHA-$i" -o /tmp/live-manifest.json \
               && grep -q '"version": "0.19.51"' /tmp/live-manifest.json \
               && grep -q 'src/ui/excel-migration-center.js' /tmp/live-manifest.json; then
                 ok=1; break
@@ -77,7 +77,7 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
-      - name: Write immutable acceptance evidence
+      - name: Write acceptance evidence to isolated evidence branch
         shell: bash
         run: |
           cat > docs/KC-DP2-V01951-MAIN-ACCEPTANCE-RESULT.md <<EOF
@@ -85,8 +85,8 @@ jobs:
 
           Ergebnis: **GRÜN**
 
-          Geprüfter Main-Commit: \\`$(git rev-parse HEAD)\\`
-          Abnahmezeit (UTC): \\`$(date -u +%Y-%m-%dT%H:%M:%SZ)\\`
+          Geprüfter Main-Commit: $(git rev-parse HEAD)
+          Abnahmezeit (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
           Bestanden:
           - TÜV / Manifest-Dateigrößen / SHA-256 / Runtime-Summe
@@ -107,4 +107,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add docs/KC-DP2-V01951-MAIN-ACCEPTANCE-RESULT.md
           git commit -m 'Record green DP2 V0.19.51 main and live acceptance'
-          git push origin HEAD:main
+          git push --force origin HEAD:refs/heads/acceptance/v01951-main-live
