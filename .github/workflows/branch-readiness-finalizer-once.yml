@@ -1,0 +1,46 @@
+name: KC DP2 Branch Readiness Finalizer Once
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/branch-readiness-finalizer-once.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  finalize-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: fix/diagnostics-history-v01951
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Finalize DP2 readiness branch
+        run: node scripts/finalize-v01951-readiness.js
+      - name: Run readiness gates before writing branch
+        run: |
+          node --check release/v0.19.51/site/src/core/supabase-connection-monitor.js
+          node --check release/v0.19.51/site/src/ui/diagnostics-history-view.js
+          node --check release/v0.19.51/site/src/ui/excel-migration-center.js
+          node tests/supabase-connection-monitor-v01951-gate.js
+          node tests/diagnostics-history-v01951-gate.js
+          node tests/excel-migration-v01951-gate.js
+          node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
+          node tests/tuev-studio-current.js
+      - name: Commit finalized generated files to readiness branch
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No generated changes required.'
+            exit 0
+          fi
+          git commit -m 'Finalize DP2 V0.19.51 readiness runtime and manifest'
+          git push origin HEAD:fix/diagnostics-history-v01951
