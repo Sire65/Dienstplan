@@ -1,14 +1,8 @@
 name: KC DP2 Admin Push Settings Gate
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'release/v0.19.51/site/src/adapters/admin-push-settings.js'
-      - 'release/v0.19.51/site/src/ui/admin-push-settings.js'
-      - 'release/v0.19.51/site/src/ui/admin-push-settings.css'
-      - 'release/v0.19.51/site/src/core/planner-application-guard.js'
-      - 'tests/admin-push-settings-gate.js'
-      - '.github/workflows/admin-push-settings-gate.yml'
+  workflow_dispatch:
+
 jobs:
   admin-push-settings:
     runs-on: ubuntu-latest
