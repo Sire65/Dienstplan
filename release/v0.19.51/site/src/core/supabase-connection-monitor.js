@@ -10,6 +10,7 @@ const now=()=>new Date().toISOString();
 const online=()=>typeof navigator==='undefined'||navigator.onLine!==false;
 const foreground=()=>typeof document==='undefined'||document.visibilityState!=='hidden';
 const led=()=>typeof document==='undefined'?null:document.getElementById('supabaseStatusLed');
+const waitingForLogin=message=>/keine gültige supabase-auth-sitzung|bitte anmelden|auth-sitzung fehlt|anmeldung.*erforderlich/i.test(String(message||''));
 function recentOk(maxMs=90000){const t=Date.parse(state.lastOkAt||'');return Number.isFinite(t)&&Date.now()-t<=maxMs;}
 function paint(mode,detail=''){
   const el=led();if(!el)return;
@@ -54,7 +55,14 @@ async function check(reason='heartbeat'){
     schedule(nextNormalDelay(),'heartbeat');
     return {ok:true,result};
   }catch(e){
-    state.failures++;state.lastError=e?.message||String(e);
+    state.lastError=e?.message||String(e);
+    if(waitingForLogin(state.lastError)){
+      state.failures=0;
+      paint('checking','Supabase bereit · Anmeldung wird abgewartet.');
+      schedule(5000,'await-login');
+      return {ok:false,waitingForLogin:true,error:state.lastError,failures:0};
+    }
+    state.failures++;
     if(state.failures<3||recentOk())paint('checking','Kurze Unterbrechung · automatische Wiederverbindung läuft.');
     else paint('error','Supabase nach mehreren Versuchen nicht erreichbar: '+state.lastError);
     schedule(nextFailureDelay(),'reconnect');
@@ -75,6 +83,6 @@ if(typeof addEventListener==='function'){
   addEventListener('pageshow',()=>{if(state.running)check('pageshow');});
 }
 if(typeof document!=='undefined')document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&state.running)check('foreground');});
-K.supabaseConnectionMonitor={version:'0.19.51-monitor1',state,start,stop,check};
+K.supabaseConnectionMonitor={version:'0.19.51-monitor2',state,start,stop,check};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(start,0),{once:true});else setTimeout(start,0);
 })();
