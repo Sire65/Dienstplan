@@ -40,6 +40,7 @@ jobs:
           node tests/tuev-studio-current.js
           node tests/ux-current-gate.js
           node tests/diagnostics-v01944-gate.js
+          node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
           node tests/push-center-v01943-gate.js
           node tests/pilot-v01948-gate.js
           ROOT="${{ steps.release.outputs.path }}"
