@@ -6,6 +6,7 @@ on:
       - fix/diagnostics-history-v01951
     paths:
       - 'release/v0.19.51/site/**'
+      - '!release/v0.19.51/site/update-manifest.json'
 
 permissions:
   contents: write
@@ -16,6 +17,7 @@ concurrency:
 
 jobs:
   refresh:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -37,5 +39,5 @@ jobs:
             echo "Manifest already current."
             exit 0
           fi
-          git commit -m "Refresh DP2 update manifest for diagnostics fix"
+          git commit -m "Refresh DP2 update manifest for diagnostics and Supabase monitor"
           git push origin HEAD:fix/diagnostics-history-v01951
