@@ -12,6 +12,6 @@
   function loadDiagnostics(){script('kcTableCoreAdapter','src/core/table-core-adapter.js?v=0.19.44');script('kcDiagnosticsAdapter','src/adapters/diagnostics.js?v=0.19.51');css('kcDiagnosticsCss','src/ui/diagnostics-center.css?v=0.19.51');script('kcDiagnosticsUi','src/ui/diagnostics-center.js?v=0.19.51',document.body)}
   function loadUxPolish(){css('kcUxPolishCss','src/ui/kc-ux-polish.css?v=0.19.52');script('kcUxPolishJs','src/ui/kc-ux-polish.js?v=0.19.52',document.body)}
   function loadMobileColleagueSearch(){script('kcMobileColleagueSearchJs','src/ui/mobile-colleague-search.js?v=0.19.51',document.body)}
-  function loadWishPhaseGuard(){script('kcWishPhaseGuardJs','src/ui/wish-phase-guard.js?v=0.19.52-safe-5',document.body)}
+  function loadWishPhaseGuard(){script('kcWishPhaseGuardJs','src/ui/wish-phase-guard.js?v=0.19.52-safe-6',document.body)}
   function loadExtras(){loadPushCenter();loadDiagnostics();loadUxPolish();loadMobileColleagueSearch();loadWishPhaseGuard()}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadExtras,{once:true});else loadExtras();
 })();
