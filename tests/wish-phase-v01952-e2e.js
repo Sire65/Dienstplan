@@ -8,6 +8,20 @@ const assert = require('assert');
   page.on('console',msg=>{if(msg.type()==='error')console.error('BROWSER:',msg.text());});
   page.on('pageerror',err=>console.error('PAGEERROR:',err.message));
 
+  // Dieser E2E prüft ausschließlich Wunsch/Soll/Ist-Funktionalität.
+  // Update-/Service-Worker-Verhalten wird separat vom Web-Release-Gate geprüft.
+  await page.addInitScript(()=>{
+    try{
+      if('serviceWorker' in navigator){
+        Object.defineProperty(navigator,'serviceWorker',{configurable:true,value:{
+          register:async()=>({update:async()=>{},unregister:async()=>true,addEventListener(){},installing:null,waiting:null,active:null}),
+          getRegistrations:async()=>[],ready:Promise.resolve(null),controller:null,addEventListener(){}
+        }});
+      }
+    }catch(_){}
+  });
+  await page.route('**/service-worker.js*',route=>route.fulfill({status:200,contentType:'application/javascript',body:"self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));"}));
+
   await page.route('**/src/core/member-access.js*',async route=>{
     const response=await route.fetch();
     let body=await response.text();
@@ -19,7 +33,6 @@ const assert = require('assert');
   await page.route('https://*.supabase.co/**',route=>route.abort());
 
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  // Basis exakt wie im bestehenden grünen Workflow-E2E starten.
   await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.actual&&window.KCDP?.publishPlan&&window.KCDP?.mutations,{timeout:20000});
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
   const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
@@ -31,11 +44,9 @@ const assert = require('assert');
   await page.locator('#unlockBtn').click();
   await page.waitForSelector('#kcChoiceView',{timeout:20000});
 
-  // Zusatzmodul darf später laden, muss aber vor jeder Wunschänderung aktiv sein.
   await page.waitForFunction(()=>window.KCDP?.wishPhaseGuard&&typeof window.KCDP?.mutations?.saveWish==='function',{timeout:15000});
   await page.waitForFunction(()=>window.KCDP?.mutations?.__wishPhaseWrapped===true,{timeout:5000});
 
-  // Hauptansicht öffnen, damit die vier Planarten real gerendert geprüft werden.
   await page.evaluate(()=>window.KCDP.startChoice.openEdit());
   await page.waitForSelector('#layerTabs button[data-layer="wish"]',{timeout:10000});
 
