@@ -1,0 +1,60 @@
+name: KC DP2 V0.19.52 Wish Phase Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'release/v0.19.52/site/**'
+      - 'tests/wish-phase-v01952-e2e.js'
+      - '.github/workflows/wish-phase-v01952.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wish-phase-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax candidate runtime
+        run: |
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.52/site -type f -name '*.js' -print0)
+          node --check tests/wish-phase-v01952-e2e.js
+      - name: Prepare isolated 0.19.52 manifest
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const currentPath='release/current.json';
+          const current=JSON.parse(fs.readFileSync(currentPath,'utf8'));
+          fs.writeFileSync('/tmp/current.production.json',JSON.stringify(current,null,2)+'\n');
+          fs.writeFileSync(currentPath,JSON.stringify({...current,version:'0.19.52',baseVersion:'0.19.51',previousVersion:'0.19.51',releasePath:'release/v0.19.52/site',mode:'candidate-test'},null,2)+'\n');
+          const mp='release/v0.19.52/site/update-manifest.json';
+          const m=JSON.parse(fs.readFileSync(mp,'utf8'));
+          if(!m.files.some(x=>(x.installPath||x.path)==='src/ui/wish-phase-guard.js'))m.files.push({path:'src/ui/wish-phase-guard.js',installPath:'src/ui/wish-phase-guard.js',runtime:true,forceRefresh:true});
+          m.releaseNotes=['Wunschphase mit Frist, eindeutigem offen/geschlossen-Status und zentraler Schreibsperre','Wunsch, Soll und Ist bleiben getrennt und einheitlich benannt','Produktionsstand 0.19.51 bleibt unverändert',...(m.releaseNotes||[])];
+          fs.writeFileSync(mp,JSON.stringify(m,null,2)+'\n');
+          NODE
+          node scripts/refresh-update-manifest.js
+          mv /tmp/current.production.json release/current.json
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start isolated candidate server
+        run: |
+          cd release/v0.19.52/site
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-wish-phase.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/kcdp-wish-phase.log
+          exit 1
+      - name: Wunschphase open close reopen regression
+        run: node tests/wish-phase-v01952-e2e.js
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/kcdp-wish-phase.log || true

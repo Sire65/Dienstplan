@@ -34,6 +34,8 @@ jobs:
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Deep TÜV for KC DP2 V$VERSION at $RELEASE_PATH"
+      - name: Refresh deterministic release manifest
+        run: node scripts/refresh-update-manifest.js
       - name: Syntax – complete current browser runtime and all tests
         shell: bash
         run: |

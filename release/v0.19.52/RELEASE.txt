@@ -1,0 +1,4 @@
+KC-DP2 0.19.52 CANDIDATE
+Basis: 0.19.51
+Änderung: sicherer Wunschphasen-Workflow mit Frist, Sperre und transparenter Statusanzeige.
+Produktionsstand 0.19.51 bleibt unverändert.

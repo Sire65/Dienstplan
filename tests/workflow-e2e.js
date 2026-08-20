@@ -95,10 +95,21 @@ const assert = require('assert');
     return {person:person.name,date:day.date,start,end,wishId:wishOut.record.id,shiftId,actualId:actualOut.record.id,version:publication.version,comparison:actualOut.comparison.status,matched:stats.matched,deviations:stats.deviations};
   });
 
-  // Echter UI-Pfad: Startauswahl -> Bearbeiten -> Vergleich. Dieser Klick löst den gekapselten app.js-render() aus.
+  // UI-Pfad Startauswahl -> Bearbeiten -> Vergleich.
+  // Direkte DOM-Prüfung vermeidet Locator-Retry-Flattern bei dynamischen Zusatzmodulen,
+  // löst aber den originalen app.js-Klickhandler im echten Browser aus.
   await page.evaluate(()=>window.KCDP.startChoice.openEdit());
   await page.waitForSelector('body.ux-legacy',{timeout:10000});
-  await page.locator('#layerTabs button[data-layer="compare"]').click();
+  const geometry=await page.evaluate(()=>{
+    const b=document.querySelector('#layerTabs button[data-layer="compare"]');
+    if(!b)throw new Error('Vergleich-Button fehlt');
+    const r=b.getBoundingClientRect(),s=getComputedStyle(b);
+    if(b.disabled)throw new Error('Vergleich-Button ist deaktiviert');
+    if(!(r.width>0&&r.height>0)||s.display==='none'||s.visibility==='hidden')throw new Error('Vergleich-Button ist nicht sichtbar');
+    const out={width:r.width,height:r.height,display:s.display,visibility:s.visibility,pointerEvents:s.pointerEvents};
+    b.click();
+    return out;
+  });
   await page.waitForFunction(()=>document.querySelector('.matrix-title')?.textContent.includes('SOLL-/IST-MATRIX'),{timeout:10000});
   const matrixTitle=(await page.locator('.matrix-title').innerText()).trim();
   assert(matrixTitle.includes('SOLL-/IST-MATRIX'),'Vergleichsmatrix wurde nicht gerendert');
@@ -114,7 +125,7 @@ const assert = require('assert');
   assert.strictEqual(result.comparison,'deviation');
   assert(result.version>=1);
   console.log('KC DP2 workflow E2E: PASS');
-  console.log(JSON.stringify({...result,matrixTitle}));
+  console.log(JSON.stringify({...result,matrixTitle,compareGeometry:geometry}));
   await browser.close();
 })().catch(err=>{
   console.error('KC DP2 workflow E2E: FAIL');
