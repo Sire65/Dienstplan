@@ -1,78 +1,57 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { Webhook } from 'npm:svix@1.76.1';
 import webpush from 'npm:web-push@3.6.7';
-import { decodeBase64, encryptMailAttachment, sha256Hex } from '../_shared/kc-dp-mail-crypto.ts';
+import { encryptMailAttachment, sha256Hex } from '../_shared/kc-dp-mail-crypto.ts';
 
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 const TARGET='dp2@kc-werne.de';
 const ADMIN_ROLES=['admin','planner','duty_manager'];
 const MAX_BYTES=10*1024*1024;
+const addr=(v:any)=>String(v?.Address||v?.address||v||'').replace(/^.*<([^>]+)>.*$/,'$1').trim().toLowerCase();
+const kind=(name:string)=>{const n=name.toLowerCase();return n.endsWith('.xlsx')?'xlsx':n.endsWith('.xls')?'xls':n.endsWith('.csv')?'csv':n.endsWith('.pdf')?'pdf':/\.(png|jpg|jpeg|webp|heic)$/i.test(n)?'image':'unknown'};
+const retentionUntil=()=>{const days=Math.max(1,Math.min(365,Number(Deno.env.get('KC_DP_MAIL_RETENTION_DAYS')||30)));return new Date(Date.now()+days*86400000).toISOString()};
 
-async function sha256(v:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)))).map(x=>x.toString(16).padStart(2,'0')).join('')}
-function retentionUntil(){const days=Math.max(1,Math.min(365,Number(Deno.env.get('KC_DP_MAIL_RETENTION_DAYS')||30)));return new Date(Date.now()+days*86400000).toISOString()}
+async function verifyResend(req:Request,raw:string){
+  const secret=Deno.env.get('KC_DP_RESEND_INBOUND_SECRET')||Deno.env.get('RESEND_WEBHOOK_SECRET')||'';
+  if(!secret)throw new Error('Resend Webhook-Secret fehlt');
+  const id=req.headers.get('svix-id')||'',timestamp=req.headers.get('svix-timestamp')||'',signature=req.headers.get('svix-signature')||'';
+  if(!id||!timestamp||!signature)throw new Error('Resend Signaturheader fehlen');
+  return new Webhook(secret).verify(raw,{'svix-id':id,'svix-timestamp':timestamp,'svix-signature':signature}) as any;
+}
+async function resendAttachments(emailId:string){
+  const api=Deno.env.get('KC_DP_RESEND_API_KEY')||Deno.env.get('RESEND_API_KEY')||'';if(!api)return[];
+  const r=await fetch(`https://api.resend.com/emails/receiving/${encodeURIComponent(emailId)}/attachments`,{headers:{Authorization:`Bearer ${api}`}});
+  if(!r.ok)throw new Error(`Resend Attachments HTTP ${r.status}`);const data=await r.json(),out:any[]=[];
+  for(const a of data.data||[]){if(!a.download_url)continue;const f=await fetch(a.download_url);if(!f.ok)throw new Error(`Resend Download HTTP ${f.status}`);out.push({name:a.filename,type:a.content_type,size:Number(a.size||0),bytes:new Uint8Array(await f.arrayBuffer())});}
+  return out;
+}
+async function normalize(req:Request,raw:string){
+  if(req.headers.get('svix-id')){
+    const e=await verifyResend(req,raw);if(e?.type!=='email.received')return null;const d=e.data||{};
+    return{provider:'resend',providerMessageId:String(d.email_id||d.message_id||crypto.randomUUID()),to:(d.to||[]).map(addr),from:addr(d.from),fromName:String(d.from||'').replace(/\s*<[^>]+>.*/,''),subject:String(d.subject||'(ohne Betreff)'),attachments:await resendAttachments(String(d.email_id||''))};
+  }
+  const body=JSON.parse(raw),item=Array.isArray(body?.items)?body.items[0]:body;
+  const recipients=[...(item?.To||[]),...(item?.Recipients||[])].map(addr);
+  return{provider:'brevo',providerMessageId:String(item?.MessageId||crypto.randomUUID()),to:recipients,from:addr(item?.From),fromName:String(item?.From?.Name||''),subject:String(item?.Subject||'(ohne Betreff)'),attachments:(item?.Attachments||[]).map((a:any)=>({name:String(a.Name||'anhang'),type:String(a.ContentType||'application/octet-stream'),size:Number(a.ContentLength||0),downloadToken:a.DownloadToken||null}))};
+}
+async function brevoBytes(token:string){const key=Deno.env.get('KC_DP_BREVO_API_KEY')||'';if(!key||!token)return null;const r=await fetch(`https://api.brevo.com/v3/inbound/attachments/${encodeURIComponent(token)}`,{headers:{'api-key':key}});if(!r.ok)throw new Error(`Brevo Download HTTP ${r.status}`);return new Uint8Array(await r.arrayBuffer())}
 
 Deno.serve(async(req)=>{
-  if(req.method!=='POST')return json({error:'POST erforderlich'},405);
-  const url=Deno.env.get('SUPABASE_URL')||'',service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'';
-  const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
-  let body:any={};try{body=await req.json()}catch{return json({error:'Ungültiges JSON'},400)}
-  const provider=String(body.provider||'').toLowerCase();
-  const secret=String(body.webhookSecret||'');
-  const expected=Deno.env.get(provider==='brevo'?'KC_DP_BREVO_INBOUND_SECRET':'KC_DP_RESEND_INBOUND_SECRET')||'';
-  if(!expected||await sha256(secret)!==await sha256(expected))return json({error:'Webhook nicht berechtigt'},403);
-
-  const to=String(body.to||body.recipient||'').trim().toLowerCase();
-  if(to!==TARGET)return json({ok:true,skipped:'other_recipient'});
-  const fromAddress=String(body.from||body.sender||'').trim().toLowerCase();
-  const subject=String(body.subject||'(ohne Betreff)').slice(0,300);
-  const providerMessageId=String(body.messageId||body.id||crypto.randomUUID()).slice(0,300);
-  const attachments=Array.isArray(body.attachments)?body.attachments:[];
-
-  const {data:existing}=await admin.from('kc_dp_inbox_messages').select('id').eq('org_id','KC_WERNE').eq('project_id','KC_DP').eq('provider_key',provider).eq('provider_message_id',providerMessageId).maybeSingle();
-  if(existing)return json({ok:true,duplicate:true,messageId:existing.id});
-
-  const {data:message,error:mErr}=await admin.from('kc_dp_inbox_messages').insert({org_id:'KC_WERNE',project_id:'KC_DP',provider_key:provider||'custom',provider_message_id:providerMessageId,from_address:fromAddress||'unbekannt',from_name:String(body.fromName||'').slice(0,200)||null,subject,status:'received',person_match_method:'unknown',metadata:{to:TARGET,attachmentCount:attachments.length,bodyStored:false}}).select().single();
-  if(mErr)return json({error:mErr.message},400);
-
-  let encryptedStored=0,attachmentFailed=0;
-  for(const a of attachments.slice(0,20)){
-    const name=String(a.name||a.filename||'anhang').slice(0,260),type=String(a.type||a.contentType||'application/octet-stream').slice(0,120),declared=Number(a.size||0)||0;
-    const lower=name.toLowerCase();const kind=lower.endsWith('.xlsx')?'xlsx':lower.endsWith('.xls')?'xls':lower.endsWith('.csv')?'csv':lower.endsWith('.pdf')?'pdf':/\.(png|jpg|jpeg|webp|heic)$/i.test(lower)?'image':'unknown';
-    let contentStatus='metadata_only',storagePath:string|null=null,plainHash=String(a.sha256||''),cipherHash:string|null=null,iv:string|null=null,algorithm:string|null=null,encryptedAt:string|null=null,size=declared;
-    try{
-      if(a.contentBase64){
-        const plain=decodeBase64(String(a.contentBase64));size=plain.byteLength;
-        if(size>MAX_BYTES)throw new Error('Anhang größer als 10 MB');
-        plainHash=await sha256Hex(plain);
-        const aad=`KC_WERNE|KC_DP|${message.id}|${name}|${plainHash}`;
-        const enc=await encryptMailAttachment(plain,aad);
-        storagePath=`${new Date().toISOString().slice(0,10)}/${message.id}/${crypto.randomUUID()}.bin`;
-        const {error:upErr}=await admin.storage.from('kc-dp-mail-quarantine').upload(storagePath,enc.cipher,{contentType:'application/octet-stream',upsert:false,cacheControl:'0'});
-        if(upErr)throw upErr;
-        contentStatus='encrypted';cipherHash=enc.cipherSha256;iv=enc.ivB64;algorithm=enc.algorithm;encryptedAt=new Date().toISOString();encryptedStored++;
-      }else if(!plainHash){plainHash=await sha256(`${providerMessageId}:${name}:${size}`)}
-    }catch(e){contentStatus='failed';attachmentFailed++;}
-    const {error:aErr}=await admin.from('kc_dp_inbox_attachments').insert({message_id:message.id,file_name:name,media_type:type,byte_size:size,sha256:plainHash||await sha256(`${providerMessageId}:${name}:${size}`),detected_kind:kind,scan_status:'pending',parse_status:'pending',storage_path:storagePath,encryption_algorithm:algorithm,encryption_iv:iv,plaintext_sha256:plainHash||null,cipher_sha256:cipherHash,encrypted_at:encryptedAt,retention_until:contentStatus==='encrypted'?retentionUntil():null,content_status:contentStatus});
-    if(aErr){attachmentFailed++;if(storagePath)await admin.storage.from('kc-dp-mail-quarantine').remove([storagePath])}
-  }
-
-  const {data:members}=await admin.from('kc_dp_memberships').select('person_id,user_id,role,active').eq('org_id','KC_WERNE').eq('active',true).in('role',ADMIN_ROLES);
-  const personIds=[...new Set((members||[]).map((m:any)=>String(m.person_id||'')).filter(Boolean))];
-  let pushSent=0,pushFailed=0;
-  if(personIds.length){
-    let pub=Deno.env.get('KC_DP_VAPID_PUBLIC_KEY')||'',priv=Deno.env.get('KC_DP_VAPID_PRIVATE_KEY')||'',subj=Deno.env.get('KC_DP_VAPID_SUBJECT')||'mailto:admin@koecheclub-werne.de';
-    if(!pub||!priv){const {data:r}=await admin.rpc('kc_dp_get_push_runtime_secrets');if(r){pub=String(r.vapidPublicKey||'');priv=String(r.vapidPrivateKey||'');subj=String(r.vapidSubject||subj)}}
-    if(pub&&priv){
-      webpush.setVapidDetails(subj,pub,priv);
-      const {data:subs}=await admin.from('kc_dp_push_subscriptions').select('id,user_id,person_id,subscription').eq('org_id','KC_WERNE').eq('project_id','KC_DP').eq('active',true).in('person_id',personIds);
-      const notificationId=`MAIL-${message.id}`;
-      const title='KC DP2 – Neue E-Mail eingegangen';
-      const text=`Von ${fromAddress||'unbekannt'} · ${subject}${attachments.length?` · ${attachments.length} Anhang/Anhänge`:''}. Prüfung läuft.`;
-      for(const s of subs||[]){
-        await admin.from('kc_dp_push_deliveries').upsert({org_id:'KC_WERNE',project_id:'KC_DP',notification_id:notificationId,subscription_id:s.id,user_id:s.user_id,person_id:s.person_id,title,status:'queued',delivery_meta:{kind:'mail_inbound',messageId:message.id,urgency:'high'}},{onConflict:'notification_id,subscription_id'});
-        try{await webpush.sendNotification(s.subscription,JSON.stringify({title,body:text,data:{notificationId,route:'mail_inbox',messageId:message.id}}),{TTL:21600,urgency:'high'});pushSent++;await admin.from('kc_dp_push_deliveries').update({status:'sent',sent_at:new Date().toISOString()}).eq('notification_id',notificationId).eq('subscription_id',s.id)}catch(e){pushFailed++;await admin.from('kc_dp_push_deliveries').update({status:'failed',failed_at:new Date().toISOString(),error_code:String((e as any).statusCode||'push_error')}).eq('notification_id',notificationId).eq('subscription_id',s.id)}
-      }
-    }
-  }
-
-  return json({ok:true,target:TARGET,messageId:message.id,attachments:attachments.length,encryptedStored,attachmentFailed,pushSent,pushFailed,bodyStored:false});
+ if(req.method!=='POST')return json({error:'POST erforderlich'},405);
+ const url=Deno.env.get('SUPABASE_URL')||'',service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'',admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+ const raw=await req.text();let mail:any;try{mail=await normalize(req,raw)}catch(e){return json({error:`Webhook nicht berechtigt/verarbeitbar: ${(e as Error).message}`},403)}
+ if(!mail)return json({ok:true,skipped:'other_event'});if(!mail.to.map(addr).includes(TARGET))return json({ok:true,skipped:'other_recipient'});
+ const {data:existing}=await admin.from('kc_dp_inbox_messages').select('id').eq('org_id','KC_WERNE').eq('project_id','KC_DP').eq('provider_key',mail.provider).eq('provider_message_id',mail.providerMessageId).maybeSingle();if(existing)return json({ok:true,duplicate:true,messageId:existing.id});
+ const {data:message,error:mErr}=await admin.from('kc_dp_inbox_messages').insert({org_id:'KC_WERNE',project_id:'KC_DP',provider_key:mail.provider,provider_message_id:mail.providerMessageId,from_address:mail.from||'unbekannt',from_name:mail.fromName||null,subject:mail.subject.slice(0,300),status:'received',person_match_method:'unknown',metadata:{to:TARGET,attachmentCount:mail.attachments.length,bodyStored:false}}).select().single();if(mErr)return json({error:mErr.message},400);
+ let encryptedStored=0,attachmentFailed=0;
+ for(const a of mail.attachments.slice(0,20)){
+   let payload:Uint8Array|null=a.bytes||null;try{if(!payload&&mail.provider==='brevo'&&a.downloadToken)payload=await brevoBytes(String(a.downloadToken));if(payload&&payload.byteLength>MAX_BYTES)throw new Error('Anhang größer als 10 MB');
+     const plainHash=payload?await sha256Hex(payload):await sha256Hex(new TextEncoder().encode(`${mail.providerMessageId}:${a.name}:${a.size}`));let storagePath:null|string=null,iv:null|string=null,cipherHash:null|string=null,algorithm:null|string=null,encryptedAt:null|string=null;
+     if(payload){const aad=`KC_WERNE|KC_DP|${message.id}|${a.name}|${plainHash}`,enc=await encryptMailAttachment(payload,aad);storagePath=`${new Date().toISOString().slice(0,10)}/${message.id}/${crypto.randomUUID()}.bin`;const {error:upErr}=await admin.storage.from('kc-dp-mail-quarantine').upload(storagePath,enc.cipher,{contentType:'application/octet-stream',upsert:false,cacheControl:'0'});if(upErr)throw upErr;iv=enc.ivB64;cipherHash=enc.cipherSha256;algorithm=enc.algorithm;encryptedAt=new Date().toISOString();encryptedStored++;}
+     const {error:aErr}=await admin.from('kc_dp_inbox_attachments').insert({message_id:message.id,file_name:String(a.name||'anhang').slice(0,260),media_type:String(a.type||'application/octet-stream').slice(0,120),byte_size:Number(payload?.byteLength||a.size||0),sha256:plainHash,detected_kind:kind(String(a.name||'')),scan_status:'pending',parse_status:'pending',storage_path:storagePath,encryption_algorithm:algorithm,encryption_iv:iv,plaintext_sha256:plainHash,cipher_sha256:cipherHash,encrypted_at:encryptedAt,retention_until:storagePath?retentionUntil():null,content_status:storagePath?'encrypted':'metadata_only'});if(aErr){attachmentFailed++;if(storagePath)await admin.storage.from('kc-dp-mail-quarantine').remove([storagePath])}
+   }catch{attachmentFailed++;}
+ }
+ const {data:members}=await admin.from('kc_dp_memberships').select('person_id,role').eq('org_id','KC_WERNE').eq('active',true).in('role',ADMIN_ROLES);const personIds=[...new Set((members||[]).map((m:any)=>String(m.person_id||'')).filter(Boolean))];let pushSent=0,pushFailed=0;
+ if(personIds.length){let pub=Deno.env.get('KC_DP_VAPID_PUBLIC_KEY')||'',priv=Deno.env.get('KC_DP_VAPID_PRIVATE_KEY')||'',subj=Deno.env.get('KC_DP_VAPID_SUBJECT')||'mailto:admin@koecheclub-werne.de';if(!pub||!priv){const {data:r}=await admin.rpc('kc_dp_get_push_runtime_secrets');if(r){pub=String(r.vapidPublicKey||'');priv=String(r.vapidPrivateKey||'');subj=String(r.vapidSubject||subj)}}if(pub&&priv){webpush.setVapidDetails(subj,pub,priv);const {data:subs}=await admin.from('kc_dp_push_subscriptions').select('id,user_id,person_id,subscription').eq('org_id','KC_WERNE').eq('project_id','KC_DP').eq('active',true).in('person_id',personIds);const notificationId=`MAIL-${message.id}`,title='KC DP2 – Neue E-Mail eingegangen',text=`Von ${mail.from||'unbekannt'} · ${mail.subject}${mail.attachments.length?` · ${mail.attachments.length} Anhang/Anhänge`:''}. Prüfung läuft.`;for(const s of subs||[]){await admin.from('kc_dp_push_deliveries').upsert({org_id:'KC_WERNE',project_id:'KC_DP',notification_id:notificationId,subscription_id:s.id,user_id:s.user_id,person_id:s.person_id,title,status:'queued',delivery_meta:{kind:'mail_inbound',messageId:message.id,urgency:'high'}},{onConflict:'notification_id,subscription_id'});try{await webpush.sendNotification(s.subscription,JSON.stringify({title,body:text,data:{notificationId,route:'mail_inbox',messageId:message.id}}),{TTL:21600,urgency:'high'});pushSent++;await admin.from('kc_dp_push_deliveries').update({status:'sent',sent_at:new Date().toISOString()}).eq('notification_id',notificationId).eq('subscription_id',s.id)}catch(e){pushFailed++;await admin.from('kc_dp_push_deliveries').update({status:'failed',failed_at:new Date().toISOString(),error_code:String((e as any).statusCode||'push_error')}).eq('notification_id',notificationId).eq('subscription_id',s.id)}}}}
+ return json({ok:true,target:TARGET,provider:mail.provider,messageId:message.id,attachments:mail.attachments.length,encryptedStored,attachmentFailed,pushSent,pushFailed,bodyStored:false});
 });
