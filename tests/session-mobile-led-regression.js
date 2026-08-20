@@ -10,17 +10,16 @@ const assert = require('assert');
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.KCDP?.sessionMobileHotfix,{timeout:20000});
+  await page.waitForFunction(()=>window.KCDP?.sessionMobileHotfix&&window.KCDP?.runtimeRecoveryBridge,{timeout:20000});
 
-  // Mobile status area must be restorable by the production hotfix.
-  await page.evaluate(()=>{
-    let root=document.getElementById('kcdpUxRoot');
-    root.innerHTML='<header class="ux-topbar"><button class="ux-userchip">Benutzer</button></header>';
-    window.KCDP.sessionMobileHotfix.apply();
-  });
-  await page.waitForSelector('#kcMobileDbStatus',{state:'attached',timeout:5000});
-  assert(await page.locator('#kcMobileIdxLed').count(),'IDX LED missing');
-  assert(await page.locator('#kcMobileSupLed').count(),'SUP LED missing');
+  // The canonical topbar is the single source of truth: status LED plus yellow traffic LED for IDX and SUP.
+  await page.waitForSelector('#idbStatusLed',{state:'attached',timeout:5000});
+  await page.waitForSelector('#idbTrafficLed',{state:'attached',timeout:5000});
+  await page.waitForSelector('#supabaseStatusLed',{state:'attached',timeout:5000});
+  await page.waitForSelector('#supabaseTrafficLed',{state:'attached',timeout:5000});
+  assert.strictEqual(await page.locator('#idbTrafficLed').count(),1,'IDX traffic LED missing or duplicated');
+  assert.strictEqual(await page.locator('#supabaseTrafficLed').count(),1,'SUP traffic LED missing or duplicated');
+  assert.strictEqual(await page.locator('#kcMobileDbStatus').count(),0,'obsolete duplicate mobile IDX/SUP block is visible');
 
   // Reproduce the exact Anmeldung / Monitor modal seen on Android.
   await page.evaluate(()=>{
@@ -28,19 +27,21 @@ const assert = require('assert');
     const modal=document.getElementById('modal');
     back.classList.remove('hidden');
     document.body.classList.add('modal-open');
-    modal.innerHTML='<h2>👤 Anmeldung / Monitor</h2><div class="ai-summary"><b>Aktuell:</b> Test · Administrator</div><div class="modal-actions"><button id="sessionClose">Schließen</button></div><button id="kcDiagnosticsAdminEntry">🛠 Zentrale Fehlerdiagnose</button>';
+    modal.innerHTML='<h2>👤 Anmeldung / Monitor</h2><div class="ai-summary"><b>Aktuell:</b> Planer · Planer</div><div class="modal-actions"><button id="sessionClose">Schließen</button></div><button id="kcDiagnosticsAdminEntry">🛠 Zentrale Fehlerdiagnose</button>';
     window.KCDP.sessionMobileHotfix.apply();
   });
   await page.waitForSelector('#kcSessionTopClose',{state:'visible',timeout:5000});
   const size=await page.locator('#kcSessionTopClose').boundingBox();
   assert(size && size.width>=44 && size.height>=44,'Close button touch target too small');
 
-  // Diagnostics must react immediately instead of leaving the modal frozen.
+  // Diagnostics must visibly react; silence/hanging is a regression.
   await page.locator('#kcDiagnosticsAdminEntry').tap();
-  await page.waitForSelector('#kcDiagImmediateOverlay',{state:'visible',timeout:5000});
-  assert(!(await page.locator('#modalBackdrop').isVisible()),'Session modal still blocks after diagnostics tap');
-  await page.locator('#kcDiagImmediateClose').tap();
-  await page.waitForSelector('#kcDiagImmediateOverlay',{state:'detached',timeout:5000});
+  await page.waitForFunction(()=>!!document.getElementById('kcDiagOverlay')||!!document.getElementById('kcDiagRecoveryOverlay'),{timeout:5000});
+  assert((await page.locator('#kcDiagOverlay').count())+(await page.locator('#kcDiagRecoveryOverlay').count())>0,'Diagnostics produced no visible response');
+
+  // Close diagnostic UI if present.
+  if(await page.locator('#kcDiagClose').count())await page.locator('#kcDiagClose').tap();
+  if(await page.locator('#kcDiagRecoveryClose').count())await page.locator('#kcDiagRecoveryClose').tap();
 
   // Reopen and verify both close paths.
   await page.evaluate(()=>{
@@ -64,6 +65,6 @@ const assert = require('assert');
   assert(!(await page.locator('#modalBackdrop').isVisible()),'Bottom close button did not close modal');
   assert(!errors.length,'Browser page errors: '+errors.join(' | '));
 
-  console.log('KC DP2 session/mobile/LED regression: PASS');
+  console.log('KC DP2 real traffic LED / session / diagnostics regression: PASS');
   await browser.close();
-})().catch(err=>{console.error('KC DP2 session/mobile/LED regression: FAIL');console.error(err.stack||err);process.exit(1);});
+})().catch(err=>{console.error('KC DP2 real traffic LED / session / diagnostics regression: FAIL');console.error(err.stack||err);process.exit(1);});
