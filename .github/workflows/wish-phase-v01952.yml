@@ -1,0 +1,44 @@
+name: KC DP2 V0.19.52 Wish Phase Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'release/v0.19.52/site/**'
+      - 'tests/wish-phase-v01952-e2e.js'
+      - '.github/workflows/wish-phase-v01952.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wish-phase-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax candidate runtime
+        run: |
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.52/site -type f -name '*.js' -print0)
+          node --check tests/wish-phase-v01952-e2e.js
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start isolated candidate server
+        run: |
+          cd release/v0.19.52/site
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-wish-phase.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/kcdp-wish-phase.log
+          exit 1
+      - name: Wunschphase open close reopen regression
+        run: node tests/wish-phase-v01952-e2e.js
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/kcdp-wish-phase.log || true
