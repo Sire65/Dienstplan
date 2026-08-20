@@ -95,19 +95,21 @@ const assert = require('assert');
     return {person:person.name,date:day.date,start,end,wishId:wishOut.record.id,shiftId,actualId:actualOut.record.id,version:publication.version,comparison:actualOut.comparison.status,matched:stats.matched,deviations:stats.deviations};
   });
 
-  // Echter UI-Pfad: Startauswahl -> Bearbeiten -> Vergleich.
-  // Der sichtbare/aktive Button wird geprüft; der Browser-native DOM-Klick löst exakt den gekapselten app.js-Handler aus.
-  // Damit ist der Test unabhängig von Headless-Chrome-Hit-Test-Flattern, ohne die App-Logik zu umgehen.
+  // UI-Pfad Startauswahl -> Bearbeiten -> Vergleich.
+  // Direkte DOM-Prüfung vermeidet Locator-Retry-Flattern bei dynamischen Zusatzmodulen,
+  // löst aber den originalen app.js-Klickhandler im echten Browser aus.
   await page.evaluate(()=>window.KCDP.startChoice.openEdit());
   await page.waitForSelector('body.ux-legacy',{timeout:10000});
-  const compare=page.locator('#layerTabs button[data-layer="compare"]');
-  await compare.waitFor({state:'visible',timeout:10000});
-  assert.strictEqual(await compare.isEnabled(),true,'Vergleich-Button ist nicht aktiv');
-  const geometry=await compare.evaluate(b=>{const r=b.getBoundingClientRect(),s=getComputedStyle(b);return {width:r.width,height:r.height,display:s.display,visibility:s.visibility,pointerEvents:s.pointerEvents}});
-  assert(geometry.width>0&&geometry.height>0,'Vergleich-Button hat keine sichtbare Trefferfläche');
-  assert.notStrictEqual(geometry.display,'none','Vergleich-Button ist ausgeblendet');
-  assert.notStrictEqual(geometry.visibility,'hidden','Vergleich-Button ist unsichtbar');
-  await compare.evaluate(b=>b.click());
+  const geometry=await page.evaluate(()=>{
+    const b=document.querySelector('#layerTabs button[data-layer="compare"]');
+    if(!b)throw new Error('Vergleich-Button fehlt');
+    const r=b.getBoundingClientRect(),s=getComputedStyle(b);
+    if(b.disabled)throw new Error('Vergleich-Button ist deaktiviert');
+    if(!(r.width>0&&r.height>0)||s.display==='none'||s.visibility==='hidden')throw new Error('Vergleich-Button ist nicht sichtbar');
+    const out={width:r.width,height:r.height,display:s.display,visibility:s.visibility,pointerEvents:s.pointerEvents};
+    b.click();
+    return out;
+  });
   await page.waitForFunction(()=>document.querySelector('.matrix-title')?.textContent.includes('SOLL-/IST-MATRIX'),{timeout:10000});
   const matrixTitle=(await page.locator('.matrix-title').innerText()).trim();
   assert(matrixTitle.includes('SOLL-/IST-MATRIX'),'Vergleichsmatrix wurde nicht gerendert');
