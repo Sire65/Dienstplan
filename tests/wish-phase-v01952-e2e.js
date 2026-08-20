@@ -8,8 +8,6 @@ const assert = require('assert');
   page.on('console',msg=>{if(msg.type()==='error')console.error('BROWSER:',msg.text());});
   page.on('pageerror',err=>console.error('PAGEERROR:',err.message));
 
-  // Gleicher isolierter Startweg wie im bereits grünen Workflow-E2E:
-  // keine echte Supabase-Anmeldung, sondern lokaler Prüfzugang.
   await page.route('**/src/core/member-access.js*',async route=>{
     const response=await route.fetch();
     let body=await response.text();
@@ -21,7 +19,8 @@ const assert = require('assert');
   await page.route('https://*.supabase.co/**',route=>route.abort());
 
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.mutations&&window.KCDP?.wishPhaseGuard,{timeout:20000});
+  // Basis exakt wie im bestehenden grünen Workflow-E2E starten.
+  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.actual&&window.KCDP?.publishPlan&&window.KCDP?.mutations,{timeout:20000});
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
   const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
   if(await details.count())await details.locator('summary').click();
@@ -31,7 +30,14 @@ const assert = require('assert');
   await page.locator('#unlockSecret').fill('KC-DP2-WishPhase-E2E-2026!');
   await page.locator('#unlockBtn').click();
   await page.waitForSelector('#kcChoiceView',{timeout:20000});
-  await page.waitForFunction(()=>typeof window.KCDP?.mutations?.saveWish==='function'&&window.KCDP?.mutations?.__wishPhaseWrapped===true,{timeout:10000});
+
+  // Zusatzmodul darf später laden, muss aber vor jeder Wunschänderung aktiv sein.
+  await page.waitForFunction(()=>window.KCDP?.wishPhaseGuard&&typeof window.KCDP?.mutations?.saveWish==='function',{timeout:15000});
+  await page.waitForFunction(()=>window.KCDP?.mutations?.__wishPhaseWrapped===true,{timeout:5000});
+
+  // Hauptansicht öffnen, damit die vier Planarten real gerendert geprüft werden.
+  await page.evaluate(()=>window.KCDP.startChoice.openEdit());
+  await page.waitForSelector('#layerTabs button[data-layer="wish"]',{timeout:10000});
 
   const before=await page.evaluate(()=>({
     shifts:(KCDP.shifts||[]).length,
