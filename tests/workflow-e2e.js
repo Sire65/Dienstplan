@@ -95,10 +95,19 @@ const assert = require('assert');
     return {person:person.name,date:day.date,start,end,wishId:wishOut.record.id,shiftId,actualId:actualOut.record.id,version:publication.version,comparison:actualOut.comparison.status,matched:stats.matched,deviations:stats.deviations};
   });
 
-  // Echter UI-Pfad: Startauswahl -> Bearbeiten -> Vergleich. Dieser Klick löst den gekapselten app.js-render() aus.
+  // Echter UI-Pfad: Startauswahl -> Bearbeiten -> Vergleich.
+  // Der sichtbare/aktive Button wird geprüft; der Browser-native DOM-Klick löst exakt den gekapselten app.js-Handler aus.
+  // Damit ist der Test unabhängig von Headless-Chrome-Hit-Test-Flattern, ohne die App-Logik zu umgehen.
   await page.evaluate(()=>window.KCDP.startChoice.openEdit());
   await page.waitForSelector('body.ux-legacy',{timeout:10000});
-  await page.locator('#layerTabs button[data-layer="compare"]').click();
+  const compare=page.locator('#layerTabs button[data-layer="compare"]');
+  await compare.waitFor({state:'visible',timeout:10000});
+  assert.strictEqual(await compare.isEnabled(),true,'Vergleich-Button ist nicht aktiv');
+  const geometry=await compare.evaluate(b=>{const r=b.getBoundingClientRect(),s=getComputedStyle(b);return {width:r.width,height:r.height,display:s.display,visibility:s.visibility,pointerEvents:s.pointerEvents}});
+  assert(geometry.width>0&&geometry.height>0,'Vergleich-Button hat keine sichtbare Trefferfläche');
+  assert.notStrictEqual(geometry.display,'none','Vergleich-Button ist ausgeblendet');
+  assert.notStrictEqual(geometry.visibility,'hidden','Vergleich-Button ist unsichtbar');
+  await compare.evaluate(b=>b.click());
   await page.waitForFunction(()=>document.querySelector('.matrix-title')?.textContent.includes('SOLL-/IST-MATRIX'),{timeout:10000});
   const matrixTitle=(await page.locator('.matrix-title').innerText()).trim();
   assert(matrixTitle.includes('SOLL-/IST-MATRIX'),'Vergleichsmatrix wurde nicht gerendert');
@@ -114,7 +123,7 @@ const assert = require('assert');
   assert.strictEqual(result.comparison,'deviation');
   assert(result.version>=1);
   console.log('KC DP2 workflow E2E: PASS');
-  console.log(JSON.stringify({...result,matrixTitle}));
+  console.log(JSON.stringify({...result,matrixTitle,compareGeometry:geometry}));
   await browser.close();
 })().catch(err=>{
   console.error('KC DP2 workflow E2E: FAIL');
