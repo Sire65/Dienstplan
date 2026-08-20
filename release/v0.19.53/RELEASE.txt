@@ -1,0 +1,8 @@
+KC DP2 V0.19.53
+Basis: V0.19.52
+Kandidat: V/H/B-Wunschmatrix
+- V = nur vorne
+- H = nur hinten
+- B = beides
+- identische Logik für Programm, Excel und Papierformular
+- strikte Importvalidierung
