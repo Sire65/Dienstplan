@@ -1,0 +1,13 @@
+const fs=require('fs'),vm=require('vm');
+const ctx={window:{},crypto:require('crypto').webcrypto,console};ctx.window.window=ctx.window;ctx.window.KCDP={};vm.createContext(ctx);
+for(const f of ['release/v0.19.54/site/src/core/document-identity.js','release/v0.19.54/site/src/core/email-inbox.js'])vm.runInContext(fs.readFileSync(f,'utf8'),ctx,{filename:f});
+const K=ctx.window.KCDP,assert=(x,m)=>{if(!x)throw new Error(m)};
+const raw=K.documentIdentity.encode({docType:'wish_matrix',periodId:'WM2026',version:'0.19.55'}),d=K.documentIdentity.decode(raw);
+assert(d&&d.schema==='KCDP-DOC-1','QR schema');assert(!raw.includes('Anne'),'QR must not contain person name');assert(/^WP-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(K.documentIdentity.safePublicLabel(d)),'short code');
+const providers=[{kind:'resend',priority:1,enabled:true,sendReady:true,receiveReady:true},{kind:'brevo',priority:2,enabled:true,sendReady:true,receiveReady:true}];
+assert(K.emailInbox.chooseProvider(providers,'send').kind==='resend','primary provider');providers[0].sendReady=false;assert(K.emailInbox.chooseProvider(providers,'send').kind==='brevo','fallback provider');
+assert(K.emailInbox.classifyAttachment({name:'Anne.xlsx'})==='excel','xlsx');assert(K.emailInbox.classifyAttachment({name:'scan.jpg'})==='image','image');
+assert(K.emailInbox.shouldAutoApply({documentMatched:true,personMatched:true,wishPhaseOpen:true,validationOk:true,confidence:.99})===true,'safe auto apply');
+assert(K.emailInbox.shouldAutoApply({documentMatched:true,personMatched:true,wishPhaseOpen:false,validationOk:true,confidence:1})===false,'closed phase guard');
+assert(K.emailInbox.shouldAutoApply({documentMatched:true,personMatched:true,wishPhaseOpen:true,validationOk:true,confidence:.9})===false,'confidence guard');
+console.log('PASS email inbox v0.19.55 gate');

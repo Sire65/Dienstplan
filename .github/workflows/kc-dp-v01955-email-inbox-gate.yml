@@ -1,0 +1,33 @@
+name: KC DP2 V0.19.55 Email Inbox Gate
+on:
+  pull_request:
+    paths:
+      - 'release/v0.19.54/site/src/core/document-identity.js'
+      - 'release/v0.19.54/site/src/core/email-inbox.js'
+      - 'release/v0.19.54/site/src/core/inbound-wish-import.js'
+      - 'release/v0.19.54/site/src/ui/email-center.js'
+      - 'release/v0.19.54/site/src/ui/kc-ux-polish.js'
+      - 'supabase/migrations/20260820142000_email_inbox_qr_registry_v01955.sql'
+      - 'tests/email-inbox-v01955-gate.js'
+      - '.github/workflows/kc-dp-v01955-email-inbox-gate.yml'
+  workflow_dispatch:
+jobs:
+  email-inbox-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check release/v0.19.54/site/src/core/document-identity.js
+          node --check release/v0.19.54/site/src/core/email-inbox.js
+          node --check release/v0.19.54/site/src/core/inbound-wish-import.js
+          node --check release/v0.19.54/site/src/ui/email-center.js
+      - name: QR, provider fallback and safe auto-import contract
+        run: node tests/email-inbox-v01955-gate.js
+      - name: TableCore contract
+        run: |
+          grep -q "K.tableCore" release/v0.19.54/site/src/ui/email-center.js
+          ! grep -q "<table" release/v0.19.54/site/src/ui/email-center.js
