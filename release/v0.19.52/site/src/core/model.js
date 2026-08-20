@@ -1,6 +1,6 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
-  K.VERSION='0.19.51';
+  K.VERSION='0.19.52';
 
   const peopleData=[
     ['Frank Brösel','Vorne · Flex','member'],['Hans-Joachim Koch','Vorne · Hinten · Verantwortung','member'],['Dieter Zander','Hinten · Flex','member'],['Klaus Zander','Vorne','member'],
@@ -86,8 +86,6 @@
   s(0,'2026-12-02',8,13,'neutral','Vorbereitung'); s(1,'2026-12-02',8,14,'neutral','Vorbereitung'); s(2,'2026-12-02',9,15,'neutral','Vorbereitung'); s(3,'2026-12-02',10,16,'neutral','Vorbereitung');
   s(5,'2026-12-14',8,13,'neutral','Nachbereitung'); s(9,'2026-12-14',8,15,'neutral','Nachbereitung'); s(12,'2026-12-14',9,14,'neutral','Nachbereitung');
   K.shifts=shifts;
-
-
 
   // Wunschdaten sind fachlich getrennt vom Soll-/Ist-Dienstplan.
   K.wishes=[
