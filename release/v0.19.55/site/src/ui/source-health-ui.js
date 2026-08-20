@@ -13,5 +13,6 @@
   function loadUxPolish(){css('kcUxPolishCss','src/ui/kc-ux-polish.css?v=0.19.55');if(window.KCDP?.kcUxPolish)return;script('kcUxPolishJs','src/ui/kc-ux-polish.js?v=0.19.55',document.body)}
   function loadMobileColleagueSearch(){script('kcMobileColleagueSearchJs','src/ui/mobile-colleague-search.js?v=0.19.51',document.body)}
   function loadWishPhaseGuard(){script('kcWishPhaseGuardJs','src/ui/wish-phase-guard.js?v=0.19.52-safe-7',document.body)}
-  function loadExtras(){loadPushCenter();loadDiagnostics();loadUxPolish();loadMobileColleagueSearch();loadWishPhaseGuard()}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadExtras,{once:true});else loadExtras();
+  function loadRecoveryBridge(){script('kcRuntimeRecoveryBridge','src/ui/runtime-recovery-bridge.js?v=0.19.64-recovery1',document.body)}
+  function loadExtras(){loadPushCenter();loadDiagnostics();loadUxPolish();loadMobileColleagueSearch();loadWishPhaseGuard();loadRecoveryBridge()}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadExtras,{once:true});else loadExtras();
 })();
