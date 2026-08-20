@@ -6,7 +6,7 @@
     const modal=byId('modal');
     if(!modal)return false;
     const h2=modal.querySelector('h2');
-    return !!h2 && /^👤\s*Anmeldung\s*\/\s*Monitor/.test(h2.textContent||'');
+    return !!h2 && /Anmeldung\s*\/\s*Monitor/.test(h2.textContent||'');
   };
   function hardClose(){
     const back=byId('modalBackdrop'),modal=byId('modal');
@@ -31,57 +31,84 @@
     if(!b){
       h2.style.position='relative';h2.style.paddingRight='58px';
       b=document.createElement('button');b.id='kcSessionTopClose';b.type='button';b.setAttribute('aria-label','Anmeldung / Monitor schließen');b.textContent='×';
-      Object.assign(b.style,{position:'absolute',right:'0',top:'50%',transform:'translateY(-50%)',width:'48px',height:'48px',borderRadius:'50%',border:'1px solid #d8c9c1',background:'#fff',fontSize:'32px',lineHeight:'40px',cursor:'pointer',zIndex:'10',touchAction:'manipulation'});
+      Object.assign(b.style,{position:'absolute',right:'0',top:'50%',transform:'translateY(-50%)',width:'48px',height:'48px',borderRadius:'50%',border:'1px solid #d8c9c1',background:'#fff',fontSize:'32px',lineHeight:'40px',cursor:'pointer',zIndex:'10002',touchAction:'manipulation'});
       h2.appendChild(b);
     }
-    bindCloseTarget(b);
-    bindCloseTarget(byId('sessionClose'));
+    bindCloseTarget(b);bindCloseTarget(byId('sessionClose'));
   }
-  function loadScript(id,src){return new Promise((resolve,reject)=>{if(byId(id)){resolve();return}const s=document.createElement('script');s.id=id;s.src=src;s.onload=resolve;s.onerror=()=>reject(new Error('Modul konnte nicht geladen werden'));document.head.appendChild(s)})}
-  async function safeOpen(button,{kind}){
-    if(!button||button.dataset.kcBusy==='1')return;
-    button.dataset.kcBusy='1';const old=button.textContent;button.disabled=true;
+  function authReady(){
+    try{return !!(K.supabaseConnection?.hasAccessToken?.()||K.memberAccess?.state?.status==='authenticated'||K.session?.state?.provider==='supabase')}catch(_){return false}
+  }
+  function normalizeSessionText(){
+    if(!isSessionModal())return;
+    const modal=byId('modal'),box=modal?.querySelector('.ai-summary');if(!box)return;
+    if(authReady()){
+      box.innerHTML=box.innerHTML.replace(/Candidate-Fallback aktiv\. Demo-PIN: 2468[^<]*/,'KC-Auth / Supabase verbunden.');
+    }else if(/Candidate-Fallback|Demo-PIN/.test(box.textContent||'')){
+      box.innerHTML=box.innerHTML.replace(/Candidate-Fallback aktiv\. Demo-PIN: 2468[^<]*/,'Online-Anmeldung ist nicht aktiv. Die zentrale Fehlerdiagnose zeigt deshalb nur den lokalen Status.');
+    }
+  }
+  function diagOverlay(){
+    let ov=byId('kcDiagImmediateOverlay');
+    if(ov)return ov;
+    ov=document.createElement('div');ov.id='kcDiagImmediateOverlay';
+    Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'140000',background:'rgba(0,0,0,.5)',display:'grid',placeItems:'center',padding:'18px'});
+    ov.innerHTML='<section style="width:min(680px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 20px 60px #0005;font-family:system-ui,Arial,sans-serif"><div style="display:flex;gap:12px;align-items:center;justify-content:space-between"><h2 style="margin:0;color:#7a1420;font-size:24px">🛠 Zentrale Fehlerdiagnose</h2><button id="kcDiagImmediateClose" type="button" aria-label="Schließen" style="width:48px;height:48px;border-radius:50%;border:1px solid #d8c9c1;background:#fff;font-size:30px;touch-action:manipulation">×</button></div><div id="kcDiagImmediateState" style="margin-top:16px;padding:14px;border:1px solid #e2d9d2;border-radius:14px;background:#faf7f3;font-size:16px;line-height:1.4">Diagnose wird gestartet …</div><div style="margin-top:14px;font-size:14px;color:#666">Lokaler Speicher: <b id="kcDiagImmediateIdx">wird geprüft</b><br>Supabase: <b id="kcDiagImmediateSup">wird geprüft</b></div></section>';
+    document.body.appendChild(ov);
+    const close=()=>ov.remove();
+    byId('kcDiagImmediateClose').onclick=close;
+    ov.addEventListener('click',e=>{if(e.target===ov)close()});
+    return ov;
+  }
+  async function openDiagnosticsImmediate(){
+    hardClose();const ov=diagOverlay(),state=byId('kcDiagImmediateState'),idx=byId('kcDiagImmediateIdx'),sup=byId('kcDiagImmediateSup');
+    if(idx)idx.textContent=K.localStorageStatus?.ok===false?'Fehler':'bereit';
+    if(sup)sup.textContent=authReady()?'angemeldet / verbunden':'nicht angemeldet';
     try{
-      if(kind==='diagnostics'){
-        button.textContent='🛠 Diagnose wird geöffnet …';
-        if(!K.diagnostics)await loadScript('kcDiagnosticsAdapterHotfix','src/adapters/diagnostics.js?v=0.19.60');
-        if(!K.diagnosticsCenter)await loadScript('kcDiagnosticsUiHotfix','src/ui/diagnostics-center.js?v=0.19.60');
-        if(!K.diagnosticsCenter?.open)throw new Error('Diagnose-Oberfläche ist nicht verfügbar.');
-        await K.diagnosticsCenter.open();
-      }else{
-        button.textContent='📲 Historie wird geöffnet …';
-        if(!K.installationCenter)await loadScript('kcInstallationUiHotfix','src/ui/installation-center.js?v=0.19.60');
-        if(!K.installationCenter?.open)throw new Error('Installationshistorie ist nicht verfügbar.');
-        await K.installationCenter.open();
+      if(!authReady()){
+        state.innerHTML='<b>Die Bedienung funktioniert.</b><br>Es besteht aktuell keine gültige Supabase-Anmeldung. Deshalb können zentrale Fehlermeldungen noch nicht aus der Cloud geladen werden. Bitte über die normale KC-DP2-Anmeldung anmelden; der Dialog bleibt trotzdem schließbar.';
+        return;
       }
-    }catch(e){
-      let n=byId('kcSessionActionError');
-      if(!n){n=document.createElement('div');n.id='kcSessionActionError';n.className='ai-summary';button.insertAdjacentElement('afterend',n)}
-      n.textContent='✕ '+(kind==='diagnostics'?'Zentrale Fehlerdiagnose':'Installationshistorie')+' konnte nicht geöffnet werden: '+String(e?.message||e);
-    }finally{button.disabled=false;button.textContent=old;button.dataset.kcBusy='0'}
+      state.textContent='Cloud-Diagnose wird geladen …';
+      if(!K.diagnosticsCenter?.open)throw new Error('Diagnose-Modul ist noch nicht verfügbar.');
+      const p=Promise.resolve().then(()=>K.diagnosticsCenter.open());
+      await Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Cloud-Diagnose antwortet nicht innerhalb von 8 Sekunden.')),8000))]);
+      ov.remove();
+    }catch(e){state.innerHTML='<b>Diagnose konnte nicht vollständig geladen werden.</b><br>'+String(e?.message||e);}
   }
-  function wireAction(id,kind){
-    const b=byId(id);if(!b||b.dataset.kcSessionHotfix==='1')return;
-    b.dataset.kcSessionHotfix='1';
-    b.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();safeOpen(b,{kind})},{capture:true});
-    b.style.touchAction='manipulation';
+  function wireDiagnostics(){
+    const b=byId('kcDiagnosticsAdminEntry');if(!b||b.dataset.kcMobileDiagV2==='1')return;
+    b.dataset.kcMobileDiagV2='1';b.style.touchAction='manipulation';
+    let fired=false;const run=e=>{e?.preventDefault?.();e?.stopImmediatePropagation?.();if(fired)return;fired=true;setTimeout(()=>{fired=false},500);openDiagnosticsImmediate()};
+    b.addEventListener('pointerdown',run,{capture:true});
+    b.addEventListener('touchend',run,{capture:true,passive:false});
+    b.addEventListener('click',run,{capture:true});
   }
-  function wireBackdrop(){
-    const back=byId('modalBackdrop');if(!back||back.dataset.kcSessionBackdropGuard==='1')return;
-    back.dataset.kcSessionBackdropGuard='1';
-    back.addEventListener('click',e=>{if(e.target===back&&isSessionModal())hardClose()},{capture:true});
+  function ensureMobileLeds(){
+    if(byId('kcMobileDbStatus'))return;
+    const host=document.querySelector('#kcdpUxRoot .ux-topbar, #kcdpUxRoot header, .ux-topbar');if(!host)return;
+    const box=document.createElement('div');box.id='kcMobileDbStatus';box.setAttribute('aria-label','Datenbankstatus');
+    Object.assign(box.style,{display:'flex',alignItems:'center',gap:'7px',marginLeft:'auto',marginRight:'4px',fontSize:'10px',fontWeight:'800'});
+    box.innerHTML='<span style="display:flex;align-items:center;gap:3px">IDX <i id="kcMobileIdxLed" style="width:10px;height:10px;border-radius:50%;background:#2b7751;display:inline-block"></i></span><span style="display:flex;align-items:center;gap:3px">SUP <i id="kcMobileSupLed" style="width:10px;height:10px;border-radius:50%;background:#2f77c6;display:inline-block"></i></span>';
+    const user=host.querySelector('.ux-userchip,[id*=user i],button[aria-label*=Benutzer i]');
+    if(user)host.insertBefore(box,user);else host.appendChild(box);
+    updateMobileLeds();
+  }
+  function updateMobileLeds(){
+    const i=byId('kcMobileIdxLed'),s=byId('kcMobileSupLed');
+    if(i)i.style.background=K.localStorageStatus?.ok===false?'#c83d3d':'#2b7751';
+    if(s){let c='#2f77c6';try{const st=K.sync?.state?.status,auth=K.supabaseConnection?.state?.authStatus;if(auth==='authenticated'&&st==='ready')c='#2b7751';else if(auth==='error'||st==='error'||st==='offline')c='#c83d3d';}catch(_){}s.style.background=c;}
   }
   function apply(){
+    ensureMobileLeds();updateMobileLeds();
     if(!isSessionModal())return;
-    addTopClose();
-    wireAction('kcDiagnosticsAdminEntry','diagnostics');
-    wireAction('kcInstallationAdminEntry','history');
-    wireBackdrop();
+    addTopClose();normalizeSessionText();wireDiagnostics();
   }
   new MutationObserver(()=>requestAnimationFrame(apply)).observe(document.body,{subtree:true,childList:true});
-  document.addEventListener('click',e=>{if(e.target?.id==='userBtn')setTimeout(apply,0)},true);
+  document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isSessionModal()){e.preventDefault();hardClose()}},true);
   window.addEventListener('pageshow',()=>setTimeout(apply,0));
+  setInterval(updateMobileLeds,2000);
   apply();
-  K.sessionMobileHotfix={version:'0.19.60',apply,hardClose,isSessionModal};
+  K.sessionMobileHotfix={version:'0.19.62',apply,hardClose,isSessionModal,openDiagnosticsImmediate};
 })();
