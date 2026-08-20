@@ -1,0 +1,22 @@
+name: KC DP2 V0.19.53 VHB Wish Matrix Gate
+
+on:
+  pull_request:
+  push:
+    branches: [feature-vhb-wish-matrix]
+
+permissions:
+  contents: read
+
+jobs:
+  vhb-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Refresh deterministic release manifest
+        run: node scripts/refresh-update-manifest.js
+      - name: V H B wish matrix contract
+        run: node tests/vhb-wish-matrix-gate.js
