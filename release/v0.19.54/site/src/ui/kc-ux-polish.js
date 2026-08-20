@@ -26,13 +26,13 @@
   }
   function humanize(){
     document.querySelectorAll('.db-label').forEach(x=>{if(x.textContent==='IDX')x.title='Lokaler Gerätespeicher';if(x.textContent==='SUP')x.title='Cloud-Synchronisierung'});
-    const m=document.getElementById('messageText');if(m&&/kompakte Plansteuerung|V0\.17\.10|V0\.19\.42|V0\.19\.51|V0\.19\.52/.test(m.textContent||''))m.textContent='KC DP2 V0.19.53 – Dienstplanung bereit.';
-    document.title='KC DP2 V0.19.53 · Köcheclub Werne';
+    const m=document.getElementById('messageText');if(m&&/kompakte Plansteuerung|V0\.17\.10|V0\.19\.42|V0\.19\.51|V0\.19\.52|V0\.19\.53/.test(m.textContent||''))m.textContent='KC DP2 V0.19.54 – Dienstplanung bereit.';
+    document.title='KC DP2 V0.19.54 · Köcheclub Werne';
   }
   function apply(){roleUx();humanize();updateSaveState()}
   const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
   else{apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.53',apply,updateSaveState};
+  K.kcUxPolish={version:'0.19.54',apply,updateSaveState};
 })();
