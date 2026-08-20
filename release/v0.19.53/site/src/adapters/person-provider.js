@@ -1,7 +1,7 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
   let provider=typeof window.KCDPPCManagerProvider==='function'?window.KCDPPCManagerProvider:null;
-  const plain=v=>String(v??'').replace(/<[^>]*>/g,'').replace(/[\u0000-\u001F\u007F]/g,'').trim();
+  const plain=v=>String(v??'').replace(/[<>&"'`]/g,'').replace(/[\u0000-\u001F\u007F]/g,'').trim();
   const state={status:provider?'ready':'offline',source:provider?'pc_manager':'local_snapshot',lastSyncAt:null,lastError:null,lastBlock:null,records:K.people?.length||0};
 
   function normalize(row){
