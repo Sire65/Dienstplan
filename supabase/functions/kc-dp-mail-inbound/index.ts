@@ -1,11 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
+import { decodeBase64, encryptMailAttachment, sha256Hex } from '../_shared/kc-dp-mail-crypto.ts';
 
 const json=(b:unknown,s=200)=>new Response(JSON.stringify(b),{status:s,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
 const TARGET='dp2@kc-werne.de';
 const ADMIN_ROLES=['admin','planner','duty_manager'];
+const MAX_BYTES=10*1024*1024;
 
 async function sha256(v:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)))).map(x=>x.toString(16).padStart(2,'0')).join('')}
+function retentionUntil(){const days=Math.max(1,Math.min(365,Number(Deno.env.get('KC_DP_MAIL_RETENTION_DAYS')||30)));return new Date(Date.now()+days*86400000).toISOString()}
 
 Deno.serve(async(req)=>{
   if(req.method!=='POST')return json({error:'POST erforderlich'},405);
@@ -27,13 +30,29 @@ Deno.serve(async(req)=>{
   const {data:existing}=await admin.from('kc_dp_inbox_messages').select('id').eq('org_id','KC_WERNE').eq('project_id','KC_DP').eq('provider_key',provider).eq('provider_message_id',providerMessageId).maybeSingle();
   if(existing)return json({ok:true,duplicate:true,messageId:existing.id});
 
-  const {data:message,error:mErr}=await admin.from('kc_dp_inbox_messages').insert({org_id:'KC_WERNE',project_id:'KC_DP',provider_key:provider||'custom',provider_message_id:providerMessageId,from_address:fromAddress||'unbekannt',from_name:String(body.fromName||'').slice(0,200)||null,subject,status:'received',person_match_method:'unknown',metadata:{to:TARGET,attachmentCount:attachments.length}}).select().single();
+  const {data:message,error:mErr}=await admin.from('kc_dp_inbox_messages').insert({org_id:'KC_WERNE',project_id:'KC_DP',provider_key:provider||'custom',provider_message_id:providerMessageId,from_address:fromAddress||'unbekannt',from_name:String(body.fromName||'').slice(0,200)||null,subject,status:'received',person_match_method:'unknown',metadata:{to:TARGET,attachmentCount:attachments.length,bodyStored:false}}).select().single();
   if(mErr)return json({error:mErr.message},400);
 
+  let encryptedStored=0,attachmentFailed=0;
   for(const a of attachments.slice(0,20)){
-    const name=String(a.name||a.filename||'anhang').slice(0,260),type=String(a.type||a.contentType||'application/octet-stream').slice(0,120),size=Number(a.size||0)||0,hash=String(a.sha256||await sha256(`${providerMessageId}:${name}:${size}`));
+    const name=String(a.name||a.filename||'anhang').slice(0,260),type=String(a.type||a.contentType||'application/octet-stream').slice(0,120),declared=Number(a.size||0)||0;
     const lower=name.toLowerCase();const kind=lower.endsWith('.xlsx')?'xlsx':lower.endsWith('.xls')?'xls':lower.endsWith('.csv')?'csv':lower.endsWith('.pdf')?'pdf':/\.(png|jpg|jpeg|webp|heic)$/i.test(lower)?'image':'unknown';
-    await admin.from('kc_dp_inbox_attachments').insert({message_id:message.id,file_name:name,media_type:type,byte_size:size,sha256:hash,detected_kind:kind,scan_status:'pending',parse_status:'pending'});
+    let contentStatus='metadata_only',storagePath:string|null=null,plainHash=String(a.sha256||''),cipherHash:string|null=null,iv:string|null=null,algorithm:string|null=null,encryptedAt:string|null=null,size=declared;
+    try{
+      if(a.contentBase64){
+        const plain=decodeBase64(String(a.contentBase64));size=plain.byteLength;
+        if(size>MAX_BYTES)throw new Error('Anhang größer als 10 MB');
+        plainHash=await sha256Hex(plain);
+        const aad=`KC_WERNE|KC_DP|${message.id}|${name}|${plainHash}`;
+        const enc=await encryptMailAttachment(plain,aad);
+        storagePath=`${new Date().toISOString().slice(0,10)}/${message.id}/${crypto.randomUUID()}.bin`;
+        const {error:upErr}=await admin.storage.from('kc-dp-mail-quarantine').upload(storagePath,enc.cipher,{contentType:'application/octet-stream',upsert:false,cacheControl:'0'});
+        if(upErr)throw upErr;
+        contentStatus='encrypted';cipherHash=enc.cipherSha256;iv=enc.ivB64;algorithm=enc.algorithm;encryptedAt=new Date().toISOString();encryptedStored++;
+      }else if(!plainHash){plainHash=await sha256(`${providerMessageId}:${name}:${size}`)}
+    }catch(e){contentStatus='failed';attachmentFailed++;}
+    const {error:aErr}=await admin.from('kc_dp_inbox_attachments').insert({message_id:message.id,file_name:name,media_type:type,byte_size:size,sha256:plainHash||await sha256(`${providerMessageId}:${name}:${size}`),detected_kind:kind,scan_status:'pending',parse_status:'pending',storage_path:storagePath,encryption_algorithm:algorithm,encryption_iv:iv,plaintext_sha256:plainHash||null,cipher_sha256:cipherHash,encrypted_at:encryptedAt,retention_until:contentStatus==='encrypted'?retentionUntil():null,content_status:contentStatus});
+    if(aErr){attachmentFailed++;if(storagePath)await admin.storage.from('kc-dp-mail-quarantine').remove([storagePath])}
   }
 
   const {data:members}=await admin.from('kc_dp_memberships').select('person_id,user_id,role,active').eq('org_id','KC_WERNE').eq('active',true).in('role',ADMIN_ROLES);
@@ -55,5 +74,5 @@ Deno.serve(async(req)=>{
     }
   }
 
-  return json({ok:true,target:TARGET,messageId:message.id,attachments:attachments.length,pushSent,pushFailed});
+  return json({ok:true,target:TARGET,messageId:message.id,attachments:attachments.length,encryptedStored,attachmentFailed,pushSent,pushFailed,bodyStored:false});
 });
