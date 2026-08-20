@@ -1,6 +1,6 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
-  K.VERSION='0.19.52';
+  K.VERSION='0.19.53';
 
   const peopleData=[
     ['Frank Brösel','Vorne · Flex','member'],['Hans-Joachim Koch','Vorne · Hinten · Verantwortung','member'],['Dieter Zander','Hinten · Flex','member'],['Klaus Zander','Vorne','member'],
@@ -87,7 +87,6 @@
   s(5,'2026-12-14',8,13,'neutral','Nachbereitung'); s(9,'2026-12-14',8,15,'neutral','Nachbereitung'); s(12,'2026-12-14',9,14,'neutral','Nachbereitung');
   K.shifts=shifts;
 
-  // Wunschdaten sind fachlich getrennt vom Soll-/Ist-Dienstplan.
   K.wishes=[
     {id:'W-1',personId:K.people[0].personId,date:'2026-12-04',start:11,end:17,wishType:'preferred',source:'self_service',comment:'Frühdienst bevorzugt',confidence:1,status:'confirmed'},
     {id:'W-2',personId:K.people[1].personId,date:'2026-12-04',start:11,end:18,wishType:'available',source:'self_service',comment:'',confidence:1,status:'confirmed'},
