@@ -4,9 +4,9 @@ const assert = require('assert');
 const checkpoint=name=>console.log(`[mobile-regression] ${new Date().toISOString()} ${name}`);
 const watchdog=setTimeout(()=>{
   console.error('KC DP2 real traffic LED / session / diagnostics regression: FAIL');
-  console.error('Hard timeout after 30s');
+  console.error('Hard timeout after 45s');
   process.exit(124);
-},30000);
+},45000);
 
 (async()=>{
   const launchOptions={headless:true};
@@ -18,11 +18,33 @@ const watchdog=setTimeout(()=>{
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
 
+  // Reuse the real localhost-only test login path from mobile-smoke instead of bypassing the login UI.
+  await page.route('**/src/core/member-access.js*',async route=>{
+    const response=await route.fetch();
+    let body=await response.text();
+    const marker="function configured(){const c=publicConfig();return /^https:\\/\\//.test(c.url)&&String(c.publishableKey||'').trim().length>20;}";
+    if(!body.includes(marker))throw new Error('member-access configured()-Marker nicht gefunden');
+    body=body.replace(marker,'function configured(){return false;}');
+    await route.fulfill({response,body,headers:{...response.headers(),'content-type':'application/javascript; charset=utf-8'}});
+  });
+
   checkpoint('goto app');
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:15000});
-  checkpoint('wait diagnostics center');
-  await page.waitForFunction(()=>window.KCDP?.diagnosticsCenter?.version==='0.19.65-clean2',{timeout:10000});
+  checkpoint('real mobile login');
+  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.diagnosticsCenter?.version==='0.19.65-clean2',{timeout:15000});
   assert.strictEqual(await page.evaluate(()=>!!window.KCDP?.runtimeRecoveryBridge),false,'legacy recovery bridge must not be loaded');
+  await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:10000});
+  const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
+  if(await details.count())await details.locator('summary').click();
+  await page.locator('#uxTestRole').selectOption('admin');
+  await page.locator('#uxTestLogin').click();
+  await page.waitForSelector('#unlockSecret',{timeout:8000});
+  await page.locator('#unlockSecret').fill('KC-DP2-Mobile-Smoke-2026!');
+  await page.locator('#unlockBtn').click();
+  await page.waitForSelector('#kcChoiceEdit',{state:'visible',timeout:12000});
+  await page.locator('#kcChoiceEdit').click();
+  await page.waitForFunction(()=>document.body.classList.contains('ux-legacy'),{timeout:8000});
+  await page.waitForSelector('#userBtn',{state:'visible',timeout:5000});
 
   checkpoint('check real LEDs');
   for(const id of ['#idbStatusLed','#idbTrafficLed','#supabaseStatusLed','#supabaseTrafficLed'])await page.waitForSelector(id,{state:'attached',timeout:3000});
@@ -33,7 +55,6 @@ const watchdog=setTimeout(()=>{
   checkpoint('prepare heavy diagnostics payload');
   await page.evaluate(()=>{
     const K=window.KCDP;
-    K.currentUser={...(K.currentUser||{}),role:'planner',personId:K.currentUser?.personId||'TEST-PLANNER'};
     const heavy=Array.from({length:500},(_,i)=>({id:`E${i}`,severity:i%9===0?'critical':'error',status:i%3===0?'reviewed':'new',error_code:`test.freeze.${i}`,message:'x'.repeat(300),occurrence_count:i+1,last_seen_at:new Date(Date.now()-i*1000).toISOString(),member_name:'Test',person_id:'TEST',device_id:`DEV-${i}`,platform:'Android',browser:'Chrome',online:true,source:'diagnostic-test'}));
     if(!K.diagnostics)K.diagnostics={};
     K.diagnostics.adminList=limit=>new Promise(resolve=>setTimeout(()=>resolve(heavy.slice(0,limit||500)),250));
