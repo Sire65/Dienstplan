@@ -6,7 +6,7 @@
   const LOAD_LIMIT=80;
   const VIEW_KEY='kc_dp2_diagnostics_view';
   const $=id=>document.getElementById(id);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const allowed=()=>ROLES.has(String(K.currentUser?.role||''));
   const compact=()=>matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)').matches;
   const fmt=v=>v?new Date(v).toLocaleString('de-DE'):'–';
