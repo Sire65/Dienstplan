@@ -31,7 +31,7 @@
     document.title='KC DP2 V0.19.55 · Köcheclub Werne';
   }
   function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.dataset.kcdpModule=key;document.head.appendChild(s)}
-  function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.61','KCDP_SESSION_DIAG_GUARD')}
+  function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.61','KCDP_SESSION_DIAG_GUARD');loadModule('src/ui/diagnostics-freeze-guard.js?v=0.19.55-guard1','KCDP_DIAG_FREEZE_GUARD')}
   function apply(){roleUx();humanize();updateSaveState()}
 
   // Kein globaler MutationObserver: apply() verändert selbst DOM-Inhalte/Klassen.
@@ -45,5 +45,5 @@
   window.addEventListener('pageshow',apply);
   window.addEventListener('focus',updateSaveState);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')updateSaveState()});
-  K.kcUxPolish={version:'0.19.55',revision:'no-global-mutation-observer',apply,updateSaveState,loadV01955Modules};
+  K.kcUxPolish={version:'0.19.55',revision:'no-global-mutation-observer+diag-freeze-guard',apply,updateSaveState,loadV01955Modules};
 })();
