@@ -18,7 +18,6 @@ const watchdog=setTimeout(()=>{
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
 
-  // Reuse the real localhost-only test login path from mobile-smoke instead of bypassing the login UI.
   await page.route('**/src/core/member-access.js*',async route=>{
     const response=await route.fetch();
     let body=await response.text();
@@ -31,7 +30,7 @@ const watchdog=setTimeout(()=>{
   checkpoint('goto app');
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:15000});
   checkpoint('real mobile login');
-  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.diagnosticsCenter?.version==='0.19.65-clean2',{timeout:15000});
+  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.diagnosticsCenter?.version==='0.19.65-clean3',{timeout:15000});
   assert.strictEqual(await page.evaluate(()=>!!window.KCDP?.runtimeRecoveryBridge),false,'legacy recovery bridge must not be loaded');
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:10000});
   const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
@@ -55,9 +54,10 @@ const watchdog=setTimeout(()=>{
   checkpoint('prepare heavy diagnostics payload');
   await page.evaluate(()=>{
     const K=window.KCDP;
-    const heavy=Array.from({length:500},(_,i)=>({id:`E${i}`,severity:i%9===0?'critical':'error',status:i%3===0?'reviewed':'new',error_code:`test.freeze.${i}`,message:'x'.repeat(300),occurrence_count:i+1,last_seen_at:new Date(Date.now()-i*1000).toISOString(),member_name:'Test',person_id:'TEST',device_id:`DEV-${i}`,platform:'Android',browser:'Chrome',online:true,source:'diagnostic-test'}));
+    const heavy=Array.from({length:500},(_,i)=>({id:`E${i}`,severity:i%9===0?'critical':'error',status:i%3===0?'reviewed':'new',error_code:`freeze.sample.${i}`,message:'x'.repeat(300),occurrence_count:i+1,last_seen_at:new Date(Date.now()-i*1000).toISOString(),member_name:'Test',person_id:'TEST',device_id:`DEV-${i}`,platform:'Android',browser:'Chrome',online:true,source:'android-regression'}));
     if(!K.diagnostics)K.diagnostics={};
-    K.diagnostics.adminList=limit=>new Promise(resolve=>setTimeout(()=>resolve(heavy.slice(0,limit||500)),250));
+    window.__kcAdminListCalls=0;
+    K.diagnostics.adminList=limit=>{window.__kcAdminListCalls++;return new Promise(resolve=>setTimeout(()=>resolve(heavy.slice(0,limit||500)),250))};
     K.diagnostics.setStatus=async()=>true;
     window.__kcHeartbeat=0;
     window.__kcHeartbeatTimer=setInterval(()=>window.__kcHeartbeat++,25);
@@ -70,20 +70,26 @@ const watchdog=setTimeout(()=>{
   const size=await page.locator('#kcSessionTopClose').boundingBox();
   assert(size&&size.width>=44&&size.height>=44,'Close button touch target too small');
 
-  checkpoint('tap diagnostics');
+  checkpoint('tap diagnostics without database access');
   const started=Date.now();
   await page.locator('#kcDiagnosticsAdminEntry').tap({timeout:3000});
-  checkpoint('assert diagnostics visible before data returns');
   await page.waitForSelector('#kcDiagOverlay',{state:'visible',timeout:1000});
-  assert(Date.now()-started<1500,'diagnostics UI did not open independently of data loading');
+  assert(Date.now()-started<1500,'diagnostics shell did not open immediately');
   assert(!(await page.locator('#modalBackdrop').isVisible()),'Session modal still blocks diagnostics');
+  await page.waitForTimeout(700);
+  assert.strictEqual(await page.evaluate(()=>window.__kcAdminListCalls),0,'opening diagnostics unexpectedly accessed database');
+  const heartbeatBeforeLoad=await page.evaluate(()=>window.__kcHeartbeat);
+  assert(heartbeatBeforeLoad>=15,`main thread stalled while idle diagnostics shell was open; heartbeat=${heartbeatBeforeLoad}`);
+  assert(await page.locator('#kcDiagLoad').isVisible(),'explicit diagnostics load button missing');
 
-  checkpoint('assert main thread remains responsive');
-  await page.waitForTimeout(1200);
-  const heartbeat=await page.evaluate(()=>window.__kcHeartbeat);
-  assert(heartbeat>=20,`main thread stalled after diagnostics open; heartbeat=${heartbeat}`);
+  checkpoint('load diagnostics explicitly');
+  await page.locator('#kcDiagLoad').tap({timeout:3000});
+  await page.waitForFunction(()=>window.__kcAdminListCalls===1,{timeout:2000});
+  await page.waitForSelector('.kc-diag-mobile-card',{state:'visible',timeout:3000});
   const cards=await page.locator('.kc-diag-mobile-card').count();
-  assert(cards<=80,`diagnostics rendered too many mobile cards: ${cards}`);
+  assert(cards>0&&cards<=80,`diagnostics rendered invalid mobile card count: ${cards}`);
+  const heartbeatAfterLoad=await page.evaluate(()=>window.__kcHeartbeat);
+  assert(heartbeatAfterLoad>heartbeatBeforeLoad,'main thread stopped after explicit diagnostics load');
 
   checkpoint('close diagnostics');
   await page.locator('#kcDiagClose').tap({timeout:3000});
