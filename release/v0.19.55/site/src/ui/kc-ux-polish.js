@@ -13,7 +13,8 @@
     const bad=sup?.classList.contains('error')&&idb?.classList.contains('error');
     const warn=sup?.classList.contains('error')&&!bad;
     x.classList.toggle('bad',!!bad);x.classList.toggle('warn',!!warn);
-    x.innerHTML=bad?'<span>⚠</span><span>Speicher prüfen</span>':warn?'<span>●</span><span>Lokal gespeichert</span>':'<span>✓</span><span>Daten gespeichert</span>';
+    const html=bad?'<span>⚠</span><span>Speicher prüfen</span>':warn?'<span>●</span><span>Lokal gespeichert</span>':'<span>✓</span><span>Daten gespeichert</span>';
+    if(x.innerHTML!==html)x.innerHTML=html;
   }
   function roleUx(){
     const r=role();document.body.classList.toggle('kc-tech-simple',!ADMIN.has(r));
@@ -32,9 +33,19 @@
   function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.dataset.kcdpModule=key;document.head.appendChild(s)}
   function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.61','KCDP_SESSION_DIAG_GUARD')}
   function apply(){roleUx();humanize();updateSaveState()}
-  const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
-  else{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
+
+  // Wichtig: Kein globaler MutationObserver mehr. Die alte Variante beobachtete das
+  // komplette DOM und schrieb in apply() selbst wieder DOM-Inhalte. Auf mobilen
+  // Browsern konnte daraus nach einem Dialogwechsel eine selbsttriggernde Schleife
+  // entstehen, die den Main-Thread blockierte. UI-Polish wird jetzt nur noch an
+  // expliziten Lebenszyklus-Ereignissen aktualisiert.
+  function boot(){loadV01955Modules();apply()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55',apply,updateSaveState,loadV01955Modules};
+  window.addEventListener('pageshow',apply);
+  window.addEventListener('focus',updateSaveState);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')updateSaveState()});
+  K.kcUxPolish={version:'0.19.56-no-observer',apply,updateSaveState,loadV01955Modules};
 })();
