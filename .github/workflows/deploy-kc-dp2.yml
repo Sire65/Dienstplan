@@ -2,6 +2,7 @@ name: KC DP2 Verified Web Release
 
 # Production stays canonical at site root. The repaired V0.19.55 candidate is
 # additionally published under /handtest-v01955/ for real-device testing.
+# Handtest redeploy trigger 2026-08-21 21:00 CEST
 on:
   push:
     branches: [main]
