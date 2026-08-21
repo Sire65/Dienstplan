@@ -1,0 +1,55 @@
+name: KC DP2 Pre-Email Reference Mobile
+
+on:
+  push:
+    branches:
+      - repair/v0.19.64-restore-diagnostics-leds
+    paths:
+      - 'release/v0.19.54/site/**'
+      - 'release/current.json'
+      - 'tests/mobile-smoke.js'
+      - 'tests/pre-email-reference-mobile.js'
+      - '.github/workflows/pre-email-reference-mobile.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pre-email-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify reference identity
+        run: |
+          grep -q 'KC DP2 V0.19.54' release/v0.19.54/site/index.html
+          test ! -f release/v0.19.54/site/src/core/email-inbox.js
+          test ! -f release/v0.19.54/site/src/ui/email-center.js
+      - name: Prepare Playwright browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Start V0.19.54 reference locally
+        run: |
+          cd release/v0.19.54/site
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-reference-http.log 2>&1 &
+          echo $! > /tmp/kcdp-reference-http.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-reference-http.log
+          exit 1
+      - name: Run existing 390x844 mobile smoke
+        run: node tests/mobile-smoke.js
+      - name: Run pre-email login diagnostics reference
+        run: node tests/pre-email-reference-mobile.js
