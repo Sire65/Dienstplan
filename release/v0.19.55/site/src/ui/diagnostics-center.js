@@ -6,7 +6,7 @@
   const LOAD_LIMIT=80;
   const VIEW_KEY='kc_dp2_diagnostics_view';
   const $=id=>document.getElementById(id);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
   const allowed=()=>ROLES.has(String(K.currentUser?.role||''));
   const compact=()=>matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)').matches;
   const fmt=v=>v?new Date(v).toLocaleString('de-DE'):'–';
@@ -32,14 +32,14 @@
     host.id='kcDiagOverlay';
     host.className='kc-diag-overlay';
     host.hidden=true;
-    host.innerHTML='<div class="kc-diag-card" role="dialog" aria-modal="true" aria-labelledby="kcDiagTitle"><div class="kc-diag-head"><div><h2 id="kcDiagTitle">🛠 Zentrale Fehlerdiagnose</h2><p>Offene Störungen zuerst · behobene und Testmeldungen getrennt</p></div><button id="kcDiagClose" type="button" aria-label="Fehlerdiagnose schließen">✕</button></div><div class="kc-diag-toolbar"><select id="kcDiagFilter" aria-label="Fehlerfilter"><option value="open">Offene Meldungen</option><option value="new">Nur neue</option><option value="critical">Nur kritische</option><option value="resolved">Behobene Meldungen</option><option value="tests">Testmeldungen</option><option value="all">Alle ohne Tests</option><option value="all_with_tests">Alle inkl. Tests</option></select><input id="kcDiagSearch" type="search" placeholder="Fehler, Mitglied, Gerät …"><div class="kc-diag-view-toggle" role="group" aria-label="Ansicht"><button type="button" data-diag-view="table">Tabelle</button><button type="button" data-diag-view="cards">Karten</button></div><button id="kcDiagReload" type="button">Aktualisieren</button></div><div id="kcDiagSummary"></div><div id="kcDiagTable"><p class="kc-diag-empty">Diagnose bereit.</p></div></div>';
+    host.innerHTML='<div class="kc-diag-card" role="dialog" aria-modal="true" aria-labelledby="kcDiagTitle"><div class="kc-diag-head"><div><h2 id="kcDiagTitle">🛠 Zentrale Fehlerdiagnose</h2><p>Fenster und Datenbankzugriff sind technisch getrennt.</p></div><button id="kcDiagClose" type="button" aria-label="Fehlerdiagnose schließen">✕</button></div><div class="kc-diag-toolbar"><select id="kcDiagFilter" aria-label="Fehlerfilter"><option value="open">Offene Meldungen</option><option value="new">Nur neue</option><option value="critical">Nur kritische</option><option value="resolved">Behobene Meldungen</option><option value="tests">Testmeldungen</option><option value="all">Alle ohne Tests</option><option value="all_with_tests">Alle inkl. Tests</option></select><input id="kcDiagSearch" type="search" placeholder="Fehler, Mitglied, Gerät …"><div class="kc-diag-view-toggle" role="group" aria-label="Ansicht"><button type="button" data-diag-view="table">Tabelle</button><button type="button" data-diag-view="cards">Karten</button></div><button id="kcDiagLoad" type="button" class="primary">Diagnosedaten laden</button></div><div id="kcDiagSummary"></div><div id="kcDiagTable"><p class="kc-diag-empty">Diagnose bereit.</p></div></div>';
     document.body.appendChild(host);
     $('kcDiagClose').addEventListener('click',close);
-    $('kcDiagReload').addEventListener('click',()=>void load());
-    $('kcDiagFilter').addEventListener('change',render);
-    $('kcDiagSearch').addEventListener('input',render);
-    host.querySelectorAll('[data-diag-view]').forEach(b=>b.addEventListener('click',()=>{if(compact()&&b.dataset.diagView==='table')return;viewMode=b.dataset.diagView;saveView(viewMode);render()}));
-    matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)').addEventListener?.('change',render);
+    $('kcDiagLoad').addEventListener('click',()=>void load());
+    $('kcDiagFilter').addEventListener('change',()=>{if(rows.length)render()});
+    $('kcDiagSearch').addEventListener('input',()=>{if(rows.length)render()});
+    host.querySelectorAll('[data-diag-view]').forEach(b=>b.addEventListener('click',()=>{if(compact()&&b.dataset.diagView==='table')return;viewMode=b.dataset.diagView;saveView(viewMode);if(rows.length)render()}));
+    matchMedia('(max-width:900px), (pointer:coarse) and (max-width:1200px)').addEventListener?.('change',()=>{if(rows.length)render()});
     return host;
   }
 
@@ -57,11 +57,12 @@
     hideSessionModal();
     host.hidden=false;
     host.removeAttribute('aria-hidden');
-    const table=$('kcDiagTable');
-    if(table&&!rows.length)table.innerHTML='<p class="kc-diag-empty"><b>Diagnose geöffnet.</b><br>Fehlermeldungen werden begrenzt im Hintergrund geladen.</p>';
+    ++loadGeneration;
+    const summary=$('kcDiagSummary'),table=$('kcDiagTable'),button=$('kcDiagLoad');
+    if(summary)summary.innerHTML='<div class="kc-diag-housekeeping"><b>Diagnosefenster geöffnet.</b> Es wurde noch kein Datenbankzugriff gestartet.</div>';
+    if(table)table.innerHTML='<p class="kc-diag-empty"><b>Programm bleibt im Leerlauf.</b><br>Tippen Sie erst auf „Diagnosedaten laden“, wenn die Meldungen aus Supabase abgerufen werden sollen.</p>';
+    if(button){button.disabled=false;button.textContent=rows.length?'Diagnosedaten neu laden':'Diagnosedaten laden'}
     requestAnimationFrame(()=>$('kcDiagClose')?.focus());
-    const generation=++loadGeneration;
-    setTimeout(()=>{if(generation===loadGeneration&&!host.hidden)void load(generation)},150);
     return {opened:true};
   }
 
@@ -96,25 +97,33 @@
   function render(){
     const host=ensureShell();if(host.hidden)return;
     const normal=rows.filter(r=>!isTest(r)),openRows=normal.filter(isOpen),critical=openRows.filter(r=>r.severity==='critical'),resolved=normal.filter(r=>r.status==='resolved'),tests=rows.filter(isTest);
-    $('kcDiagSummary').innerHTML=`<div class="kc-diag-stats"><div><b>${openRows.length}</b><span>offen</span></div><div><b>${critical.length}</b><span>kritisch</span></div><div><b>${new Set(openRows.map(r=>r.device_id).filter(Boolean)).size}</b><span>Geräte</span></div><div><b>${new Set(openRows.map(r=>r.person_id).filter(Boolean)).size}</b><span>Mitglieder</span></div></div><div class="kc-diag-housekeeping">Es werden höchstens <b>${LOAD_LIMIT}</b> aktuelle Meldungen geladen. So bleibt die Diagnose auch auf Mobilgeräten bedienbar.</div>`;
+    $('kcDiagSummary').innerHTML=`<div class="kc-diag-stats"><div><b>${openRows.length}</b><span>offen</span></div><div><b>${critical.length}</b><span>kritisch</span></div><div><b>${new Set(openRows.map(r=>r.device_id).filter(Boolean)).size}</b><span>Geräte</span></div><div><b>${new Set(openRows.map(r=>r.person_id).filter(Boolean)).size}</b><span>Mitglieder</span></div></div><div class="kc-diag-housekeeping">Es wurden höchstens <b>${LOAD_LIMIT}</b> aktuelle Meldungen geladen.</div>`;
     const view=effectiveView();host.querySelectorAll('[data-diag-view]').forEach(b=>{const active=b.dataset.diagView===view;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));b.disabled=compact()&&b.dataset.diagView==='table'});
     const list=filtered(),table=$('kcDiagTable');table.className='';
     if(view==='cards'||!K.tableCore){cards(list,table);return}
     const columns=[{key:'severity',label:'Stufe',render:r=>`${severityIcon(r.severity)} ${esc(severityLabel(r.severity))}${isTest(r)?' · TEST':''}`},{key:'status',label:'Status',render:r=>esc(statusLabel(r.status))},{key:'member_name',label:'Mitglied'},{key:'message',label:'Meldung',render:r=>`<b>${esc(friendlyTitle(r))}</b><br>${esc(r.message||'')}<br><small>${esc(r.error_code||'–')}</small>`},{key:'app_version',label:'Version'},{key:'occurrence_count',label:'Anzahl',render:r=>`${Number(r.occurrence_count||1)}×`},{key:'last_seen_at',label:'Zuletzt',render:r=>fmt(r.last_seen_at)},{key:'device_id',label:'Gerät / Browser',render:r=>`${esc(r.platform||'')}<br><small>${esc(r.device_id||'–')}</small>`},{key:'actions',label:'Aktion',render:r=>`<div class="kc-diag-table-actions">${actionHtml(r)}</div>`}];
     K.tableCore.create(table,{rows:list,columns});wireActions(table)
   }
-  function showLoadError(e){const table=$('kcDiagTable');if(!table||ensureShell().hidden)return;table.innerHTML=`<div class="kc-diag-load-error"><b>Diagnose konnte nicht geladen werden.</b><p>${esc(e?.message||String(e))}</p><button id="kcDiagRetry" type="button">Erneut versuchen</button></div>`;$('kcDiagRetry')?.addEventListener('click',()=>void load())}
-  async function load(expectedGeneration=loadGeneration){
-    if(loading)return;loading=true;
+  function showLoadError(e){const table=$('kcDiagTable');if(!table||ensureShell().hidden)return;table.innerHTML=`<div class="kc-diag-load-error"><b>Diagnosedaten konnten nicht geladen werden.</b><p>${esc(e?.message||String(e))}</p><button id="kcDiagRetry" type="button">Erneut laden</button></div>`;$('kcDiagRetry')?.addEventListener('click',()=>void load())}
+  async function load(){
+    if(loading)return;
+    const host=ensureShell();if(host.hidden)return;
+    const expectedGeneration=loadGeneration,button=$('kcDiagLoad');
+    loading=true;
+    if(button){button.disabled=true;button.textContent='Diagnosedaten werden geladen …'}
+    const table=$('kcDiagTable');if(table)table.innerHTML='<p class="kc-diag-empty">Diagnosedaten werden geladen …</p>';
     try{
       if(!navigator.onLine)throw new Error('Dieses Gerät ist offline.');
       if(!K.diagnostics?.adminList)throw new Error('Diagnose-Datenmodul ist nicht verfügbar.');
       const loaded=await timeout(K.diagnostics.adminList(LOAD_LIMIT),LOAD_TIMEOUT_MS,'Supabase-Diagnose')||[];
-      if(expectedGeneration!==loadGeneration||ensureShell().hidden)return;
+      if(expectedGeneration!==loadGeneration||host.hidden)return;
       rows=Array.isArray(loaded)?loaded.slice(0,LOAD_LIMIT):[];
       await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
-      if(expectedGeneration===loadGeneration&&!ensureShell().hidden)render();
-    }catch(e){if(expectedGeneration===loadGeneration)showLoadError(e)}finally{loading=false}
+      if(expectedGeneration===loadGeneration&&!host.hidden)render();
+    }catch(e){if(expectedGeneration===loadGeneration)showLoadError(e)}finally{
+      loading=false;
+      if(button&&!host.hidden){button.disabled=false;button.textContent='Diagnosedaten neu laden'}
+    }
   }
 
   ensureShell();
@@ -124,5 +133,5 @@
     userBtn.dataset.kcDiagSessionHook='1';
     userBtn.addEventListener('click',()=>queueMicrotask(ensureSessionControls));
   }
-  K.diagnosticsCenter={version:'0.19.65-clean2',open,close,load,allowed,isTest,friendlyTitle,ensureSessionControls};
+  K.diagnosticsCenter={version:'0.19.65-clean3',open,close,load,allowed,isTest,friendlyTitle,ensureSessionControls};
 })();
