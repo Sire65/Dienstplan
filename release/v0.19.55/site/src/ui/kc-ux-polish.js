@@ -2,6 +2,7 @@
   const K=window.KCDP=window.KCDP||{};
   const ADMIN=new Set(['admin']);
   const PRIV=new Set(['planner','duty_manager','admin']);
+  let featureLoadStarted=false,featureWaitTimer=null;
   function role(){return String(K.currentUser?.role||'')}
   function ensureSaveState(){
     const right=document.querySelector('.top-right');if(!right||document.getElementById('kcSaveState'))return;
@@ -30,20 +31,35 @@
     const m=document.getElementById('messageText');if(m&&/kompakte Plansteuerung|V0\.17\.10|V0\.19\.42|V0\.19\.51|V0\.19\.52|V0\.19\.53|V0\.19\.54/.test(m.textContent||''))m.textContent='KC DP2 V0.19.55 – Dienstplanung bereit.';
     document.title='KC DP2 V0.19.55 · Köcheclub Werne';
   }
-  function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.dataset.kcdpModule=key;document.head.appendChild(s)}
-  function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.61','KCDP_SESSION_DIAG_GUARD')}
+  function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.dataset.kcdpModule=key;s.async=true;document.head.appendChild(s)}
+  function loadV01955Modules(){
+    if(featureLoadStarted)return;
+    featureLoadStarted=true;
+    loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');
+    loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');
+    loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');
+    loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');
+  }
+  function applicationReady(){
+    return !!K.currentUser?.personId && !document.body.classList.contains('ux-login');
+  }
+  function scheduleFeatureLoad(){
+    if(featureLoadStarted)return;
+    if(applicationReady()){setTimeout(loadV01955Modules,250);return;}
+    let tries=0;
+    featureWaitTimer=setInterval(()=>{
+      tries++;
+      if(applicationReady()){clearInterval(featureWaitTimer);featureWaitTimer=null;setTimeout(loadV01955Modules,250);}
+      else if(tries>=120){clearInterval(featureWaitTimer);featureWaitTimer=null;}
+    },250);
+  }
   function apply(){roleUx();humanize();updateSaveState()}
-
-  // Kein globaler MutationObserver: apply() verändert selbst DOM-Inhalte/Klassen.
-  // Ein subtree-Observer konnte sich dadurch auf mobilen Browsern rekursiv selbst
-  // auslösen und den Main-Thread bei Dialogwechseln blockieren.
-  function boot(){loadV01955Modules();apply()}
+  function boot(){apply();scheduleFeatureLoad()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
-
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  window.addEventListener('pageshow',apply);
+  window.addEventListener('pageshow',()=>{apply();scheduleFeatureLoad()});
   window.addEventListener('focus',updateSaveState);
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')updateSaveState()});
-  K.kcUxPolish={version:'0.19.55',revision:'no-global-mutation-observer+single-diag-guard',apply,updateSaveState,loadV01955Modules};
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){updateSaveState();scheduleFeatureLoad()}});
+  K.kcUxPolish={version:'0.19.55',revision:'v01954-login-path+deferred-mail',apply,updateSaveState,loadV01955Modules,scheduleFeatureLoad};
 })();
