@@ -1,6 +1,7 @@
 name: KC DP2 Verified Web Release
 
-# Manual notification test trigger 2026-08-19
+# Production stays canonical at site root. The repaired V0.19.55 candidate is
+# additionally published under /handtest-v01955/ for real-device testing.
 on:
   push:
     branches: [main]
@@ -26,12 +27,22 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout production main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: prod
+      - name: Checkout repaired handtest branch
+        uses: actions/checkout@v6
+        with:
+          ref: repair/current-by-v01954
+          path: repair
       - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Resolve canonical current release
         id: release
+        working-directory: prod
         shell: bash
         run: |
           set -euo pipefail
@@ -42,8 +53,10 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
       - name: Refresh deterministic release manifest
+        working-directory: prod
         run: node scripts/refresh-update-manifest.js
       - name: Verify canonical current release
+        working-directory: prod
         shell: bash
         run: |
           set -euo pipefail
@@ -58,10 +71,28 @@ jobs:
           node tests/admin-push-settings-gate.js
           ROOT="${{ steps.release.outputs.path }}"
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
+      - name: Verify isolated handtest candidate exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f repair/release/v0.19.55/site/index.html
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find repair/release/v0.19.55/site -type f -name '*.js' -print0)
+      - name: Build combined Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          cp -a "prod/${{ steps.release.outputs.path }}/." dist/
+          mkdir -p dist/handtest-v01955
+          cp -a repair/release/v0.19.55/site/. dist/handtest-v01955/
+          printf '%s\n' "production=${{ steps.release.outputs.version }}" "handtest=0.19.55" > dist/HANDTEST_BUILD.txt
+          test -f dist/index.html
+          test -f dist/handtest-v01955/index.html
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: ${{ steps.release.outputs.path }}
+          path: dist
   deploy:
     needs: verify
     runs-on: ubuntu-latest
