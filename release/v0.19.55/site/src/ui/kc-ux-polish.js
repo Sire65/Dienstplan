@@ -34,11 +34,9 @@
   function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.61','KCDP_SESSION_DIAG_GUARD')}
   function apply(){roleUx();humanize();updateSaveState()}
 
-  // Wichtig: Kein globaler MutationObserver mehr. Die alte Variante beobachtete das
-  // komplette DOM und schrieb in apply() selbst wieder DOM-Inhalte. Auf mobilen
-  // Browsern konnte daraus nach einem Dialogwechsel eine selbsttriggernde Schleife
-  // entstehen, die den Main-Thread blockierte. UI-Polish wird jetzt nur noch an
-  // expliziten Lebenszyklus-Ereignissen aktualisiert.
+  // Kein globaler MutationObserver: apply() verändert selbst DOM-Inhalte/Klassen.
+  // Ein subtree-Observer konnte sich dadurch auf mobilen Browsern rekursiv selbst
+  // auslösen und den Main-Thread bei Dialogwechseln blockieren.
   function boot(){loadV01955Modules();apply()}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
@@ -47,5 +45,5 @@
   window.addEventListener('pageshow',apply);
   window.addEventListener('focus',updateSaveState);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')updateSaveState()});
-  K.kcUxPolish={version:'0.19.56-no-observer',apply,updateSaveState,loadV01955Modules};
+  K.kcUxPolish={version:'0.19.55',revision:'no-global-mutation-observer',apply,updateSaveState,loadV01955Modules};
 })();
