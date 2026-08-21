@@ -1,3 +1,4 @@
+.kc-diag-overlay[hidden]{display:none!important;pointer-events:none!important}
 .kc-diag-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10080;display:grid;place-items:center;padding:12px}
 .kc-diag-card{width:min(1280px,98vw);max-height:94vh;overflow:auto;background:#fff;border-radius:14px;padding:16px;box-sizing:border-box}
 .kc-diag-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -46,6 +47,7 @@
 .kc-diag-load-error button{min-height:40px;margin-top:6px}
 @media(max-width:900px),(pointer:coarse) and (max-width:1200px){
  .kc-diag-overlay{padding:0;display:block}
+ .kc-diag-overlay[hidden]{display:none!important;pointer-events:none!important}
  .kc-diag-card{width:100%;max-width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding:10px;overflow-x:hidden}
  .kc-diag-head{position:sticky;top:-10px;background:#fff;z-index:2;padding:8px 0}
  .kc-diag-head h2{font-size:1.15rem}
