@@ -8,7 +8,7 @@ on:
       - 'release/**/site/**'
       - 'release/current.json'
       - 'tests/mobile-smoke.js'
-      - 'tests/session-mobile-led-regression.js'
+      - 'tests/diagnostics-freeze-guard-mobile.js'
       - '.github/workflows/mobile-smoke.yml'
   pull_request:
     branches: [main]
@@ -16,7 +16,7 @@ on:
       - 'release/**/site/**'
       - 'release/current.json'
       - 'tests/mobile-smoke.js'
-      - 'tests/session-mobile-led-regression.js'
+      - 'tests/diagnostics-freeze-guard-mobile.js'
       - '.github/workflows/mobile-smoke.yml'
 
 permissions:
@@ -60,5 +60,5 @@ jobs:
           exit 1
       - name: Run 390x844 smartphone smoke test
         run: node tests/mobile-smoke.js
-      - name: Run Anmeldung/Diagnose/LED regression
-        run: node tests/session-mobile-led-regression.js
+      - name: Run guarded Android diagnostics regression
+        run: node tests/diagnostics-freeze-guard-mobile.js
