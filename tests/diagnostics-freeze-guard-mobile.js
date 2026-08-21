@@ -1,0 +1,22 @@
+const { chromium } = require('playwright');
+const assert = require('assert');
+(async()=>{
+  const opts={headless:true}; if(process.env.KC_PLAYWRIGHT_CHANNEL)opts.channel=process.env.KC_PLAYWRIGHT_CHANNEL;
+  const browser=await chromium.launch(opts);
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2,locale:'de-DE'});
+  const page=await context.newPage(); const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/src/core/member-access.js*',async route=>{const response=await route.fetch();let body=await response.text();const marker="function configured(){const c=publicConfig();return /^https:\\/\\//.test(c.url)&&String(c.publishableKey||'').trim().length>20;}";if(!body.includes(marker))throw new Error('member-access marker missing');body=body.replace(marker,'function configured(){return false;}');await route.fulfill({response,body,headers:{...response.headers(),'content-type':'application/javascript; charset=utf-8'}})});
+  await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded',timeout:15000});
+  await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:10000}); const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details'); if(await details.count())await details.locator('summary').click();
+  await page.locator('#uxTestRole').selectOption('admin'); await page.locator('#uxTestLogin').click(); await page.waitForSelector('#unlockSecret',{timeout:8000}); await page.locator('#unlockSecret').fill('KC-DP2-Mobile-Smoke-2026!'); await page.locator('#unlockBtn').click(); await page.waitForSelector('#kcChoiceEdit',{state:'visible',timeout:12000}); await page.locator('#kcChoiceEdit').click(); await page.waitForSelector('#userBtn',{state:'visible',timeout:8000});
+  for(const id of ['#idbStatusLed','#idbTrafficLed','#supabaseStatusLed','#supabaseTrafficLed'])await page.waitForSelector(id,{state:'attached',timeout:3000});
+  await page.evaluate(()=>{const K=window.KCDP;if(!K.diagnostics)K.diagnostics={};window.__kcAdminListCalls=0;K.diagnostics.adminList=limit=>{window.__kcAdminListCalls++;return Promise.resolve([{id:'probe',severity:'info',status:'new',error_code:'probe',message:'probe'}].slice(0,limit))};window.__hb=0;window.__hbt=setInterval(()=>window.__hb++,25)});
+  await page.locator('#userBtn').tap(); await page.waitForSelector('#kcDiagnosticsAdminEntry',{state:'visible',timeout:3000});
+  await page.locator('#kcDiagnosticsAdminEntry').tap(); await page.waitForSelector('#kcDiagFreezeGuard',{state:'visible',timeout:1500}); await page.waitForTimeout(500);
+  assert.strictEqual(await page.evaluate(()=>window.__kcAdminListCalls),0,'guard opening must not access database'); assert((await page.evaluate(()=>window.__hb))>10,'main thread stalled opening guard');
+  await page.locator('#kcDiagProbeUi').tap(); await page.waitForTimeout(100); assert.strictEqual((await page.evaluate(()=>JSON.parse(localStorage.getItem('kc_dp2_diag_freeze_probe_v1')).stage)),'ui-ok');
+  await page.locator('#kcDiagProbeCore').tap(); await page.waitForTimeout(100); assert.strictEqual((await page.evaluate(()=>JSON.parse(localStorage.getItem('kc_dp2_diag_freeze_probe_v1')).stage)),'core-ok');
+  await page.locator('#kcDiagProbeDb').tap(); await page.waitForFunction(()=>window.__kcAdminListCalls===1,{timeout:2000}); await page.waitForFunction(()=>JSON.parse(localStorage.getItem('kc_dp2_diag_freeze_probe_v1')).stage==='db-ok',{timeout:2000});
+  assert((await page.evaluate(()=>window.__hb))>10,'main thread stopped during guarded probe'); await page.locator('#kcDiagGuardClose').tap(); await page.waitForSelector('#kcDiagFreezeGuard',{state:'hidden',timeout:1000}); await page.evaluate(()=>clearInterval(window.__hbt)); assert(!errors.length,'page errors: '+errors.join(' | '));
+  console.log('KC DP2 diagnostics freeze guard mobile: PASS'); await browser.close();
+})().catch(e=>{console.error('KC DP2 diagnostics freeze guard mobile: FAIL');console.error(e.stack||e);process.exit(1)});
