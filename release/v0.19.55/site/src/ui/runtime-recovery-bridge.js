@@ -17,9 +17,10 @@
   async function openDiagnostics(force=false){if(loading&&!force)return;loading=true;try{removeStaleMobileStatus();if(!byId('kcDiagRecoveryOverlay'))loadingOverlay();hardClose();await ensureModules();const result=K.diagnosticsCenter.open();if(result?.opened===false)throw new Error(result.reason==='not-allowed-or-diagnostics-missing'?'Diagnose ist für diese Rolle oder Sitzung noch nicht verfügbar.':'Diagnose konnte nicht geöffnet werden.');if(byId('kcDiagOverlay'))byId('kcDiagRecoveryOverlay')?.remove();else setTimeout(()=>{if(!byId('kcDiagOverlay'))fallback('Die Diagnosefunktion wurde aufgerufen, aber das Diagnosefenster ist nicht sichtbar geworden.')},150)}catch(e){fallback(e?.message||String(e))}finally{loading=false}}
   function scheduleDiagnostics(e){e?.preventDefault?.();e?.stopPropagation?.();e?.stopImmediatePropagation?.();loadingOverlay();if(diagScheduled)return;diagScheduled=true;setTimeout(()=>{diagScheduled=false;void openDiagnostics()},0)}
   function isDiagButton(target){const b=target?.closest?.('button');return !!b&&(b.id==='kcDiagnosticsAdminEntry'||/Zentrale\s+Fehlerdiagnose/i.test(b.textContent||''))}
-  function bindDiag(el){if(!el||el.dataset.kcRecoveryDiag==='1')return;el.dataset.kcRecoveryDiag='1';el.style.touchAction='manipulation';el.addEventListener('pointerup',scheduleDiagnostics,true);el.addEventListener('touchend',scheduleDiagnostics,{capture:true,passive:false});el.addEventListener('click',scheduleDiagnostics,true)}
+  function bindDiag(el){if(!el||el.dataset.kcRecoveryDiag==='1')return;el.dataset.kcRecoveryDiag='1';el.style.touchAction='manipulation';el.addEventListener('pointerdown',scheduleDiagnostics,true);el.onclick=scheduleDiagnostics}
+  document.addEventListener('pointerdown',e=>{if(isDiagButton(e.target))scheduleDiagnostics(e)},true);
   document.addEventListener('click',e=>{if(isDiagButton(e.target))scheduleDiagnostics(e)},true);
   function apply(){removeStaleMobileStatus();ensureSessionClose();document.querySelectorAll('button').forEach(b=>{if(isDiagButton(b))bindDiag(b)})}
   apply();const obs=new MutationObserver(apply);if(document.documentElement)obs.observe(document.documentElement,{childList:true,subtree:true});
-  K.runtimeRecoveryBridge={version:'0.19.64-sync-feedback3',openDiagnostics,removeStaleMobileStatus,ensureSessionClose,hardClose,apply};
+  K.runtimeRecoveryBridge={version:'0.19.64-pointerdown4',openDiagnostics,removeStaleMobileStatus,ensureSessionClose,hardClose,apply};
 })();
