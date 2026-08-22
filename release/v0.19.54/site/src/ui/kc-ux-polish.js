@@ -45,5 +45,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.20.0-p14',apply,updateSaveState,loadStartChoice};
+  K.kcUxPolish={version:'0.19.54',apply,updateSaveState,loadStartChoice};
 })();
