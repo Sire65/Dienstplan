@@ -1,0 +1,3 @@
+checkpoint=P2-login-leds
+expected_gate=green
+base=recovery/dp2-v02000
