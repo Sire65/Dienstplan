@@ -32,6 +32,17 @@ jobs:
           cat /tmp/kcdp-http.log
           exit 1
       - name: Android browser login smoke
+        id: login_smoke
+        continue-on-error: true
         run: node tests/v02000-browser-login-smoke.js
       - name: Android functional E2E audit
+        if: always()
         run: node tests/v02000-browser-functional-audit.js
+      - name: Enforce login smoke result
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.login_smoke.outcome }}" != "success" ]; then
+            echo "Legacy login smoke failed (kept separate from functional audit)."
+            exit 1
+          fi
