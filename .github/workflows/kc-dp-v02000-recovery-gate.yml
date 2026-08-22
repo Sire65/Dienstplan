@@ -21,6 +21,8 @@ jobs:
         run: node tests/v02000-baseline-gate.js
       - name: Local XLSX parser gate
         run: node tests/v02000-xlsx-local-gate.js
+      - name: Mobile day smoke gate
+        run: node tests/v02000-mobile-day-smoke.js
       - name: Syntax check stable release
         shell: bash
         run: |
