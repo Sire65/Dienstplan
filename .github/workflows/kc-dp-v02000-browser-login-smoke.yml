@@ -1,0 +1,35 @@
+name: KC DP2 V0.20.0 Browser Login Smoke
+
+on:
+  pull_request:
+    branches:
+      - recovery/dp2-v02000
+  workflow_dispatch:
+
+jobs:
+  browser-login-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Start recovery site
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --directory release/v0.19.54/site > /tmp/kcdp-http.log 2>&1 &
+          echo $! > /tmp/kcdp-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/kcdp-http.log
+          exit 1
+      - name: Android browser login smoke
+        run: node tests/v02000-browser-login-smoke.js
