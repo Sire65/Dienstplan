@@ -17,6 +17,9 @@ assert(bridgeCode.includes("defaultTestOnly:true"),'Bridge muss TEST als Default
 assert(bridgeCode.includes("testOnly:true"),'Bridge darf LIVE nicht freischalten');
 assert(!bridgeCode.includes('.health()')||bridgeCode.includes('manualHealth'),'Health darf nur manuell aufgerufen werden');
 assert(!bridgeCode.includes("orgId:orgId()||'kc-dp2'"),'Bridge darf keine erfundene orgId senden');
+assert(bridgeCode.includes("liveOwner:'legacy_push'"),'Legacy Push muss bis zur bewussten Migration alleiniger LIVE-Besitzer bleiben');
+assert(bridgeCode.includes("centralMode:'shadow_test'"),'KC Communication muss im Recovery-Stand Shadow/TEST bleiben');
+assert(bridgeCode.includes('centralLiveEnabled:false'),'Zentraler LIVE-Versand darf nicht automatisch aktiviert sein');
 
 const calls=[];
 let failNetwork=false;
@@ -31,7 +34,7 @@ const K={
   supabaseConnection:{sessionSnapshot:()=>({access_token:'TEST-TOKEN'})},
   publishPlan:()=>({version:7,publishedAt:'2026-08-22T18:00:00Z'}),
   mutations:{saveShift:(candidate)=>({record:{...candidate,id:'S-1'}})},
-  pushAdapter:{createReplacement:(input)=>Promise.resolve({ok:true,input})}
+  pushAdapter:{createReplacement:(input)=>input.fail?Promise.reject(new Error('simulierter Legacy-Vertretungsfehler')):Promise.resolve({ok:true,input})}
 };
 const context={window:{KCDP:K},globalThis:null,console,fetch:fetchMock,AbortController,setTimeout,clearTimeout,Promise,crypto:webcrypto};
 context.globalThis=context.window;
@@ -43,6 +46,9 @@ vm.runInContext(bridgeCode,context,{filename:'communication-bridge.js'});
 assert.strictEqual(calls.length,0,'KC Communication darf beim DP2-Start keinen Netzwerkaufruf auslösen');
 assert.strictEqual(K.communicationBridge.state.mode,'test','Bridge muss im TEST-Modus starten');
 assert.strictEqual(K.communicationBridge.state.ready,true,'Bridge muss mit offiziellem SDK bereit sein');
+assert.strictEqual(K.communicationBridge.routing.liveOwner,'legacy_push','LIVE-Versandhoheit muss beim Legacy Push liegen');
+assert.strictEqual(K.communicationBridge.routing.centralMode,'shadow_test','KC Communication muss Shadow/TEST sein');
+assert.strictEqual(K.communicationBridge.routing.centralLiveEnabled,false,'KC Communication LIVE muss gesperrt bleiben');
 
 const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
 (async()=>{
@@ -67,10 +73,15 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   const replacement=await replacementPromise;
   assert.strictEqual(replacement.ok,true,'bestehende Replacement-Funktion muss normal zurückkehren');
   await tick();
-  assert.strictEqual(calls.length,3,'replacement_requested muss genau ein Event auslösen');
+  assert.strictEqual(calls.length,3,'replacement_requested muss nach erfolgreicher Legacy-Anlage genau ein Shadow-Event auslösen');
   assert.strictEqual(calls[2].body.eventKey,'replacement_requested');
   assert.strictEqual(calls[2].body.testOnly,true);
   assert.deepStrictEqual(calls[2].body.recipients,[{personId:'P-2'},{personId:'P-3'}]);
+
+  const beforeFailedReplacement=calls.length;
+  await assert.rejects(()=>K.pushAdapter.createReplacement({date:'2026-12-05',start:'16:00',end:'17:00',personIds:['P-9'],fail:true}),/Legacy-Vertretungsfehler/,'Fehler der bestehenden Vertretungsanlage muss unverändert weitergereicht werden');
+  await tick();
+  assert.strictEqual(calls.length,beforeFailedReplacement,'Bei fehlgeschlagener Legacy-Anlage darf kein zentrales Phantom-Event entstehen');
 
   await K.pushAdapter.createReplacement({date:'2026-12-05',start:0,end:1,personIds:['P-5']});
   await tick();
@@ -97,5 +108,5 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.strictEqual(K.communicationBridge.state.lastOk,false,'Kommunikationsfehler muss im Bridge-State sichtbar sein');
   assert(/nicht erreichbar|simulierter Kommunikationsausfall/i.test(K.communicationBridge.state.lastError||''),'Fehler muss diagnostizierbar bleiben');
 
-  console.log('KC DP2 V0.20 P12 Communication Bridge Gate PASS');
+  console.log('KC DP2 V0.20 P13 Communication Ownership Gate PASS');
 })().catch(err=>{console.error(err);process.exit(1);});
