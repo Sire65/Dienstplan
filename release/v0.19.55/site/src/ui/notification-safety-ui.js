@@ -64,9 +64,47 @@
     return true;
   }
 
-  const observer=new MutationObserver(()=>decorate(document));
-  function start(){decorate(document);observer.observe(document.body,{childList:true,subtree:true,characterData:true});}
+  let loginTimer=null;
+  function loginWatchdog(){
+    const form=document.getElementById('uxLoginForm');
+    if(!form||form.dataset.kcLoginWatchdog==='1')return;
+    form.dataset.kcLoginWatchdog='1';
+    form.addEventListener('submit',()=>{
+      clearTimeout(loginTimer);
+      const startedAt=Date.now();
+      loginTimer=setTimeout(()=>{
+        const current=document.getElementById('uxLoginForm');
+        const btn=current?.querySelector('button[type="submit"]');
+        if(!current||!btn||!btn.disabled||!/Anmeldung läuft/i.test(btn.textContent||''))return;
+        sessionStorage.setItem('kc_dp_login_timeout_notice','1');
+        try{K.supabaseConnection?.clearSession?.();}catch(_){}
+        location.reload();
+      },20000);
+      K.loginWatchdogState={startedAt,timeoutMs:20000};
+    },true);
+  }
+
+  function showLoginTimeoutNotice(){
+    if(sessionStorage.getItem('kc_dp_login_timeout_notice')!=='1')return;
+    sessionStorage.removeItem('kc_dp_login_timeout_notice');
+    const tryShow=()=>{
+      const card=document.querySelector('.ux-login-card');
+      const h=card?.querySelector('h1');
+      if(!card||!h)return false;
+      const old=document.getElementById('kcLoginTimeoutNotice');if(old)old.remove();
+      const n=document.createElement('div');
+      n.id='kcLoginTimeoutNotice';
+      n.className='ux-note ux-error';
+      n.textContent='Die Anmeldung hat innerhalb von 20 Sekunden keine Antwort erhalten. Bitte Internetverbindung prüfen und erneut anmelden.';
+      h.insertAdjacentElement('afterend',n);
+      return true;
+    };
+    if(!tryShow()){let n=0;const t=setInterval(()=>{n++;if(tryShow()||n>40)clearInterval(t)},250);}
+  }
+
+  const observer=new MutationObserver(()=>{decorate(document);loginWatchdog();});
+  function start(){decorate(document);loginWatchdog();showLoginTimeoutNotice();observer.observe(document.body,{childList:true,subtree:true,characterData:true});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 
-  K.notificationSafetyUi={version:'0.19.56-preview-guard',parse,human,canDispatch,assertDispatchAllowed,decorate};
+  K.notificationSafetyUi={version:'0.19.56-preview-guard-login-watchdog',parse,human,canDispatch,assertDispatchAllowed,decorate,loginWatchdog};
 })();
