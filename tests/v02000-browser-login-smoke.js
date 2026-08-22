@@ -18,63 +18,69 @@ function assert(cond, msg) {
   console.log('✓', msg);
 }
 
-async function openLogin(browser, routeMode) {
-  checkpoint(`openLogin(${routeMode}) start`);
+async function openLogin(browser, mode) {
+  checkpoint(`openLogin(${mode}) start`);
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/151 Mobile Safari/537.36'
   });
   const page = await context.newPage();
-  const requests = [];
-  await page.route(/https:\/\/[^/]+\.supabase\.co\/.*/, async route => {
-    const url = route.request().url();
-    requests.push(url);
-    if (url.includes('/auth/v1/token?grant_type=password')) {
-      checkpoint(`password token request (${routeMode})`);
-      if (routeMode === 'invalid') {
-        return route.fulfill({
-          status: 400,
-          contentType: 'application/json',
-          body: JSON.stringify({ error_code: 'invalid_credentials', msg: 'Invalid login credentials' })
-        });
+
+  await page.addInitScript(({ mode }) => {
+    const nativeFetch = window.fetch.bind(window);
+    window.__kcSmoke = { mode, tokenCalls: 0, settingsCalls: 0, aborts: 0, urls: [] };
+
+    window.fetch = async function kcSmokeFetch(input, init = {}) {
+      const url = typeof input === 'string' ? input : input?.url || String(input || '');
+      if (!/https:\/\/[^/]+\.supabase\.co\//.test(url)) {
+        return nativeFetch(input, init);
       }
-      if (routeMode === 'hang') {
-        checkpoint('simulated hanging token request entered');
-        await new Promise(r => setTimeout(r, 20000));
-        checkpoint('simulated hanging token request aborting after 20s');
-        try { return await route.abort('timedout'); } catch (_) { return; }
+
+      window.__kcSmoke.urls.push(url);
+
+      if (url.includes('/auth/v1/token?grant_type=password')) {
+        window.__kcSmoke.tokenCalls++;
+        if (mode === 'invalid') {
+          return new Response(JSON.stringify({
+            error_code: 'invalid_credentials',
+            msg: 'Invalid login credentials'
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+
+        if (mode === 'hang') {
+          const signal = init?.signal || (typeof input === 'object' ? input?.signal : null);
+          return new Promise((resolve, reject) => {
+            const failAbort = () => {
+              window.__kcSmoke.aborts++;
+              reject(new DOMException('The operation was aborted.', 'AbortError'));
+            };
+            if (signal?.aborted) return failAbort();
+            if (signal?.addEventListener) signal.addEventListener('abort', failAbort, { once: true });
+          });
+        }
       }
-    }
-    if (url.includes('/auth/v1/settings')) checkpoint(`transport/settings request (${routeMode})`);
-    return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-  });
+
+      if (url.includes('/auth/v1/settings')) {
+        window.__kcSmoke.settingsCalls++;
+      }
+
+      return new Response('{}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    };
+  }, { mode });
+
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 15000 });
-  checkpoint(`openLogin(${routeMode}) ready`);
-  return { context, page, requests };
-}
-
-async function snapshot(page, label) {
-  const state = await page.evaluate(() => {
-    const form = document.querySelector('#uxLoginForm');
-    const button = form?.querySelector('button[type="submit"]');
-    const card = document.querySelector('.ux-login-card');
-    return {
-      bodyClass: document.body.className,
-      formExists: !!form,
-      buttonExists: !!button,
-      buttonText: button?.textContent?.trim() || null,
-      buttonDisabled: !!button?.disabled,
-      cardText: card?.innerText || '',
-      bodyText: document.body?.innerText || ''
-    };
-  });
-  console.log(`STATE ${label}: ${JSON.stringify(state)}`);
-  return state;
+  checkpoint(`openLogin(${mode}) ready`);
+  return { context, page };
 }
 
 async function setPasswordViaDom(page, value) {
-  checkpoint('set password via direct page DOM start');
   const actual = await page.evaluate(nextValue => {
     const el = document.querySelector('#uxPassword');
     if (!el || !el.isConnected || el.disabled) return null;
@@ -85,11 +91,12 @@ async function setPasswordViaDom(page, value) {
     return el.value;
   }, value);
   if (actual !== value) throw new Error(`DOM password input mismatch: ${JSON.stringify(actual)}`);
-  checkpoint('set password via direct page DOM done');
 }
 
-async function nativeSubmit(page) {
-  checkpoint('direct page requestSubmit start');
+async function submit(page) {
+  checkpoint('submit start');
+  await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
+  await setPasswordViaDom(page, 'wrong-password');
   const ok = await page.evaluate(() => {
     const form = document.querySelector('#uxLoginForm');
     const button = form?.querySelector('button[type="submit"]');
@@ -98,39 +105,58 @@ async function nativeSubmit(page) {
     return true;
   });
   if (!ok) throw new Error('Could not requestSubmit login form');
-  checkpoint('direct page requestSubmit done');
+  checkpoint('submit dispatched');
 }
 
-async function submit(page) {
-  checkpoint('submit start');
-  await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
-  await setPasswordViaDom(page, 'wrong-password');
-  await nativeSubmit(page);
+async function waitBrowserCondition(page, kind, timeoutMs) {
+  return page.evaluate(({ kind, timeoutMs }) => new Promise(resolve => {
+    const started = performance.now();
+    let timer = null;
+    let observer = null;
+
+    const snapshot = () => {
+      const form = document.querySelector('#uxLoginForm');
+      const button = form?.querySelector('button[type="submit"]');
+      const card = document.querySelector('.ux-login-card');
+      const cardText = card?.innerText || '';
+      const bodyText = document.body?.innerText || '';
+      const text = `${cardText}\n${bodyText}`;
+      return {
+        formExists: !!form,
+        buttonExists: !!button,
+        buttonText: button?.textContent?.trim() || null,
+        buttonDisabled: !!button?.disabled,
+        cardText,
+        bodyText,
+        friendly: /E-Mail-Adresse oder Passwort ist falsch/.test(text),
+        recovered: !!button && button.textContent.trim() === 'Anmelden' && !button.disabled
+      };
+    };
+
+    const done = state => {
+      if (timer) clearTimeout(timer);
+      if (observer) observer.disconnect();
+      resolve({ ...state, elapsed: Math.round(performance.now() - started), timedOut: false });
+    };
+
+    const check = () => {
+      const state = snapshot();
+      if (kind === 'friendly' && state.friendly) return done(state);
+      if (kind === 'recovered' && state.recovered) return done(state);
+    };
+
+    observer = new MutationObserver(check);
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+    timer = setTimeout(() => {
+      observer.disconnect();
+      resolve({ ...snapshot(), elapsed: Math.round(performance.now() - started), timedOut: true });
+    }, timeoutMs);
+    check();
+  }), { kind, timeoutMs });
 }
 
-async function waitForFriendly(page, timeoutMs) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const state = await snapshot(page, `friendly +${Date.now() - started}ms`);
-    const txt = `${state.cardText}\n${state.bodyText}`;
-    if (/E-Mail-Adresse oder Passwort ist falsch/.test(txt)) {
-      return { state, elapsed: Date.now() - started };
-    }
-    await page.waitForTimeout(150);
-  }
-  return { state: await snapshot(page, 'friendly timeout'), elapsed: Date.now() - started };
-}
-
-async function waitForRecoveredButton(page, timeoutMs) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const state = await snapshot(page, `recovery +${Date.now() - started}ms`);
-    if (state.buttonExists && state.buttonText === 'Anmelden' && !state.buttonDisabled) {
-      return { state, recovered: true, elapsed: Date.now() - started };
-    }
-    await page.waitForTimeout(150);
-  }
-  return { state: await snapshot(page, 'recovery timeout'), recovered: false, elapsed: Date.now() - started };
+async function smokeStats(page) {
+  return page.evaluate(() => ({ ...(window.__kcSmoke || {}) }));
 }
 
 (async () => {
@@ -139,38 +165,43 @@ async function waitForRecoveredButton(page, timeoutMs) {
   try {
     {
       checkpoint('scenario invalid credentials start');
-      const { context, page, requests } = await openLogin(browser, 'invalid');
+      const { context, page } = await openLogin(browser, 'invalid');
       assert(await page.locator('body').evaluate(el => el.classList.contains('ux-login')), 'Android viewport starts in login mode');
       assert(await page.locator('#uxLoginForm').isVisible(), 'Login form is visible');
       await submit(page);
 
-      const friendly = await waitForFriendly(page, 5000);
-      assert(/E-Mail-Adresse oder Passwort ist falsch/.test(`${friendly.state.cardText}\n${friendly.state.bodyText}`), `Invalid credentials return a friendly login error (${friendly.elapsed} ms)`);
+      const friendly = await waitBrowserCondition(page, 'friendly', 5000);
+      console.log(`INVALID friendly state: ${JSON.stringify(friendly)}`);
+      assert(!friendly.timedOut && friendly.friendly, `Invalid credentials return a friendly login error (${friendly.elapsed} ms)`);
 
-      const recovery = await waitForRecoveredButton(page, 3000);
-      assert(recovery.recovered, `Login button recovers after auth error (${recovery.elapsed} ms after friendly error)`);
-      assert(recovery.state.buttonText !== 'Anmeldung läuft…' && !recovery.state.buttonDisabled, 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
+      const recovery = await waitBrowserCondition(page, 'recovered', 3000);
+      console.log(`INVALID recovery state: ${JSON.stringify(recovery)}`);
+      assert(!recovery.timedOut && recovery.recovered, `Login button recovers after auth error (${recovery.elapsed} ms after friendly error)`);
+      assert(recovery.buttonText !== 'Anmeldung läuft…' && !recovery.buttonDisabled, 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
 
-      const tokenCalls = requests.filter(u => u.includes('/auth/v1/token?grant_type=password')).length;
-      assert(tokenCalls === 1, `Invalid-credential path issues one password-auth request (${tokenCalls})`);
+      const stats = await smokeStats(page);
+      assert(stats.tokenCalls === 1, `Invalid-credential path issues one password-auth request (${stats.tokenCalls})`);
       await context.close();
       checkpoint('scenario invalid credentials done');
     }
 
     {
       checkpoint('scenario hanging transport start');
-      const { context, page, requests } = await openLogin(browser, 'hang');
+      const { context, page } = await openLogin(browser, 'hang');
       const started = Date.now();
       await submit(page);
-      const recovery = await waitForRecoveredButton(page, 19000);
+      const recovery = await waitBrowserCondition(page, 'recovered', 19000);
       const elapsed = Date.now() - started;
-      assert(recovery.recovered, `Hanging login returns control in under 19s (${elapsed} ms)`);
+      console.log(`HANG recovery state: ${JSON.stringify(recovery)}`);
+      assert(!recovery.timedOut && recovery.recovered, `Hanging login returns control in under 19s (${elapsed} ms)`);
       assert(elapsed < 19000, `Hanging login stays below 19s (${elapsed} ms)`);
-      assert(recovery.state.buttonText !== 'Anmeldung läuft…' && !recovery.state.buttonDisabled, 'Hanging transport does not leave login UI stuck');
-      const tokenCalls = requests.filter(u => u.includes('/auth/v1/token?grant_type=password')).length;
-      assert(tokenCalls === 1, `Only one password-auth request is issued (${tokenCalls})`);
-      const diagCalls = requests.filter(u => u.includes('/auth/v1/settings?kc_dp_transport=')).length;
-      assert(diagCalls === 0, `Network-timeout path does not start a second blocking transport diagnosis (${diagCalls})`);
+      assert(recovery.buttonText !== 'Anmeldung läuft…' && !recovery.buttonDisabled, 'Hanging transport does not leave login UI stuck');
+
+      const stats = await smokeStats(page);
+      console.log(`HANG fetch stats: ${JSON.stringify(stats)}`);
+      assert(stats.tokenCalls === 1, `Only one password-auth request is issued (${stats.tokenCalls})`);
+      assert(stats.settingsCalls === 0, `Network-timeout path does not start a second blocking transport diagnosis (${stats.settingsCalls})`);
+      assert(stats.aborts >= 1, `Supabase password request is actually aborted by the timeout guard (${stats.aborts})`);
       await context.close();
       checkpoint('scenario hanging transport done');
     }
