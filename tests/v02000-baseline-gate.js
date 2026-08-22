@@ -11,6 +11,8 @@ const app=fs.readFileSync(path.join(root,'src','ui','app.js'),'utf8');
 const storage=fs.readFileSync(path.join(root,'src','adapters','storage.js'),'utf8');
 const sync=fs.readFileSync(path.join(root,'src','adapters','sync.js'),'utf8');
 const managerAutoSync=fs.readFileSync(path.join(root,'src','core','manager-auto-sync.js'),'utf8');
+const diagnosticsCenter=fs.readFileSync(path.join(root,'src','ui','diagnostics-center.js'),'utf8');
+const diagnosticsHistory=fs.readFileSync(path.join(root,'src','ui','diagnostics-history-view.js'),'utf8');
 function ok(cond,msg){if(!cond){console.error('FAIL:',msg);process.exitCode=1}else console.log('OK:',msg)}
 ok(fs.existsSync(path.join(root,'index.html')),'V0.19.54 Baseline vorhanden');
 ok(index.includes('KC DP2 V0.19.54'),'Release-Identität V0.19.54');
@@ -47,6 +49,9 @@ ok(managerAutoSync.includes('runBackground'),'Manager-Sync besitzt Background-Di
 ok(managerAutoSync.includes('setTimeout(()=>{Promise.resolve(run(reason))'),'Manager-Sync wird nach Auth asynchron gestartet');
 ok(!managerAutoSync.includes('await run(reason);return out'),'Login wartet nicht mehr auf Manager-Sync');
 ok(managerAutoSync.includes('externe Synchronisation darf Authentifizierung/Start nie blockieren'),'Local-first Recovery-Regel dokumentiert');
+ok(diagnosticsCenter.includes("diagnostics-history-view.js"),'Diagnosezentrum lädt Historien-Companion');
+ok(diagnosticsHistory.includes("data-kc-diag-scope=\"open\"")&&diagnosticsHistory.includes("data-kc-diag-scope=\"history\"")&&diagnosticsHistory.includes("data-kc-diag-scope=\"tests\""),'Diagnose trennt Offen, Historie und Tests');
+ok(!diagnosticsHistory.includes('memberAccess')&&!diagnosticsHistory.includes('storage.')&&!diagnosticsHistory.includes('K.sync'),'Diagnose-Historie greift nicht in Auth, Storage oder Sync ein');
 ok(!index.includes('notification-channel-safety.js'),'Baseline enthält noch keine nachträgliche Notification-Safety-Schicht');
 ok(!index.includes('notification-channel-settings.js'),'Baseline enthält noch keine nachträgliche Notification-Settings-Schicht');
 ok(!index.includes('email-center.js'),'Baseline lädt keinen Mail-Admin in den DP2-Kern');
