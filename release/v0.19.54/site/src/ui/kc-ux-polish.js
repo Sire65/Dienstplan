@@ -13,7 +13,8 @@
     const bad=sup?.classList.contains('error')&&idb?.classList.contains('error');
     const warn=sup?.classList.contains('error')&&!bad;
     x.classList.toggle('bad',!!bad);x.classList.toggle('warn',!!warn);
-    x.innerHTML=bad?'<span>⚠</span><span>Speicher prüfen</span>':warn?'<span>●</span><span>Lokal gespeichert</span>':'<span>✓</span><span>Daten gespeichert</span>';
+    const html=bad?'<span>⚠</span><span>Speicher prüfen</span>':warn?'<span>●</span><span>Lokal gespeichert</span>':'<span>✓</span><span>Daten gespeichert</span>';
+    if(x.innerHTML!==html)x.innerHTML=html;
   }
   function roleUx(){
     const r=role();document.body.classList.toggle('kc-tech-simple',!ADMIN.has(r));
@@ -47,7 +48,8 @@
     return true;
   }
   function apply(){roleUx();humanize();updateSaveState()}
-  const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
+  let scheduled=false;
+  const obs=new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;apply();});});
   function boot(){apply();loadStartChoice();loadMobileLoginInput();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
