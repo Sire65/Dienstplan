@@ -29,10 +29,21 @@
     const m=document.getElementById('messageText');if(m&&/kompakte Plansteuerung|V0\.17\.10|V0\.19\.42|V0\.19\.51|V0\.19\.52|V0\.19\.53/.test(m.textContent||''))m.textContent='KC DP2 V0.19.54 – Dienstplanung bereit.';
     document.title='KC DP2 V0.19.54 · Köcheclub Werne';
   }
+  function loadStartChoice(){
+    if(typeof document==='undefined')return false;
+    if(!document.getElementById('kcStartChoiceCss')){
+      const l=document.createElement('link');l.id='kcStartChoiceCss';l.rel='stylesheet';l.href='src/ui/start-choice.css?v=0.20.0-p14';document.head.appendChild(l);
+    }
+    if(!document.getElementById('kcStartChoiceJs')){
+      const s=document.createElement('script');s.id='kcStartChoiceJs';s.src='src/ui/start-choice.js?v=0.20.0-p14';s.async=false;document.head.appendChild(s);
+    }
+    return true;
+  }
   function apply(){roleUx();humanize();updateSaveState()}
   const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
-  else{apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
+  function boot(){apply();loadStartChoice();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.54',apply,updateSaveState};
+  K.kcUxPolish={version:'0.19.54',apply,updateSaveState,loadStartChoice};
 })();
