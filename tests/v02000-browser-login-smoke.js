@@ -108,17 +108,29 @@ async function submit(page) {
   await nativeSubmit(page);
 }
 
-async function waitForOutcome(page, timeoutMs) {
+async function waitForFriendly(page, timeoutMs) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    const state = await snapshot(page, `outcome +${Date.now() - started}ms`);
+    const state = await snapshot(page, `friendly +${Date.now() - started}ms`);
     const txt = `${state.cardText}\n${state.bodyText}`;
-    const friendly = /E-Mail-Adresse oder Passwort ist falsch/.test(txt);
-    const recovered = state.buttonExists && state.buttonText === 'Anmelden' && !state.buttonDisabled && !/Anmeldung läuft…/.test(txt);
-    if (friendly || recovered) return { state, friendly, recovered, elapsed: Date.now() - started };
-    await page.waitForTimeout(250);
+    if (/E-Mail-Adresse oder Passwort ist falsch/.test(txt)) {
+      return { state, elapsed: Date.now() - started };
+    }
+    await page.waitForTimeout(150);
   }
-  return { state: await snapshot(page, 'outcome timeout'), friendly: false, recovered: false, elapsed: Date.now() - started };
+  return { state: await snapshot(page, 'friendly timeout'), elapsed: Date.now() - started };
+}
+
+async function waitForRecoveredButton(page, timeoutMs) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const state = await snapshot(page, `recovery +${Date.now() - started}ms`);
+    if (state.buttonExists && state.buttonText === 'Anmelden' && !state.buttonDisabled) {
+      return { state, recovered: true, elapsed: Date.now() - started };
+    }
+    await page.waitForTimeout(150);
+  }
+  return { state: await snapshot(page, 'recovery timeout'), recovered: false, elapsed: Date.now() - started };
 }
 
 (async () => {
@@ -131,9 +143,14 @@ async function waitForOutcome(page, timeoutMs) {
       assert(await page.locator('body').evaluate(el => el.classList.contains('ux-login')), 'Android viewport starts in login mode');
       assert(await page.locator('#uxLoginForm').isVisible(), 'Login form is visible');
       await submit(page);
-      const outcome = await waitForOutcome(page, 8000);
-      assert(outcome.friendly, `Invalid credentials return a friendly login error (${outcome.elapsed} ms)`);
-      assert(!/Anmeldung läuft…/.test(`${outcome.state.cardText}\n${outcome.state.bodyText}`), 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
+
+      const friendly = await waitForFriendly(page, 5000);
+      assert(/E-Mail-Adresse oder Passwort ist falsch/.test(`${friendly.state.cardText}\n${friendly.state.bodyText}`), `Invalid credentials return a friendly login error (${friendly.elapsed} ms)`);
+
+      const recovery = await waitForRecoveredButton(page, 3000);
+      assert(recovery.recovered, `Login button recovers after auth error (${recovery.elapsed} ms after friendly error)`);
+      assert(recovery.state.buttonText !== 'Anmeldung läuft…' && !recovery.state.buttonDisabled, 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
+
       const tokenCalls = requests.filter(u => u.includes('/auth/v1/token?grant_type=password')).length;
       assert(tokenCalls === 1, `Invalid-credential path issues one password-auth request (${tokenCalls})`);
       await context.close();
@@ -145,11 +162,11 @@ async function waitForOutcome(page, timeoutMs) {
       const { context, page, requests } = await openLogin(browser, 'hang');
       const started = Date.now();
       await submit(page);
-      const outcome = await waitForOutcome(page, 19000);
+      const recovery = await waitForRecoveredButton(page, 19000);
       const elapsed = Date.now() - started;
-      assert(outcome.recovered, `Hanging login returns control in under 19s (${elapsed} ms)`);
+      assert(recovery.recovered, `Hanging login returns control in under 19s (${elapsed} ms)`);
       assert(elapsed < 19000, `Hanging login stays below 19s (${elapsed} ms)`);
-      assert(!/Anmeldung läuft…/.test(`${outcome.state.cardText}\n${outcome.state.bodyText}`), 'Hanging transport does not leave login UI stuck');
+      assert(recovery.state.buttonText !== 'Anmeldung läuft…' && !recovery.state.buttonDisabled, 'Hanging transport does not leave login UI stuck');
       const tokenCalls = requests.filter(u => u.includes('/auth/v1/token?grant_type=password')).length;
       assert(tokenCalls === 1, `Only one password-auth request is issued (${tokenCalls})`);
       const diagCalls = requests.filter(u => u.includes('/auth/v1/settings?kc_dp_transport=')).length;
