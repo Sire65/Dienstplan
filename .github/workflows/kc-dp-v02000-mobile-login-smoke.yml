@@ -1,0 +1,48 @@
+name: KC DP2 V0.20.0 Mobile Login Smoke
+
+on:
+  pull_request:
+    branches:
+      - recovery/dp2-v02000
+    paths:
+      - 'release/v0.19.54/site/**'
+      - 'tests/v02000-mobile-login-smoke.js'
+      - '.github/workflows/kc-dp-v02000-mobile-login-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-login-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Prepare Playwright browser
+        run: |
+          npm install --no-save playwright@1.55.0
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Start exact V0.20 recovery site locally
+        run: |
+          SITE="release/v0.19.54/site"
+          test -f "$SITE/index.html"
+          cd "$SITE"
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-v02000-http.log 2>&1 &
+          echo $! > /tmp/kcdp-v02000-http.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/kcdp-v02000-http.log
+          exit 1
+      - name: Run 390x844 recovery login smoke
+        run: node tests/v02000-mobile-login-smoke.js
