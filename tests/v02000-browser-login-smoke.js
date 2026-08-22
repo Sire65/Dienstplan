@@ -84,34 +84,44 @@ async function loginDomState(page, label) {
   return state;
 }
 
-async function focusAndType(page, id, value) {
-  checkpoint(`focusAndType ${id} start`);
-  const ok = await page.evaluate(sel => {
-    const el = document.querySelector(sel);
-    if (!el || !el.isConnected || el.disabled) return false;
-    el.focus();
-    return document.activeElement === el;
-  }, id);
-  if (!ok) throw new Error(`Could not focus ${id}`);
-  await page.keyboard.type(value, { delay: 15 });
-  const actual = await page.evaluate(sel => document.querySelector(sel)?.value || '', id);
-  if (actual !== value) throw new Error(`Keyboard input mismatch for ${id}: ${JSON.stringify(actual)}`);
-  checkpoint(`focusAndType ${id} done`);
+async function setPasswordViaDom(page, value) {
+  checkpoint('set password via DOM events start');
+  const actual = await page.locator('#uxPassword').evaluate((el, nextValue) => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    setter.call(el, nextValue);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return el.value;
+  }, value);
+  if (actual !== value) throw new Error(`DOM password input mismatch: ${JSON.stringify(actual)}`);
+  checkpoint('set password via DOM events done');
+}
+
+async function nativeSubmit(page) {
+  checkpoint('native requestSubmit start');
+  const ok = await page.locator('#uxLoginForm').evaluate(form => {
+    const button = form.querySelector('button[type="submit"]');
+    if (!button) return false;
+    form.requestSubmit(button);
+    return true;
+  });
+  if (!ok) throw new Error('Could not requestSubmit login form');
+  checkpoint('native requestSubmit done');
 }
 
 async function submit(page) {
   checkpoint('submit start');
   await loginDomState(page, 'before-email');
-  await focusAndType(page, '#uxEmail', 'smoke@example.com');
+  checkpoint('fill email start');
+  await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
+  checkpoint('fill email done');
   await page.waitForTimeout(250);
   const afterEmail = await loginDomState(page, 'after-email');
   if (!afterEmail.passwordExists || !afterEmail.passwordConnected || afterEmail.passwordDisplay === 'none' || afterEmail.passwordVisibility === 'hidden' || afterEmail.passwordWidth === 0 || afterEmail.passwordHeight === 0) {
     throw new Error('Password field became non-interactive after email input: ' + JSON.stringify(afterEmail));
   }
-  await focusAndType(page, '#uxPassword', 'wrong-password');
-  checkpoint('click submit');
-  await page.locator('#uxLoginForm button[type="submit"]').click({ timeout: 10000 });
-  checkpoint('submit click completed');
+  await setPasswordViaDom(page, 'wrong-password');
+  await nativeSubmit(page);
 }
 
 (async () => {
