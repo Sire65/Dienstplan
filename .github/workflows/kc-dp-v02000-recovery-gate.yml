@@ -25,6 +25,8 @@ jobs:
         run: node tests/v02000-mobile-day-smoke.js
       - name: V H B behavior gate
         run: node tests/v02000-vhb-behavior-gate.js
+      - name: Planner interactions gate
+        run: node tests/v02000-planner-interactions-gate.js
       - name: Syntax check stable release
         shell: bash
         run: |
