@@ -33,6 +33,8 @@ jobs:
         run: node tests/v02000-communication-bridge-gate.js
       - name: KC Communication status gate
         run: node tests/v02000-communication-status-gate.js
+      - name: Supabase timeout behavior gate
+        run: node tests/v02000-supabase-timeout-gate.js
       - name: Syntax check stable release
         shell: bash
         run: |
