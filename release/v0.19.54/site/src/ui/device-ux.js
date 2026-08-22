@@ -19,7 +19,6 @@
     function armAfterLogin(){
       if(released||document.body?.classList.contains('ux-login'))return;
       if(releaseTimer)return;
-      // Genug Abstand, damit Startansicht und erste Bedienung Vorrang haben.
       releaseTimer=setTimeout(()=>{
         if('requestIdleCallback'in window)requestIdleCallback(reallyRelease,{timeout:30000});
         else reallyRelease();
@@ -80,17 +79,11 @@
   }
   function watchPhone(){
     if(postLoginStarted)return;postLoginStarted=true;
-    loadPhoneDayAssets();
-    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},120);},{passive:true});
-    window.addEventListener('orientationchange',()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},{passive:true});
-  }
-  function startPhoneAfterLogin(){
-    if(!document.body?.classList.contains('ux-login'))return watchPhone();
-    const o=new MutationObserver(()=>{if(!document.body.classList.contains('ux-login')){o.disconnect();watchPhone();}});
-    o.observe(document.body,{attributes:true,attributeFilter:['class']});
+    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(K.phoneDayUx)K.phoneDayUx.refresh?.();},120);},{passive:true});
+    window.addEventListener('orientationchange',()=>{K.phoneDayUx?.refresh?.();},{passive:true});
   }
   K.deviceUX={version:'0.20.0-recovery-p19',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets,startChoiceAutoLoad:false};
-  // Recovery-Regel: Startauswahl bleibt vorhanden, wird aber NICHT automatisch geladen.
-  // P19: Mobile-Day-Fachassets werden erst nach erfolgreichem Login geladen.
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startPhoneAfterLogin,{once:true});else startPhoneAfterLogin();
+  // P23: Mobile-Day wird nicht beim Rollenstart vorgeladen. Start-Choice/openLegacy
+  // aktiviert die Handy-Tagesansicht erst dann, wenn der Tagesplan wirklich geöffnet wird.
+  watchPhone();
 })();

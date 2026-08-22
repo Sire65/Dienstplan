@@ -26,11 +26,16 @@ function apply(){
  K.memberAccess.state.membership=JSON.parse(JSON.stringify(m));
  K.memberAccess.state.remember=!!x.remember;
  K.memberAccess.state.lastError=null;
- K.session?.adoptAuthenticatedUser?.({personId:m.person_id,role,displayName,provider:'supabase-bootstrap'});
+ try{
+  K.session?.adoptAuthenticatedUser?.({personId:m.person_id,role,displayName,provider:'supabase'});
+ }catch(_){
+  if(K.session?.state){K.session.state.mode='authenticated';K.session.state.provider='supabase';K.session.state.lastActivityAt=new Date().toISOString();}
+ }
+ Promise.resolve(K.memberAccess.setRememberHint?.(!!x.remember)).catch(()=>{});
  K.__bootstrapRemember=!!x.remember;
  K.__bootstrapSessionApplied=true;
  return {ok:true,personId:m.person_id,role};
 }
-K.bootstrapSession={version:'0.20.0-p21',take,apply};
+K.bootstrapSession={version:'0.20.0-p23',take,apply};
 K.__bootstrapSessionResult=apply();
 })();
