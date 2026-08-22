@@ -30,10 +30,16 @@ const assert = require('assert');
   await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess,{timeout:20000});
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
 
-  const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
-  if(await details.count())await details.evaluate(el=>{el.open=true;});
-  await page.locator('#uxTestRole').selectOption('admin');
-  await page.locator('#uxTestLogin').click();
+  await page.evaluate(()=>{
+    const details=document.querySelector('#uxLocalTest')?.closest('details');
+    if(details)details.open=true;
+    const role=document.getElementById('uxTestRole');
+    const button=document.getElementById('uxTestLogin');
+    if(!role||!button)throw new Error('Lokaler Prüfzugang ist nicht vollständig gerendert');
+    role.value='admin';
+    role.dispatchEvent(new Event('change',{bubbles:true}));
+    button.click();
+  });
 
   await page.waitForSelector('#unlockSecret',{timeout:10000});
   await page.locator('#unlockSecret').fill('KC-DP2-Recovery-Mobile-Smoke-2026!');
