@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-const state={version:'0.20.0-p18',applied:0,lastAt:null};
+const state={version:'0.20.0-p23',applied:0,lastAt:null,observing:true};
 function normalize(input,{type,name,autocomplete,inputmode}={}){
   if(!input)return false;
   if(input.dataset.kcNativeLoginReady==='1')return true;
@@ -25,8 +25,11 @@ function apply(){
   normalize(password,{type:'password',name:'password',autocomplete:'current-password'});
   state.applied++;state.lastAt=new Date().toISOString();return true;
 }
-const observer=new MutationObserver(()=>{if(document.getElementById('uxEmail')||document.getElementById('uxPassword'))apply();});
+const observer=new MutationObserver(()=>{
+  if(document.getElementById('uxEmail')||document.getElementById('uxPassword')){apply();return;}
+  if(!document.body?.classList.contains('ux-login')){observer.disconnect();state.observing=false;}
+});
 if(document.documentElement)observer.observe(document.documentElement,{childList:true,subtree:true});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply,{once:true});else apply();
-window.KCDP=window.KCDP||{};window.KCDP.mobileLoginInput={state,apply};
+window.KCDP=window.KCDP||{};window.KCDP.mobileLoginInput={state,apply,disconnect(){observer.disconnect();state.observing=false;}};
 })();
