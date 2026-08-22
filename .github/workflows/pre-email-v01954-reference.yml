@@ -1,0 +1,37 @@
+name: KC DP2 Pre-Email V0.19.54 Reference
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/pre-email-v01954-reference.js'
+      - '.github/workflows/pre-email-v01954-reference.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Prepare Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Start pre-email KC DP2 V0.19.54
+        run: |
+          test -f release/v0.19.54/site/index.html
+          cd release/v0.19.54/site
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/kcdp-v01954.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/kcdp-v01954.log
+          exit 1
+      - name: Run pre-email mobile reference
+        run: node tests/pre-email-v01954-reference.js
