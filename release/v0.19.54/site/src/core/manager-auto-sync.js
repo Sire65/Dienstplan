@@ -1,6 +1,6 @@
 (function(){
   const K=window.KCDP=window.KCDP||{};
-  const state={status:'idle',inFlight:false,lastAttemptAt:null,lastSuccessAt:null,lastReason:null,lastError:null,lastResult:null,persisted:false};
+  const state={status:'idle',inFlight:false,lastAttemptAt:null,lastSuccessAt:null,lastReason:null,lastError:null,lastResult:null,persisted:false,backgroundRuns:0};
   let running=null;
 
   function enabled(){return K.integrationConfig?.pcManager?.autoSync===true;}
@@ -16,7 +16,7 @@
   function clone(v){try{return JSON.parse(JSON.stringify(v));}catch(_){return null;}}
   function markSkipped(reason,code){state.status='skipped';state.lastReason=reason;state.lastError=null;state.lastResult={ok:false,skipped:true,code,reason};return clone(state.lastResult);}
 
-  async function run(reason='authenticated'){
+  async function run(reason='background'){
     if(running)return running;
     const gate=canRun();
     if(!gate.ok)return markSkipped(reason,gate.code);
@@ -48,9 +48,20 @@
     return running;
   }
 
+  function runBackground(reason){
+    state.backgroundRuns++;
+    // Recovery-Regel: externe Synchronisation darf Authentifizierung/Start nie blockieren.
+    setTimeout(()=>{Promise.resolve(run(reason)).catch(e=>{state.status='error';state.lastError=e?.message||String(e);});},0);
+    return {scheduled:true,reason};
+  }
+
   function wrapAsync(name,reason){
     const api=K.memberAccess,original=api?.[name];if(typeof original!=='function'||original.__kcManagerAutoSync)return false;
-    const wrapped=async function(...args){const out=await original.apply(this,args);await run(reason);return out;};
+    const wrapped=async function(...args){
+      const out=await original.apply(this,args);
+      runBackground(reason);
+      return out;
+    };
     wrapped.__kcManagerAutoSync=true;wrapped.__kcOriginal=original;api[name]=wrapped;return true;
   }
   function install(){
@@ -58,6 +69,6 @@
     state.status=wrapped?'armed':state.status;return wrapped;
   }
 
-  K.managerAutoSync={version:'0.19.42',state,enabled,authenticated,permitted,canRun,run,install};
+  K.managerAutoSync={version:'0.20.0-recovery-2',state,enabled,authenticated,permitted,canRun,run,runBackground,install};
   install();
 })();
