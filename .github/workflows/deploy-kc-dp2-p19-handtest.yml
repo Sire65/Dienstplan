@@ -1,4 +1,4 @@
-name: KC DP2 P19 Isolated Handtest Deploy
+name: KC DP2 P20 Bootstrap Handtest Deploy
 
 on:
   push:
@@ -59,6 +59,11 @@ jobs:
         with:
           ref: d7b9eb6d7f0c4011f4e5497f7e5c264b025ab36f
           path: p19
+      - name: Checkout P20
+        uses: actions/checkout@v6
+        with:
+          ref: c30c13f71bd6c22e4be91ba7742300c1d7fc6aa9
+          path: p20
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -75,20 +80,20 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Verify P19 recovery candidate
-        working-directory: p19
+      - name: Verify P20 bootstrap candidate
+        working-directory: p20
         shell: bash
         run: |
           set -euo pipefail
           node tests/v02000-device-key-gate.js
           node tests/v02000-mobile-login-input-gate.js
           node tests/v02000-login-performance-gate.js
-          test -f release/v0.19.54/site/index.html
-          grep -q "0.20.0-recovery-p19" release/v0.19.54/site/src/ui/device-ux.js
-          grep -q "serviceWorkerDeferred:true" release/v0.19.54/site/src/ui/device-ux.js
+          node tests/v02000-login-bootstrap-gate.js
+          test -f release/v0.19.54/site/login-bootstrap.html
+          test -f release/v0.19.54/site/src/core/bootstrap-session.js
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
 
-      - name: Build complete Pages artifact with P19
+      - name: Build complete Pages artifact with P20
         shell: bash
         run: |
           set -euo pipefail
@@ -112,18 +117,19 @@ jobs:
 
           mkdir -p dist/rc-v02000-p16
           cp -a p16/release/v0.19.54/site/. dist/rc-v02000-p16/
-
           mkdir -p dist/rc-v02000-p16-isolated
           cp -a p16/release/v0.19.54/site/. dist/rc-v02000-p16-isolated/
-
           mkdir -p dist/rc-v02000-p17-isolated
           cp -a p17/release/v0.19.54/site/. dist/rc-v02000-p17-isolated/
-
           mkdir -p dist/rc-v02000-p18-isolated
           cp -a p18/release/v0.19.54/site/. dist/rc-v02000-p18-isolated/
-
           mkdir -p dist/rc-v02000-p19-isolated
           cp -a p19/release/v0.19.54/site/. dist/rc-v02000-p19-isolated/
+
+          mkdir -p dist/rc-v02000-p20-bootstrap
+          cp -a p20/release/v0.19.54/site/. dist/rc-v02000-p20-bootstrap/
+          cp dist/rc-v02000-p20-bootstrap/index.html dist/rc-v02000-p20-bootstrap/app.html
+          cp dist/rc-v02000-p20-bootstrap/login-bootstrap.html dist/rc-v02000-p20-bootstrap/index.html
 
           node <<'NODE'
           const fs=require('fs');
@@ -131,7 +137,8 @@ jobs:
             ['p16-isolated','P16_ISOLATED_1'],
             ['p17-isolated','P17_ISOLATED_1'],
             ['p18-isolated','P18_ISOLATED_1'],
-            ['p19-isolated','P19_ISOLATED_1']
+            ['p19-isolated','P19_ISOLATED_1'],
+            ['p20-bootstrap','P20_BOOTSTRAP_1']
           ];
           for(const [folder,suffix] of variants){
             const base=`dist/rc-v02000-${folder}`;
@@ -146,27 +153,33 @@ jobs:
             b=b.replace("DEVICE_DB='KC_DP_DEVICE_KEY_V1'",`DEVICE_DB='KC_DP_DEVICE_KEY_${suffix}'`);
             fs.writeFileSync(backup,b);
           }
+
+          const app='dist/rc-v02000-p20-bootstrap/app.html';
+          let html=fs.readFileSync(app,'utf8');
+          const marker='<script src="src/adapters/supabase-provider.js?v=0.19.37"></script>';
+          if(!html.includes(marker)) throw new Error('P20 app Supabase marker missing');
+          html=html.replace(marker,marker+'<script src="src/core/bootstrap-session.js?v=0.20.0-p20"></script>');
+          fs.writeFileSync(app,html);
           NODE
 
           printf '%s\n' \
-            'candidate=0.20.0-p19-isolated-handtest' \
-            'source=d7b9eb6d7f0c4011f4e5497f7e5c264b025ab36f' \
-            'storage=KC_DP_SECURE_CANDIDATE_P19_ISOLATED_1' \
-            'device_key_db=KC_DP_DEVICE_KEY_P19_ISOLATED_1' \
-            'purpose=mobile-login-performance-handtest' > dist/rc-v02000-p19-isolated/P19_ISOLATED_BUILD.txt
+            'candidate=0.20.0-p20-bootstrap-handtest' \
+            'source=c30c13f71bd6c22e4be91ba7742300c1d7fc6aa9' \
+            'entry=index.html lightweight bootstrap' \
+            'app=app.html full runtime after authentication' \
+            'storage=KC_DP_SECURE_CANDIDATE_P20_BOOTSTRAP_1' \
+            'device_key_db=KC_DP_DEVICE_KEY_P20_BOOTSTRAP_1' > dist/rc-v02000-p20-bootstrap/P20_BUILD.txt
 
           test -f dist/index.html
-          test -f dist/handtest-v01955/index.html
-          test -f dist/stable-v01954/index.html
-          test -f dist/rc-v02000/index.html
-          test -f dist/rc-v02000-p16/index.html
-          test -f dist/rc-v02000-p16-isolated/index.html
-          test -f dist/rc-v02000-p17-isolated/index.html
-          test -f dist/rc-v02000-p18-isolated/index.html
           test -f dist/rc-v02000-p19-isolated/index.html
-          grep -q "KC_DP_SECURE_CANDIDATE_P19_ISOLATED_1" dist/rc-v02000-p19-isolated/src/adapters/storage.js
-          grep -q "KC_DP_DEVICE_KEY_P19_ISOLATED_1" dist/rc-v02000-p19-isolated/src/adapters/backup.js
-          grep -q "0.20.0-recovery-p19" dist/rc-v02000-p19-isolated/src/ui/device-ux.js
+          test -f dist/rc-v02000-p20-bootstrap/index.html
+          test -f dist/rc-v02000-p20-bootstrap/app.html
+          grep -q 'Schnellstart P20' dist/rc-v02000-p20-bootstrap/index.html
+          ! grep -q 'planning.js' dist/rc-v02000-p20-bootstrap/index.html
+          ! grep -q 'service-worker.js' dist/rc-v02000-p20-bootstrap/index.html
+          grep -q 'bootstrap-session.js?v=0.20.0-p20' dist/rc-v02000-p20-bootstrap/app.html
+          grep -q 'KC_DP_SECURE_CANDIDATE_P20_BOOTSTRAP_1' dist/rc-v02000-p20-bootstrap/src/adapters/storage.js
+          grep -q 'KC_DP_DEVICE_KEY_P20_BOOTSTRAP_1' dist/rc-v02000-p20-bootstrap/src/adapters/backup.js
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
