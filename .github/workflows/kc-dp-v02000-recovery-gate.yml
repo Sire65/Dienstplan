@@ -1,0 +1,34 @@
+name: KC DP2 V0.20.0 Recovery Gate
+
+on:
+  push:
+    branches:
+      - recovery/dp2-v02000
+  pull_request:
+    branches:
+      - recovery/dp2-v02000
+  workflow_dispatch:
+
+jobs:
+  recovery-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Baseline gate
+        run: node tests/v02000-baseline-gate.js
+      - name: Syntax check stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="release/v0.19.54/site"
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$ROOT" -type f -name '*.js' -print0)
+      - name: Recovery architecture guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f docs/KC-DP2-V02000-RECOVERY.md
+          grep -q "Sire65/KC-Communication" docs/KC-DP2-V02000-RECOVERY.md
+          grep -q "DP2 muss ohne Kommunikationsmodul starten" docs/KC-DP2-V02000-RECOVERY.md
