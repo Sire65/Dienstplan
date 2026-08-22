@@ -21,7 +21,7 @@
 <button id="submit" type="submit">Anmelden</button>
 <div id="status" class="status" role="status" aria-live="polite">Bereit.</div>
 </form>
-<div class="small">Schnellstart P20 · vor der Anmeldung werden keine DP2-Fachmodule geladen.</div>
+<div class="small">Schnellstart P21 · Anmeldung und Rollenübergabe vor dem DP2-Start.</div>
 </main>
 <script>
 (()=>{
@@ -51,9 +51,10 @@ form.addEventListener('submit',async e=>{
   if(!session?.access_token||!session?.user?.id)throw new Error('Supabase hat keine gültige Sitzung geliefert.');
   message('Mitgliedschaft wird geprüft …');
   const q=`/rest/v1/kc_dp_memberships?select=org_id,user_id,role,active,person_id,display_name,email,phone&org_id=eq.${encodeURIComponent(ORG_ID)}&user_id=eq.${encodeURIComponent(session.user.id)}&active=is.true&limit=1`;
-  const membership=await request(q,{method:'GET'},session.access_token);
-  if(!Array.isArray(membership)||!membership[0])throw new Error('Keine aktive KC-DP-Mitgliedschaft gefunden.');
-  sessionStorage.setItem(SESSION_KEY,JSON.stringify({session,remember:document.getElementById('remember').checked,createdAt:Date.now()}));
+  const rows=await request(q,{method:'GET'},session.access_token);
+  if(!Array.isArray(rows)||!rows[0])throw new Error('Keine aktive KC-DP-Mitgliedschaft gefunden.');
+  const membership=rows[0];
+  sessionStorage.setItem(SESSION_KEY,JSON.stringify({session,membership,remember:document.getElementById('remember').checked,createdAt:Date.now()}));
   message('Anmeldung erfolgreich. KC DP2 wird geladen …');
   location.replace('app.html?bootstrap=1');
  }catch(err){message(err?.message||'Anmeldung fehlgeschlagen.',true);button.disabled=false}
