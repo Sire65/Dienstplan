@@ -29,6 +29,8 @@ jobs:
         run: node tests/v02000-planner-interactions-gate.js
       - name: Publication and actual workflow gate
         run: node tests/v02000-publication-actual-gate.js
+      - name: Start choice gate
+        run: node tests/v02000-start-choice-gate.js
       - name: KC Communication bridge isolation gate
         run: node tests/v02000-communication-bridge-gate.js
       - name: KC Communication status gate
