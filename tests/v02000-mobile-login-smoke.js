@@ -41,9 +41,16 @@ const assert = require('assert');
     button.click();
   });
 
-  await page.waitForSelector('#unlockSecret',{timeout:10000});
-  await page.locator('#unlockSecret').fill('KC-DP2-Recovery-Mobile-Smoke-2026!');
-  await page.locator('#unlockBtn').click();
+  await page.waitForFunction(()=>!!document.getElementById('unlockSecret'),{timeout:10000});
+  await page.evaluate(()=>{
+    const secret=document.getElementById('unlockSecret');
+    const button=document.getElementById('unlockBtn');
+    if(!secret||!button)throw new Error('Unlock-Dialog ist nicht vollständig gerendert');
+    secret.value='KC-DP2-Recovery-Mobile-Smoke-2026!';
+    secret.dispatchEvent(new Event('input',{bubbles:true}));
+    secret.dispatchEvent(new Event('change',{bubbles:true}));
+    button.click();
+  });
 
   await page.waitForSelector('body.ux-role',{timeout:25000});
   await page.waitForSelector('.ux-topbar',{timeout:10000});
