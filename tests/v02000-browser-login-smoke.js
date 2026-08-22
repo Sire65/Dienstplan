@@ -33,23 +33,14 @@ async function openLogin(browser, routeMode) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForSelector('#uxLoginForm', { timeout: 15000 });
-  // The app may render the login surface once more while startup guards finish.
-  // Wait briefly and then require a fresh, stable form before interacting.
-  await page.waitForTimeout(1200);
-  await page.waitForSelector('#uxLoginForm #uxEmail', { state: 'visible', timeout: 10000 });
-  await page.waitForSelector('#uxLoginForm #uxPassword', { state: 'visible', timeout: 10000 });
+  await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 15000 });
   return { context, page, requests };
 }
 
 async function submit(page) {
-  const email = page.locator('#uxLoginForm #uxEmail');
-  const password = page.locator('#uxLoginForm #uxPassword');
-  await email.waitFor({ state: 'visible', timeout: 10000 });
-  await password.waitFor({ state: 'visible', timeout: 10000 });
-  await email.fill('smoke@example.com');
-  await password.fill('wrong-password');
-  await page.locator('#uxLoginForm button[type="submit"]').click();
+  await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
+  await page.locator('#uxPassword').fill('wrong-password', { timeout: 10000 });
+  await page.locator('#uxLoginForm button[type="submit"]').click({ timeout: 10000 });
 }
 
 (async () => {
@@ -60,7 +51,7 @@ async function submit(page) {
       assert(await page.locator('body').evaluate(el => el.classList.contains('ux-login')), 'Android viewport starts in login mode');
       assert(await page.locator('#uxLoginForm').isVisible(), 'Login form is visible');
       await submit(page);
-      await page.waitForSelector('#uxLoginForm', { state: 'visible', timeout: 5000 });
+      await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 5000 });
       const txt = await page.locator('.ux-login-card').innerText();
       assert(/E-Mail-Adresse oder Passwort ist falsch/.test(txt), 'Invalid credentials return a friendly login error');
       assert(!/Anmeldung läuft…/.test(txt), 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
