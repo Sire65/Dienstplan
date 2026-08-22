@@ -31,6 +31,8 @@ jobs:
         run: node tests/v02000-publication-actual-gate.js
       - name: Start choice gate
         run: node tests/v02000-start-choice-gate.js
+      - name: Device key management gate
+        run: node tests/v02000-device-key-gate.js
       - name: KC Communication bridge isolation gate
         run: node tests/v02000-communication-bridge-gate.js
       - name: KC Communication status gate
