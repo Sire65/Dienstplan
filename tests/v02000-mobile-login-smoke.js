@@ -60,7 +60,6 @@ const assert = require('assert');
   assert(result.personId,'Person-ID fehlt nach Login');
   assert.strictEqual(result.storageUnlocked,true,'Lokaler verschlüsselter Speicher wurde nicht entsperrt');
   assert(!/Anmeldung läuft/i.test(result.text),'Login hängt weiterhin bei „Anmeldung läuft“');
-  assert(!document?.querySelector,'');
   assert(result.recoveryLeds,'Recovery-IDX/SUP-Status fehlt');
   assert(['ok','maintenance','error'].includes(result.recoveryLeds.idb),'IDX-Status ungültig');
   assert(['ok','maintenance','error'].includes(result.recoveryLeds.supabase),'SUP-Status ungültig');
