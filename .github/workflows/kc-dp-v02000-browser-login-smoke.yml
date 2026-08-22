@@ -35,14 +35,23 @@ jobs:
         id: login_smoke
         continue-on-error: true
         run: node tests/v02000-browser-login-smoke.js
-      - name: Android functional E2E audit
+      - name: Android raw functional E2E audit
+        id: raw_audit
+        continue-on-error: true
         if: always()
         run: node tests/v02000-browser-functional-audit.js
-      - name: Enforce login smoke result
+      - name: Android downstream audit with test-only loop neutralization
+        id: downstream_audit
+        continue-on-error: true
+        if: always()
+        run: node tests/v02000-browser-downstream-audit.js
+      - name: Enforce audit results
         if: always()
         shell: bash
         run: |
-          if [ "${{ steps.login_smoke.outcome }}" != "success" ]; then
-            echo "Legacy login smoke failed (kept separate from functional audit)."
+          echo "login_smoke=${{ steps.login_smoke.outcome }}"
+          echo "raw_audit=${{ steps.raw_audit.outcome }}"
+          echo "downstream_audit=${{ steps.downstream_audit.outcome }}"
+          if [ "${{ steps.login_smoke.outcome }}" != "success" ] || [ "${{ steps.raw_audit.outcome }}" != "success" ] || [ "${{ steps.downstream_audit.outcome }}" != "success" ]; then
             exit 1
           fi
