@@ -139,17 +139,25 @@ jobs:
           cp -a rc/release/v0.19.54/site/. dist/rc-v02000/
           cp rc/release/v0.20.0-rc1.json dist/rc-v02000/RC_BUILD.json
 
+          rm -rf dist/rc-v02000-clean1
+          mkdir -p dist/rc-v02000-clean1
+          cp -a rc/release/v0.19.54/site/. dist/rc-v02000-clean1/
+          cp rc/release/v0.20.0-rc1.json dist/rc-v02000-clean1/RC_BUILD.json
+
           printf '%s\n' \
             "production=${{ steps.release.outputs.version }}" \
             "handtest=0.19.55-main" \
             "stable=0.19.54-pre-mail" \
             "rc=0.20.0-rc1" \
+            "rc_clean=0.20.0-rc1" \
             "rc_source=735c85aa986f2872af670110d813567bbba99449" > dist/HANDTEST_BUILD.txt
           test -f dist/index.html
           test -f dist/handtest-v01955/index.html
           test -f dist/stable-v01954/index.html
           test -f dist/rc-v02000/index.html
           test -f dist/rc-v02000/RC_BUILD.json
+          test -f dist/rc-v02000-clean1/index.html
+          test -f dist/rc-v02000-clean1/RC_BUILD.json
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
