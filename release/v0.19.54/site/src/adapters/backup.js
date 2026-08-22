@@ -10,3 +10,25 @@
   function download(obj,name=`KC_DP_Backup_${new Date().toISOString().slice(0,10)}.json`){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
   K.backup={version:'0.12.0',exportBackup,preview,restore,download};
 })();
+
+(function(){
+  'use strict';
+  const K=window.KCDP=window.KCDP||{};
+  const DEVICE_DB='KC_DP_DEVICE_KEY_V1',STORE='device_keys',KEY_ID='primary',AAD='KC_DP_DEVICE_SECRET_V1',META_KEY='__kc_local_crypto_meta_v2__';
+  const enc=new TextEncoder(),dec=new TextDecoder();
+  const state={version:'0.20.0-p16',status:'starting',mode:null,needsRecovery:false,lastError:null};
+  function b64(bytes){let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(s)}
+  function unb64(text){return Uint8Array.from(atob(text),c=>c.charCodeAt(0))}
+  function generatedSecret(){const raw=crypto.getRandomValues(new Uint8Array(32));return b64(raw).replaceAll('+','-').replaceAll('/','_').replaceAll('=','')}
+  function openKeyDb(){return new Promise((resolve,reject)=>{const q=indexedDB.open(DEVICE_DB,1);q.onupgradeneeded=()=>{const db=q.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'})};q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)})}
+  async function readRow(){const db=await openKeyDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readonly'),q=tx.objectStore(STORE).get(KEY_ID);q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error)})}finally{db.close()}}
+  async function writeRow(row){const db=await openKeyDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(row);tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error)})}finally{db.close()}}
+  async function hasEncryptedPayload(){if(!K.storage.db)await K.storage.init();return new Promise((resolve,reject)=>{const tx=K.storage.db.transaction('encrypted_envelopes','readonly'),q=tx.objectStore('encrypted_envelopes').openCursor();q.onsuccess=()=>{const c=q.result;if(!c)return resolve(false);if(c.key!==META_KEY)return resolve(true);c.continue()};q.onerror=()=>reject(q.error)})}
+  async function rememberSecret(secret){if(String(secret||'').length<16)throw new Error('Geräteschlüssel ist zu kurz.');const wrappingKey=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']),iv=crypto.getRandomValues(new Uint8Array(12)),additionalData=enc.encode(AAD),cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData,tagLength:128},wrappingKey,enc.encode(String(secret)));await writeRow({id:KEY_ID,format:AAD,wrappingKey,iv:b64(iv),ciphertext:b64(new Uint8Array(cipher)),createdAt:new Date().toISOString()});return true}
+  async function restoreSecret(){const row=await readRow();if(!row?.wrappingKey||row.format!==AAD)return null;const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(row.iv),additionalData:enc.encode(AAD),tagLength:128},row.wrappingKey,unb64(row.ciphertext));return dec.decode(plain)}
+  async function prepare(){try{await K.storage.init();let secret=null;try{secret=await restoreSecret()}catch(_){secret=null}if(secret){K.storage.setSecret(secret);state.status='ready';state.mode='restored';return {ok:true,mode:'restored'}}if(await hasEncryptedPayload()){state.status='recovery-required';state.mode='recovery';state.needsRecovery=true;return {ok:false,needsRecovery:true}}secret=generatedSecret();await rememberSecret(secret);K.storage.setSecret(secret);state.status='ready';state.mode='generated';return {ok:true,mode:'generated'}}catch(e){state.status='error';state.lastError=e?.message||String(e);return {ok:false,error:state.lastError}}}
+  const ready=prepare();
+  function bindUnlockDialog(){const input=document.getElementById('unlockSecret'),button=document.getElementById('unlockBtn');if(!input||!button||button.dataset.kcDeviceKeyBound==='1')return;button.dataset.kcDeviceKeyBound='1';const backdrop=document.getElementById('modalBackdrop');if(backdrop)backdrop.style.visibility='hidden';ready.then(result=>{if(result?.ok&&K.storage?.unlocked&&K.storage.secret){input.value=K.storage.secret;button.click();setTimeout(()=>{if(backdrop)backdrop.style.visibility=''},0);return}if(backdrop)backdrop.style.visibility='';if(result?.needsRecovery){button.addEventListener('click',()=>{const supplied=String(input.value||'');setTimeout(()=>{if(K.storage?.unlocked&&supplied.length>=16)rememberSecret(supplied).catch(()=>{})},0)},{once:true})}}).catch(()=>{if(backdrop)backdrop.style.visibility=''})}
+  const observer=new MutationObserver(bindUnlockDialog);if(document.documentElement)observer.observe(document.documentElement,{childList:true,subtree:true});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bindUnlockDialog,{once:true});else bindUnlockDialog();
+  K.deviceKeyManager={state,ready,rememberSecret,restoreSecret,hasEncryptedPayload,deviceDb:DEVICE_DB};
+})();
