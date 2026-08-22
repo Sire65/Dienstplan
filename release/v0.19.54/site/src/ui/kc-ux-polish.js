@@ -42,7 +42,7 @@
   function loadMobileLoginInput(){
     if(typeof document==='undefined')return false;
     if(!document.getElementById('kcMobileLoginInputJs')){
-      const s=document.createElement('script');s.id='kcMobileLoginInputJs';s.src='src/ui/mobile-login-input.js?v=0.20.0-p17';s.async=false;document.head.appendChild(s);
+      const s=document.createElement('script');s.id='kcMobileLoginInputJs';s.src='src/ui/mobile-login-input.js?v=0.20.0-p18';s.async=false;document.head.appendChild(s);
     }
     return true;
   }
