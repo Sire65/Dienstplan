@@ -33,3 +33,5 @@ jobs:
           exit 1
       - name: Android browser login smoke
         run: node tests/v02000-browser-login-smoke.js
+      - name: Android functional E2E audit
+        run: node tests/v02000-browser-functional-audit.js
