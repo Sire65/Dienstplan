@@ -6,6 +6,8 @@ const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const integrations=fs.readFileSync(path.join(root,'src','core','integrations.js'),'utf8');
 const sourceHealth=fs.readFileSync(path.join(root,'src','ui','source-health-ui.js'),'utf8');
 const recoveryLeds=fs.readFileSync(path.join(root,'src','ui','recovery-status-leds.js'),'utf8');
+const updateUi=fs.readFileSync(path.join(root,'src','ui','update-ui.js'),'utf8');
+const app=fs.readFileSync(path.join(root,'src','ui','app.js'),'utf8');
 function ok(cond,msg){if(!cond){console.error('FAIL:',msg);process.exitCode=1}else console.log('OK:',msg)}
 ok(fs.existsSync(path.join(root,'index.html')),'V0.19.54 Baseline vorhanden');
 ok(index.includes('KC DP2 V0.19.54'),'Release-Identität V0.19.54');
@@ -28,6 +30,12 @@ ok(recoveryLeds.includes('kcRoleIdbStatus'),'IDX-LED für Rollenansicht vorhande
 ok(recoveryLeds.includes('kcRoleSupStatus'),'SUP-LED für Rollenansicht vorhanden');
 ok(recoveryLeds.includes("KC_DP_IDB_TRAFFIC"),'IDX-Datenverkehr wird auch mobil signalisiert');
 ok(recoveryLeds.includes('lastPushAt')&&recoveryLeds.includes('lastPullAt'),'Supabase-Datenverkehr wird aus Adapterstatus abgeleitet');
+ok(index.indexOf('src/ui/update-ui.js')<index.indexOf('src/ui/app.js'),'Startup-Guard wird vor App-Init geladen');
+ok(updateUi.includes('startupStabilityGuard'),'Startstabilitäts-Guard aktiv');
+ok(updateUi.includes('KC_DP_STARTUP_READY'),'Startbereitschaft wird explizit signalisiert');
+ok(updateUi.includes('KC_DP_OPTIONAL_SERVICE_ERROR'),'optionale Dienstfehler werden separat protokolliert');
+ok(updateUi.includes('originalShow?.()'),'Fallback kann Startansicht unabhängig erneut öffnen');
+ok(app.includes('K.roleUx?.afterDataLoaded?.()'),'App übergibt nach Datenladen an Rollenansicht');
 ok(!index.includes('notification-channel-safety.js'),'Baseline enthält noch keine nachträgliche Notification-Safety-Schicht');
 ok(!index.includes('notification-channel-settings.js'),'Baseline enthält noch keine nachträgliche Notification-Settings-Schicht');
 ok(!index.includes('email-center.js'),'Baseline lädt keinen Mail-Admin in den DP2-Kern');
