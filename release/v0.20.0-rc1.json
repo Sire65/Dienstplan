@@ -1,0 +1,34 @@
+{
+  "app": "KC DP2",
+  "candidateVersion": "0.20.0-rc1",
+  "targetVersion": "0.20.0",
+  "sourceVersion": "0.19.54",
+  "runtimePath": "release/v0.19.54/site",
+  "runtimeFreezeCommit": "2b324c37a07810ef411825f894464fbf9aa44759",
+  "recoveryBranch": "recovery/dp2-v02000",
+  "productionBranch": "main",
+  "productionBranchTargeted": false,
+  "runtimeFrozen": true,
+  "communication": {
+    "liveOwner": "legacy_push",
+    "centralMode": "shadow_test",
+    "centralLiveEnabled": false,
+    "testOnly": true
+  },
+  "requiredGates": [
+    "baseline",
+    "xlsx-local",
+    "mobile-day",
+    "vhb",
+    "planner-interactions",
+    "publication-actual",
+    "start-choice",
+    "communication-bridge",
+    "communication-status",
+    "supabase-timeout",
+    "javascript-syntax",
+    "browser-login-smoke",
+    "web-release-verify"
+  ],
+  "releaseRule": "Final release/v0.20.0 creation and version switch only after RC gates are green."
+}
