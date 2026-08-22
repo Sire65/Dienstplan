@@ -68,15 +68,28 @@ async function loginDomState(page, label) {
   return state;
 }
 
+async function focusAndType(page, id, value) {
+  const ok = await page.evaluate(sel => {
+    const el = document.querySelector(sel);
+    if (!el || !el.isConnected || el.disabled) return false;
+    el.focus();
+    return document.activeElement === el;
+  }, id);
+  if (!ok) throw new Error(`Could not focus ${id}`);
+  await page.keyboard.type(value, { delay: 15 });
+  const actual = await page.evaluate(sel => document.querySelector(sel)?.value || '', id);
+  if (actual !== value) throw new Error(`Keyboard input mismatch for ${id}: ${JSON.stringify(actual)}`);
+}
+
 async function submit(page) {
   await loginDomState(page, 'before-email');
-  await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
+  await focusAndType(page, '#uxEmail', 'smoke@example.com');
   await page.waitForTimeout(250);
   const afterEmail = await loginDomState(page, 'after-email');
   if (!afterEmail.passwordExists || !afterEmail.passwordConnected || afterEmail.passwordDisplay === 'none' || afterEmail.passwordVisibility === 'hidden' || afterEmail.passwordWidth === 0 || afterEmail.passwordHeight === 0) {
     throw new Error('Password field became non-interactive after email input: ' + JSON.stringify(afterEmail));
   }
-  await page.locator('#uxPassword').fill('wrong-password', { timeout: 10000 });
+  await focusAndType(page, '#uxPassword', 'wrong-password');
   await page.locator('#uxLoginForm button[type="submit"]').click({ timeout: 10000 });
 }
 
