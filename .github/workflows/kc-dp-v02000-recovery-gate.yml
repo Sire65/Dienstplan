@@ -31,6 +31,8 @@ jobs:
         run: node tests/v02000-publication-actual-gate.js
       - name: KC Communication bridge isolation gate
         run: node tests/v02000-communication-bridge-gate.js
+      - name: KC Communication status gate
+        run: node tests/v02000-communication-status-gate.js
       - name: Syntax check stable release
         shell: bash
         run: |
