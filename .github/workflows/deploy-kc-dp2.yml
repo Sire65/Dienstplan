@@ -56,6 +56,11 @@ jobs:
         with:
           ref: 3dc944d891896394f7da6f32cef03b0b559c9450
           path: p17
+      - name: Checkout merged P18 native Android login candidate
+        uses: actions/checkout@v6
+        with:
+          ref: 2f69f0870a88248b6ee4d4df34246b9a2f7bafb1
+          path: p18
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -148,6 +153,19 @@ jobs:
           node tests/v02000-device-key-gate.js
           node tests/v02000-mobile-login-input-gate.js
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
+      - name: Verify merged P18 native Android login candidate
+        working-directory: p18
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release/v0.19.54/site/src/ui/mobile-login-input.js
+          test -f tests/v02000-mobile-login-input-gate.js
+          node tests/v02000-device-key-gate.js
+          node tests/v02000-mobile-login-input-gate.js
+          grep -q "0.20.0-p18" release/v0.19.54/site/src/ui/mobile-login-input.js
+          ! grep -q "addEventListener('touchend'" release/v0.19.54/site/src/ui/mobile-login-input.js
+          ! grep -q "pointerup" release/v0.19.54/site/src/ui/mobile-login-input.js
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
       - name: Build combined Pages artifact
         shell: bash
         run: |
@@ -238,6 +256,36 @@ jobs:
           node --check dist/rc-v02000-p17-isolated/src/adapters/backup.js
           node --check dist/rc-v02000-p17-isolated/src/ui/mobile-login-input.js
 
+          rm -rf dist/rc-v02000-p18-isolated
+          mkdir -p dist/rc-v02000-p18-isolated
+          cp -a p18/release/v0.19.54/site/. dist/rc-v02000-p18-isolated/
+          node <<'NODE'
+          const fs=require('fs');
+          const storage='dist/rc-v02000-p18-isolated/src/adapters/storage.js';
+          const backup='dist/rc-v02000-p18-isolated/src/adapters/backup.js';
+          let s=fs.readFileSync(storage,'utf8');
+          if(!s.includes("DB_NAME='KC_DP_SECURE_CANDIDATE'")) throw new Error('P18 storage DB marker missing');
+          s=s.replace("DB_NAME='KC_DP_SECURE_CANDIDATE'","DB_NAME='KC_DP_SECURE_CANDIDATE_P18_ISOLATED_1'");
+          fs.writeFileSync(storage,s);
+          let b=fs.readFileSync(backup,'utf8');
+          if(!b.includes("DEVICE_DB='KC_DP_DEVICE_KEY_V1'")) throw new Error('P18 device DB marker missing');
+          b=b.replace("DEVICE_DB='KC_DP_DEVICE_KEY_V1'","DEVICE_DB='KC_DP_DEVICE_KEY_P18_ISOLATED_1'");
+          fs.writeFileSync(backup,b);
+          NODE
+          printf '%s\n' \
+            'candidate=0.20.0-p18-isolated-handtest' \
+            'source=2f69f0870a88248b6ee4d4df34246b9a2f7bafb1' \
+            'storage=KC_DP_SECURE_CANDIDATE_P18_ISOLATED_1' \
+            'device_key_db=KC_DP_DEVICE_KEY_P18_ISOLATED_1' \
+            'purpose=native-android-login-input-handtest' > dist/rc-v02000-p18-isolated/P18_ISOLATED_BUILD.txt
+          grep -q "KC_DP_SECURE_CANDIDATE_P18_ISOLATED_1" dist/rc-v02000-p18-isolated/src/adapters/storage.js
+          grep -q "KC_DP_DEVICE_KEY_P18_ISOLATED_1" dist/rc-v02000-p18-isolated/src/adapters/backup.js
+          grep -q "0.20.0-p18" dist/rc-v02000-p18-isolated/src/ui/mobile-login-input.js
+          test -f dist/rc-v02000-p18-isolated/index.html
+          node --check dist/rc-v02000-p18-isolated/src/adapters/storage.js
+          node --check dist/rc-v02000-p18-isolated/src/adapters/backup.js
+          node --check dist/rc-v02000-p18-isolated/src/ui/mobile-login-input.js
+
           printf '%s\n' \
             "production=${{ steps.release.outputs.version }}" \
             "handtest=0.19.55-main" \
@@ -248,7 +296,8 @@ jobs:
             "p16=0.20.0-p16-handtest" \
             "p16_source=c85c03266b7b85c84c41a8ebf02ce8afe098f915" \
             "p16_isolated=0.20.0-p16-isolated-handtest" \
-            "p17_isolated=0.20.0-p17-isolated-handtest" > dist/HANDTEST_BUILD.txt
+            "p17_isolated=0.20.0-p17-isolated-handtest" \
+            "p18_isolated=0.20.0-p18-isolated-handtest" > dist/HANDTEST_BUILD.txt
           test -f dist/index.html
           test -f dist/handtest-v01955/index.html
           test -f dist/stable-v01954/index.html
@@ -262,6 +311,8 @@ jobs:
           test -f dist/rc-v02000-p16-isolated/P16_ISOLATED_BUILD.txt
           test -f dist/rc-v02000-p17-isolated/index.html
           test -f dist/rc-v02000-p17-isolated/P17_ISOLATED_BUILD.txt
+          test -f dist/rc-v02000-p18-isolated/index.html
+          test -f dist/rc-v02000-p18-isolated/P18_ISOLATED_BUILD.txt
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
