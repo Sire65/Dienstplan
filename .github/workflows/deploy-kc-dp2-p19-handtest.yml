@@ -1,0 +1,185 @@
+name: KC DP2 P19 Isolated Handtest Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-kc-dp2-p19-handtest.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-kc-dp2-p19-handtest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kc-dp2-pages-main
+  cancel-in-progress: true
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: prod
+      - name: Checkout stable V0.19.54
+        uses: actions/checkout@v6
+        with:
+          ref: restore/v0.19.54-stable
+          path: stable
+      - name: Checkout frozen RC1
+        uses: actions/checkout@v6
+        with:
+          ref: 735c85aa986f2872af670110d813567bbba99449
+          path: rc
+      - name: Checkout P16
+        uses: actions/checkout@v6
+        with:
+          ref: c85c03266b7b85c84c41a8ebf02ce8afe098f915
+          path: p16
+      - name: Checkout P17
+        uses: actions/checkout@v6
+        with:
+          ref: 3dc944d891896394f7da6f32cef03b0b559c9450
+          path: p17
+      - name: Checkout P18
+        uses: actions/checkout@v6
+        with:
+          ref: 2f69f0870a88248b6ee4d4df34246b9a2f7bafb1
+          path: p18
+      - name: Checkout P19
+        uses: actions/checkout@v6
+        with:
+          ref: d7b9eb6d7f0c4011f4e5497f7e5c264b025ab36f
+          path: p19
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Resolve production release
+        id: release
+        working-directory: prod
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./release/current.json').version")"
+          RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          test -f "$RELEASE_PATH/index.html"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Verify P19 recovery candidate
+        working-directory: p19
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/v02000-device-key-gate.js
+          node tests/v02000-mobile-login-input-gate.js
+          node tests/v02000-login-performance-gate.js
+          test -f release/v0.19.54/site/index.html
+          grep -q "0.20.0-recovery-p19" release/v0.19.54/site/src/ui/device-ux.js
+          grep -q "serviceWorkerDeferred:true" release/v0.19.54/site/src/ui/device-ux.js
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
+
+      - name: Build complete Pages artifact with P19
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist
+          cp -a "prod/${{ steps.release.outputs.path }}/." dist/
+
+          mkdir -p dist/handtest-v01955
+          cp -a prod/release/v0.19.55/site/handtest-v01955/. dist/handtest-v01955/
+
+          mkdir -p dist/stable-v01954
+          cp -a stable/release/v0.19.54/site/. dist/stable-v01954/
+
+          mkdir -p dist/rc-v02000
+          cp -a rc/release/v0.19.54/site/. dist/rc-v02000/
+          cp rc/release/v0.20.0-rc1.json dist/rc-v02000/RC_BUILD.json
+
+          mkdir -p dist/rc-v02000-clean1
+          cp -a rc/release/v0.19.54/site/. dist/rc-v02000-clean1/
+          cp rc/release/v0.20.0-rc1.json dist/rc-v02000-clean1/RC_BUILD.json
+
+          mkdir -p dist/rc-v02000-p16
+          cp -a p16/release/v0.19.54/site/. dist/rc-v02000-p16/
+
+          mkdir -p dist/rc-v02000-p16-isolated
+          cp -a p16/release/v0.19.54/site/. dist/rc-v02000-p16-isolated/
+
+          mkdir -p dist/rc-v02000-p17-isolated
+          cp -a p17/release/v0.19.54/site/. dist/rc-v02000-p17-isolated/
+
+          mkdir -p dist/rc-v02000-p18-isolated
+          cp -a p18/release/v0.19.54/site/. dist/rc-v02000-p18-isolated/
+
+          mkdir -p dist/rc-v02000-p19-isolated
+          cp -a p19/release/v0.19.54/site/. dist/rc-v02000-p19-isolated/
+
+          node <<'NODE'
+          const fs=require('fs');
+          const variants=[
+            ['p16-isolated','P16_ISOLATED_1'],
+            ['p17-isolated','P17_ISOLATED_1'],
+            ['p18-isolated','P18_ISOLATED_1'],
+            ['p19-isolated','P19_ISOLATED_1']
+          ];
+          for(const [folder,suffix] of variants){
+            const base=`dist/rc-v02000-${folder}`;
+            const storage=`${base}/src/adapters/storage.js`;
+            const backup=`${base}/src/adapters/backup.js`;
+            let s=fs.readFileSync(storage,'utf8');
+            if(!s.includes("DB_NAME='KC_DP_SECURE_CANDIDATE'")) throw new Error(`${folder}: storage marker missing`);
+            s=s.replace("DB_NAME='KC_DP_SECURE_CANDIDATE'",`DB_NAME='KC_DP_SECURE_CANDIDATE_${suffix}'`);
+            fs.writeFileSync(storage,s);
+            let b=fs.readFileSync(backup,'utf8');
+            if(!b.includes("DEVICE_DB='KC_DP_DEVICE_KEY_V1'")) throw new Error(`${folder}: device marker missing`);
+            b=b.replace("DEVICE_DB='KC_DP_DEVICE_KEY_V1'",`DEVICE_DB='KC_DP_DEVICE_KEY_${suffix}'`);
+            fs.writeFileSync(backup,b);
+          }
+          NODE
+
+          printf '%s\n' \
+            'candidate=0.20.0-p19-isolated-handtest' \
+            'source=d7b9eb6d7f0c4011f4e5497f7e5c264b025ab36f' \
+            'storage=KC_DP_SECURE_CANDIDATE_P19_ISOLATED_1' \
+            'device_key_db=KC_DP_DEVICE_KEY_P19_ISOLATED_1' \
+            'purpose=mobile-login-performance-handtest' > dist/rc-v02000-p19-isolated/P19_ISOLATED_BUILD.txt
+
+          test -f dist/index.html
+          test -f dist/handtest-v01955/index.html
+          test -f dist/stable-v01954/index.html
+          test -f dist/rc-v02000/index.html
+          test -f dist/rc-v02000-p16/index.html
+          test -f dist/rc-v02000-p16-isolated/index.html
+          test -f dist/rc-v02000-p17-isolated/index.html
+          test -f dist/rc-v02000-p18-isolated/index.html
+          test -f dist/rc-v02000-p19-isolated/index.html
+          grep -q "KC_DP_SECURE_CANDIDATE_P19_ISOLATED_1" dist/rc-v02000-p19-isolated/src/adapters/storage.js
+          grep -q "KC_DP_DEVICE_KEY_P19_ISOLATED_1" dist/rc-v02000-p19-isolated/src/adapters/backup.js
+          grep -q "0.20.0-recovery-p19" dist/rc-v02000-p19-isolated/src/ui/device-ux.js
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: verify-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
