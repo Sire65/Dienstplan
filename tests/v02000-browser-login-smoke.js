@@ -34,11 +34,48 @@ async function openLogin(browser, routeMode) {
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 15000 });
+  await page.evaluate(() => {
+    const root = document.getElementById('kcdpUxRoot');
+    window.__kcLoginRootMutations = 0;
+    window.__kcLoginObserver = new MutationObserver(() => { window.__kcLoginRootMutations++; });
+    if (root) window.__kcLoginObserver.observe(root, { childList: true, subtree: true, attributes: true });
+  });
   return { context, page, requests };
 }
 
+async function loginDomState(page, label) {
+  const state = await page.evaluate(() => {
+    const p = document.getElementById('uxPassword');
+    const f = document.getElementById('uxLoginForm');
+    const r = p?.getBoundingClientRect?.();
+    const s = p ? getComputedStyle(p) : null;
+    return {
+      bodyClass: document.body.className,
+      formConnected: !!f?.isConnected,
+      passwordExists: !!p,
+      passwordConnected: !!p?.isConnected,
+      passwordDisabled: !!p?.disabled,
+      passwordDisplay: s?.display || null,
+      passwordVisibility: s?.visibility || null,
+      passwordOpacity: s?.opacity || null,
+      passwordWidth: r?.width || 0,
+      passwordHeight: r?.height || 0,
+      rootMutations: window.__kcLoginRootMutations || 0,
+      activeId: document.activeElement?.id || null
+    };
+  });
+  console.log(`DOM ${label}: ${JSON.stringify(state)}`);
+  return state;
+}
+
 async function submit(page) {
+  await loginDomState(page, 'before-email');
   await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
+  await page.waitForTimeout(250);
+  const afterEmail = await loginDomState(page, 'after-email');
+  if (!afterEmail.passwordExists || !afterEmail.passwordConnected || afterEmail.passwordDisplay === 'none' || afterEmail.passwordVisibility === 'hidden' || afterEmail.passwordWidth === 0 || afterEmail.passwordHeight === 0) {
+    throw new Error('Password field became non-interactive after email input: ' + JSON.stringify(afterEmail));
+  }
   await page.locator('#uxPassword').fill('wrong-password', { timeout: 10000 });
   await page.locator('#uxLoginForm button[type="submit"]').click({ timeout: 10000 });
 }
