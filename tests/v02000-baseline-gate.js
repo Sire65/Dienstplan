@@ -8,6 +8,9 @@ const sourceHealth=fs.readFileSync(path.join(root,'src','ui','source-health-ui.j
 const recoveryLeds=fs.readFileSync(path.join(root,'src','ui','recovery-status-leds.js'),'utf8');
 const updateUi=fs.readFileSync(path.join(root,'src','ui','update-ui.js'),'utf8');
 const app=fs.readFileSync(path.join(root,'src','ui','app.js'),'utf8');
+const storage=fs.readFileSync(path.join(root,'src','adapters','storage.js'),'utf8');
+const sync=fs.readFileSync(path.join(root,'src','adapters','sync.js'),'utf8');
+const managerAutoSync=fs.readFileSync(path.join(root,'src','core','manager-auto-sync.js'),'utf8');
 function ok(cond,msg){if(!cond){console.error('FAIL:',msg);process.exitCode=1}else console.log('OK:',msg)}
 ok(fs.existsSync(path.join(root,'index.html')),'V0.19.54 Baseline vorhanden');
 ok(index.includes('KC DP2 V0.19.54'),'Release-Identität V0.19.54');
@@ -36,6 +39,14 @@ ok(updateUi.includes('KC_DP_STARTUP_READY'),'Startbereitschaft wird explizit sig
 ok(updateUi.includes('KC_DP_OPTIONAL_SERVICE_ERROR'),'optionale Dienstfehler werden separat protokolliert');
 ok(updateUi.includes('originalShow?.()'),'Fallback kann Startansicht unabhängig erneut öffnen');
 ok(app.includes('K.roleUx?.afterDataLoaded?.()'),'App übergibt nach Datenladen an Rollenansicht');
+ok(storage.includes('IndexedDB antwortet nicht')&&storage.includes('10000'),'IndexedDB-Open besitzt harten Timeout');
+ok(storage.includes('Lokale Datenbank antwortet beim Lesen nicht')&&storage.includes('12000'),'verschlüsseltes Lesen besitzt harten Timeout');
+ok(storage.includes("AES-256-GCM")&&storage.includes("PBKDF2-SHA-256"),'lokaler Speicher bleibt AES-256-GCM/PBKDF2 geschützt');
+ok(sync.includes('offlineFallback')===false,'Sync-Core erzwingt keinen UI-Startpfad');
+ok(managerAutoSync.includes('runBackground'),'Manager-Sync besitzt Background-Dispatcher');
+ok(managerAutoSync.includes('setTimeout(()=>{Promise.resolve(run(reason))'),'Manager-Sync wird nach Auth asynchron gestartet');
+ok(!managerAutoSync.includes('await run(reason);return out'),'Login wartet nicht mehr auf Manager-Sync');
+ok(managerAutoSync.includes('externe Synchronisation darf Authentifizierung/Start nie blockieren'),'Local-first Recovery-Regel dokumentiert');
 ok(!index.includes('notification-channel-safety.js'),'Baseline enthält noch keine nachträgliche Notification-Safety-Schicht');
 ok(!index.includes('notification-channel-settings.js'),'Baseline enthält noch keine nachträgliche Notification-Settings-Schicht');
 ok(!index.includes('email-center.js'),'Baseline lädt keinen Mail-Admin in den DP2-Kern');
