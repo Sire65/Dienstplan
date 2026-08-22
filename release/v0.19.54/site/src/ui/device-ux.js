@@ -1,5 +1,47 @@
 (function(){
-  const K=window.KCDP=window.KCDP||{};let boundToken=0,phoneAssetsStarted=false,startChoiceStarted=false,resizeTimer=null;
+  const K=window.KCDP=window.KCDP||{};let boundToken=0,phoneAssetsStarted=false,startChoiceStarted=false,resizeTimer=null,postLoginStarted=false;
+
+  // P19: Auf mobilen Geraeten darf die Loginmaske nicht gleichzeitig die komplette
+  // PWA-Runtime in den Cache laden. update-manager.js registriert den Service Worker
+  // beim DOMContentLoaded; deshalb wird register() bis nach dem Login geparkt.
+  function installPreLoginServiceWorkerGuard(){
+    const sw=navigator.serviceWorker;if(!sw||window.__kcDpLoginSwGuardInstalled)return false;
+    const proto=Object.getPrototypeOf(sw),nativeRegister=proto?.register;if(typeof nativeRegister!=='function')return false;
+    window.__kcDpLoginSwGuardInstalled=true;
+    const queued=[];let released=false,releaseTimer=null,obs=null;
+    function reallyRelease(){
+      if(released)return;released=true;
+      try{proto.register=nativeRegister;}catch(_){}
+      try{obs?.disconnect();}catch(_){}
+      clearTimeout(releaseTimer);
+      while(queued.length){const q=queued.shift();Promise.resolve().then(()=>nativeRegister.apply(q.ctx,q.args)).then(q.resolve,q.reject);}
+    }
+    function armAfterLogin(){
+      if(released||document.body?.classList.contains('ux-login'))return;
+      if(releaseTimer)return;
+      // Genug Abstand, damit Startansicht und erste Bedienung Vorrang haben.
+      releaseTimer=setTimeout(()=>{
+        if('requestIdleCallback'in window)requestIdleCallback(reallyRelease,{timeout:30000});
+        else reallyRelease();
+      },15000);
+    }
+    try{
+      proto.register=function(...args){
+        if(released||!document.body?.classList.contains('ux-login'))return nativeRegister.apply(this,args);
+        return new Promise((resolve,reject)=>queued.push({ctx:this,args,resolve,reject}));
+      };
+      obs=new MutationObserver(armAfterLogin);
+      if(document.body)obs.observe(document.body,{attributes:true,attributeFilter:['class']});
+      armAfterLogin();
+      K.loginPerformanceGuard={version:'0.20.0-p19',serviceWorkerDeferred:true,release:reallyRelease,queued:()=>queued.length};
+      return true;
+    }catch(_){
+      try{proto.register=nativeRegister;}catch(__){}
+      return false;
+    }
+  }
+  installPreLoginServiceWorkerGuard();
+
   function longPress(el){if(el.dataset.kcLongpress)return;el.dataset.kcLongpress='1';let timer=null,x=0,y=0;el.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;x=e.clientX;y=e.clientY;timer=setTimeout(()=>{timer=null;el.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:x,clientY:y}));},650);},{passive:true});el.addEventListener('pointermove',e=>{if(timer&&Math.hypot(e.clientX-x,e.clientY-y)>10){clearTimeout(timer);timer=null;}},{passive:true});['pointerup','pointercancel'].forEach(t=>el.addEventListener(t,()=>{if(timer)clearTimeout(timer);timer=null;},{passive:true}));}
   function bind(){boundToken++;document.querySelectorAll('.shift,.wish-bar,.standby-bar,.person-cell,.matrix-cell,.timeline-cell').forEach(longPress);}
   function autoScroll(e){const w=document.querySelector('.planner-grid-wrap');if(!w)return;const r=w.getBoundingClientRect(),edge=48;let dx=0,dy=0;if(e.clientX<r.left+edge)dx=-18;else if(e.clientX>r.right-edge)dx=18;if(e.clientY<r.top+edge)dy=-18;else if(e.clientY>r.bottom-edge)dy=18;if(dx||dy)w.scrollBy({left:dx,top:dy});}
@@ -36,9 +78,19 @@
       document.head.appendChild(script);
     });
   }
-  function watchPhone(){loadPhoneDayAssets();window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},120);},{passive:true});window.addEventListener('orientationchange',()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},{passive:true});}
-  K.deviceUX={version:'0.20.0-recovery-p5.3',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets,startChoiceAutoLoad:false};
+  function watchPhone(){
+    if(postLoginStarted)return;postLoginStarted=true;
+    loadPhoneDayAssets();
+    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},120);},{passive:true});
+    window.addEventListener('orientationchange',()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},{passive:true});
+  }
+  function startPhoneAfterLogin(){
+    if(!document.body?.classList.contains('ux-login'))return watchPhone();
+    const o=new MutationObserver(()=>{if(!document.body.classList.contains('ux-login')){o.disconnect();watchPhone();}});
+    o.observe(document.body,{attributes:true,attributeFilter:['class']});
+  }
+  K.deviceUX={version:'0.20.0-recovery-p19',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets,startChoiceAutoLoad:false};
   // Recovery-Regel: Startauswahl bleibt vorhanden, wird aber NICHT automatisch geladen.
-  // Erst nach eigenem Startpfad-/Read-only-Regressionspaket darf loadStartChoiceAssets() bewusst aktiviert werden.
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchPhone,{once:true});else watchPhone();
+  // P19: Mobile-Day-Fachassets werden erst nach erfolgreichem Login geladen.
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',startPhoneAfterLogin,{once:true});else startPhoneAfterLogin();
 })();
