@@ -39,11 +39,18 @@
     }
     return true;
   }
+  function loadMobileLoginInput(){
+    if(typeof document==='undefined')return false;
+    if(!document.getElementById('kcMobileLoginInputJs')){
+      const s=document.createElement('script');s.id='kcMobileLoginInputJs';s.src='src/ui/mobile-login-input.js?v=0.20.0-p17';s.async=false;document.head.appendChild(s);
+    }
+    return true;
+  }
   function apply(){roleUx();humanize();updateSaveState()}
   const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
-  function boot(){apply();loadStartChoice();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
+  function boot(){apply();loadStartChoice();loadMobileLoginInput();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
   else boot();
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.54',apply,updateSaveState,loadStartChoice};
+  K.kcUxPolish={version:'0.19.54',apply,updateSaveState,loadStartChoice,loadMobileLoginInput};
 })();
