@@ -114,7 +114,7 @@ jobs:
           test -f release/v0.20.0-rc1.json
           test "$(node -p "require('./release/v0.20.0-rc1.json').candidateVersion")" = "0.20.0-rc1"
           test "$(node -p "require('./release/v0.20.0-rc1.json').runtimePath")" = "release/v0.19.54/site"
-          test "$(node -p "require('./release/v0.20.0-rc1.json').freezeCommit")" = "2b324c37a07810ef411825f894464fbf9aa44759"
+          test "$(node -p "require('./release/v0.20.0-rc1.json').runtimeFreezeCommit")" = "2b324c37a07810ef411825f894464fbf9aa44759"
           test -f release/v0.19.54/site/index.html
           node tests/v02000-release-candidate-freeze-gate.js
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
