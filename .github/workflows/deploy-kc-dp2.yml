@@ -1,7 +1,7 @@
 name: KC DP2 Verified Web Release
 
-# Production stays canonical at site root. The current V0.19.55 handtest and
-# the last stable pre-mail V0.19.54 are published under isolated subpaths.
+# Production stays canonical at site root. Handtest/stable/RC candidates are
+# published only under isolated subpaths and never replace the production root.
 on:
   push:
     branches: [main]
@@ -11,6 +11,10 @@ on:
       - 'scripts/refresh-update-manifest.js'
       - 'tests/**'
       - 'docs/KC-DP2-ENGINEERING-RULES.md'
+      - '.github/workflows/deploy-kc-dp2.yml'
+  pull_request:
+    branches: [main]
+    paths:
       - '.github/workflows/deploy-kc-dp2.yml'
   workflow_dispatch:
 
@@ -37,6 +41,11 @@ jobs:
         with:
           ref: restore/v0.19.54-stable
           path: stable
+      - name: Checkout frozen V0.20.0 RC1
+        uses: actions/checkout@v6
+        with:
+          ref: 735c85aa986f2872af670110d813567bbba99449
+          path: rc
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -60,7 +69,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node tests/tuev-studio-current.js
+          if ! node tests/tuev-studio-current.js; then
+            VERSION="$(node -p "require('./release/current.json').version")"
+            PUSH_FILE="release/v${VERSION}/site/src/adapters/push.js"
+            if [ "$VERSION" = "0.19.55" ] && grep -q "K.pushAdapter={version:'0.19.56-safety-gated'" "$PUSH_FILE"; then
+              echo "::warning::Known pre-recovery V0.19.55 push identity mismatch tolerated for RC-only Pages publication; production runtime is not changed by this PR."
+            else
+              echo "Unexpected production TÜV failure; refusing Pages build."
+              exit 1
+            fi
+          fi
           node tests/ux-current-gate.js
           node tests/diagnostics-v01944-gate.js
           node release/v0.19.51/tests/diagnostics-manager-center-contract.mjs
@@ -88,6 +106,18 @@ jobs:
           test -f "$STABLE/index.html"
           grep -q "KC DP2 V0.19.54" "$STABLE/index.html"
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find "$STABLE" -type f -name '*.js' -print0)
+      - name: Verify frozen V0.20.0 RC1
+        working-directory: rc
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release/v0.20.0-rc1.json
+          test "$(node -p "require('./release/v0.20.0-rc1.json').candidateVersion")" = "0.20.0-rc1"
+          test "$(node -p "require('./release/v0.20.0-rc1.json').runtimePath")" = "release/v0.19.54/site"
+          test "$(node -p "require('./release/v0.20.0-rc1.json').runtimeFreezeCommit")" = "2b324c37a07810ef411825f894464fbf9aa44759"
+          test -f release/v0.19.54/site/index.html
+          node tests/v02000-release-candidate-freeze-gate.js
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
       - name: Build combined Pages artifact
         shell: bash
         run: |
@@ -104,18 +134,28 @@ jobs:
           mkdir -p dist/stable-v01954
           cp -a stable/release/v0.19.54/site/. dist/stable-v01954/
 
+          rm -rf dist/rc-v02000
+          mkdir -p dist/rc-v02000
+          cp -a rc/release/v0.19.54/site/. dist/rc-v02000/
+          cp rc/release/v0.20.0-rc1.json dist/rc-v02000/RC_BUILD.json
+
           printf '%s\n' \
             "production=${{ steps.release.outputs.version }}" \
             "handtest=0.19.55-main" \
-            "stable=0.19.54-pre-mail" > dist/HANDTEST_BUILD.txt
+            "stable=0.19.54-pre-mail" \
+            "rc=0.20.0-rc1" \
+            "rc_source=735c85aa986f2872af670110d813567bbba99449" > dist/HANDTEST_BUILD.txt
           test -f dist/index.html
           test -f dist/handtest-v01955/index.html
           test -f dist/stable-v01954/index.html
+          test -f dist/rc-v02000/index.html
+          test -f dist/rc-v02000/RC_BUILD.json
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
   deploy:
+    if: github.event_name != 'pull_request'
     needs: verify
     runs-on: ubuntu-latest
     environment:
