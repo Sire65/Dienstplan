@@ -1,7 +1,8 @@
 (function(){
   'use strict';
   const K=window.KCDP=window.KCDP||{};
-  const state={mode:'test',ready:false,lastEvent:null,lastOk:null,lastError:null,lastAt:null,lastSkippedReason:null};
+  const routing=Object.freeze({liveOwner:'legacy_push',centralMode:'shadow_test',centralLiveEnabled:false});
+  const state={mode:'test',ready:false,lastEvent:null,lastOk:null,lastError:null,lastAt:null,lastSkippedReason:null,routing};
   const fmtTime=h=>`${String(Math.floor(Number(h))).padStart(2,'0')}:${String(Math.round((Number(h)%1)*60)).padStart(2,'0')}`;
   const orgId=()=>String(K.integrationConfig?.supabase?.orgId||'').trim()||null;
   const present=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
@@ -74,14 +75,16 @@
       const result=original.apply(this,arguments);
       const ids=Array.isArray(input.personIds)?input.personIds.filter(Boolean):[];
       if(input.date&&present(input.start)&&present(input.end)&&ids.length){
-        fire('replacement_requested',{date:String(input.date),from:String(input.start),to:String(input.end),recipientPersonIds:ids.map(String),area:input.area||null,zone:input.zone||null,reasonCategory:input.reasonCategory||null});
+        Promise.resolve(result).then(()=>{
+          fire('replacement_requested',{date:String(input.date),from:String(input.start),to:String(input.end),recipientPersonIds:ids.map(String),area:input.area||null,zone:input.zone||null,reasonCategory:input.reasonCategory||null});
+        },()=>{});
       }
       return result;
     };
     wrapped.__kcCommunicationWrapped=true;K.pushAdapter.createReplacement=wrapped;
   }
 
-  K.communicationBridge={version:'0.20.0-p12',state,emit,fire,manualHealth,describe:()=>adapter?.describe?.()||null};
+  K.communicationBridge={version:'0.20.0-p13',state,routing,emit,fire,manualHealth,describe:()=>adapter?.describe?.()||null};
 
   // P9 status UI is a local-only companion. Loading it performs no KC Communication request.
   if(typeof document!=='undefined'&&!document.getElementById('kcDpCommunicationStatusUi')){
