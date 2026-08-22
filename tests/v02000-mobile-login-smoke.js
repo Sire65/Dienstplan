@@ -31,7 +31,7 @@ const assert = require('assert');
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
 
   const details=page.locator('#uxLocalTest').locator('xpath=ancestor::details');
-  if(await details.count())await details.locator('summary').click();
+  if(await details.count())await details.evaluate(el=>{el.open=true;});
   await page.locator('#uxTestRole').selectOption('admin');
   await page.locator('#uxTestLogin').click();
 
