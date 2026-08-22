@@ -1,6 +1,17 @@
 const { chromium } = require('playwright');
 
 const BASE = process.env.KCDP_BASE_URL || 'http://127.0.0.1:4173/';
+const TOTAL_TIMEOUT_MS = 60000;
+const testStartedAt = Date.now();
+const watchdog = setTimeout(() => {
+  const elapsed = Date.now() - testStartedAt;
+  console.error(`✕ GLOBAL TIMEOUT: browser login smoke exceeded ${TOTAL_TIMEOUT_MS} ms (elapsed ${elapsed} ms)`);
+  process.exit(124);
+}, TOTAL_TIMEOUT_MS);
+
+function checkpoint(label) {
+  console.log(`[+${Date.now() - testStartedAt}ms] ${label}`);
+}
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -8,6 +19,7 @@ function assert(cond, msg) {
 }
 
 async function openLogin(browser, routeMode) {
+  checkpoint(`openLogin(${routeMode}) start`);
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     userAgent: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/151 Mobile Safari/537.36'
@@ -18,6 +30,7 @@ async function openLogin(browser, routeMode) {
     const url = route.request().url();
     requests.push(url);
     if (url.includes('/auth/v1/token?grant_type=password')) {
+      checkpoint(`password token request (${routeMode})`);
       if (routeMode === 'invalid') {
         return route.fulfill({
           status: 400,
@@ -26,7 +39,9 @@ async function openLogin(browser, routeMode) {
         });
       }
       if (routeMode === 'hang') {
+        checkpoint('simulated hanging token request entered');
         await new Promise(r => setTimeout(r, 20000));
+        checkpoint('simulated hanging token request aborting after 20s');
         try { return await route.abort('timedout'); } catch (_) { return; }
       }
     }
@@ -40,6 +55,7 @@ async function openLogin(browser, routeMode) {
     window.__kcLoginObserver = new MutationObserver(() => { window.__kcLoginRootMutations++; });
     if (root) window.__kcLoginObserver.observe(root, { childList: true, subtree: true, attributes: true });
   });
+  checkpoint(`openLogin(${routeMode}) ready`);
   return { context, page, requests };
 }
 
@@ -69,6 +85,7 @@ async function loginDomState(page, label) {
 }
 
 async function focusAndType(page, id, value) {
+  checkpoint(`focusAndType ${id} start`);
   const ok = await page.evaluate(sel => {
     const el = document.querySelector(sel);
     if (!el || !el.isConnected || el.disabled) return false;
@@ -79,9 +96,11 @@ async function focusAndType(page, id, value) {
   await page.keyboard.type(value, { delay: 15 });
   const actual = await page.evaluate(sel => document.querySelector(sel)?.value || '', id);
   if (actual !== value) throw new Error(`Keyboard input mismatch for ${id}: ${JSON.stringify(actual)}`);
+  checkpoint(`focusAndType ${id} done`);
 }
 
 async function submit(page) {
+  checkpoint('submit start');
   await loginDomState(page, 'before-email');
   await focusAndType(page, '#uxEmail', 'smoke@example.com');
   await page.waitForTimeout(250);
@@ -90,13 +109,17 @@ async function submit(page) {
     throw new Error('Password field became non-interactive after email input: ' + JSON.stringify(afterEmail));
   }
   await focusAndType(page, '#uxPassword', 'wrong-password');
+  checkpoint('click submit');
   await page.locator('#uxLoginForm button[type="submit"]').click({ timeout: 10000 });
+  checkpoint('submit click completed');
 }
 
 (async () => {
+  checkpoint('launch chromium');
   const browser = await chromium.launch({ headless: true });
   try {
     {
+      checkpoint('scenario invalid credentials start');
       const { context, page } = await openLogin(browser, 'invalid');
       assert(await page.locator('body').evaluate(el => el.classList.contains('ux-login')), 'Android viewport starts in login mode');
       assert(await page.locator('#uxLoginForm').isVisible(), 'Login form is visible');
@@ -106,12 +129,15 @@ async function submit(page) {
       assert(/E-Mail-Adresse oder Passwort ist falsch/.test(txt), 'Invalid credentials return a friendly login error');
       assert(!/Anmeldung läuft…/.test(txt), 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
       await context.close();
+      checkpoint('scenario invalid credentials done');
     }
 
     {
+      checkpoint('scenario hanging transport start');
       const { context, page, requests } = await openLogin(browser, 'hang');
       const started = Date.now();
       await submit(page);
+      checkpoint('waiting for login button recovery');
       await page.waitForFunction(() => {
         const b = document.querySelector('#uxLoginForm button[type="submit"]');
         return !!b && b.textContent.trim() === 'Anmelden' && !b.disabled;
@@ -125,13 +151,16 @@ async function submit(page) {
       const diagCalls = requests.filter(u => u.includes('/auth/v1/settings?kc_dp_transport=')).length;
       assert(diagCalls === 0, `Network-timeout path does not start a second blocking transport diagnosis (${diagCalls})`);
       await context.close();
+      checkpoint('scenario hanging transport done');
     }
 
     console.log('V0.20 browser login smoke: PASS');
   } finally {
+    clearTimeout(watchdog);
     await browser.close();
   }
 })().catch(err => {
+  clearTimeout(watchdog);
   console.error(err.stack || err);
   process.exit(1);
 });
