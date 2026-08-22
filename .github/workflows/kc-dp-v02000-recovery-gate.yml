@@ -19,6 +19,8 @@ jobs:
           node-version: 22
       - name: Baseline gate
         run: node tests/v02000-baseline-gate.js
+      - name: Local XLSX parser gate
+        run: node tests/v02000-xlsx-local-gate.js
       - name: Syntax check stable release
         shell: bash
         run: |
