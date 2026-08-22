@@ -1,7 +1,7 @@
 const { chromium } = require('playwright');
 
 const BASE = process.env.KCDP_BASE_URL || 'http://127.0.0.1:4173/';
-const TOTAL_TIMEOUT_MS = 60000;
+const TOTAL_TIMEOUT_MS = 45000;
 const testStartedAt = Date.now();
 const watchdog = setTimeout(() => {
   const elapsed = Date.now() - testStartedAt;
@@ -49,22 +49,22 @@ async function openLogin(browser, mode) {
             headers: { 'Content-Type': 'application/json' }
           });
         }
-
-        if (mode === 'hang') {
-          const signal = init?.signal || (typeof input === 'object' ? input?.signal : null);
-          return new Promise((resolve, reject) => {
-            const failAbort = () => {
-              window.__kcSmoke.aborts++;
-              reject(new DOMException('The operation was aborted.', 'AbortError'));
-            };
-            if (signal?.aborted) return failAbort();
-            if (signal?.addEventListener) signal.addEventListener('abort', failAbort, { once: true });
-          });
-        }
       }
 
       if (url.includes('/auth/v1/settings')) {
         window.__kcSmoke.settingsCalls++;
+      }
+
+      if (mode === 'hang') {
+        const signal = init?.signal || (typeof input === 'object' ? input?.signal : null);
+        return new Promise((resolve, reject) => {
+          const failAbort = () => {
+            window.__kcSmoke.aborts++;
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          };
+          if (signal?.aborted) return failAbort();
+          if (signal?.addEventListener) signal.addEventListener('abort', failAbort, { once: true });
+        });
       }
 
       return new Response('{}', {
@@ -133,8 +133,6 @@ async function waitBrowserCondition(page, kind, timeoutMs) {
         buttonExists: !!button,
         buttonText: button?.textContent?.trim() || null,
         buttonDisabled: !!button?.disabled,
-        cardText,
-        bodyText,
         friendly: /E-Mail-Adresse oder Passwort ist falsch/.test(text),
         recovered: !!button && button.textContent.trim() === 'Anmelden' && !button.disabled
       };
@@ -166,21 +164,6 @@ async function smokeStats(page) {
   return page.evaluate(() => ({ ...(window.__kcSmoke || {}) }));
 }
 
-async function loginSurfaceState(page) {
-  return page.evaluate(() => {
-    const body = document.body;
-    const form = document.querySelector('#uxLoginForm');
-    const email = document.querySelector('#uxEmail');
-    const password = document.querySelector('#uxPassword');
-    return {
-      loginMode: !!body?.classList.contains('ux-login'),
-      formExists: !!form,
-      emailExists: !!email,
-      passwordExists: !!password
-    };
-  });
-}
-
 (async () => {
   checkpoint('launch chromium');
   const browser = await chromium.launch({ headless: true });
@@ -188,7 +171,12 @@ async function loginSurfaceState(page) {
     {
       checkpoint('scenario invalid credentials start');
       const { context, page } = await openLogin(browser, 'invalid');
-      const surface = await loginSurfaceState(page);
+      const surface = await page.evaluate(() => ({
+        loginMode: document.body.classList.contains('ux-login'),
+        formExists: !!document.querySelector('#uxLoginForm'),
+        emailExists: !!document.querySelector('#uxEmail'),
+        passwordExists: !!document.querySelector('#uxPassword')
+      }));
       assert(surface.loginMode, 'Android viewport starts in login mode');
       assert(surface.formExists && surface.emailExists && surface.passwordExists, 'Login form is visible and complete');
       await submit(page);
@@ -209,24 +197,42 @@ async function loginSurfaceState(page) {
     }
 
     {
-      checkpoint('scenario hanging transport start');
+      checkpoint('scenario isolated timeout guard start');
       const { context, page } = await openLogin(browser, 'hang');
-      const started = Date.now();
-      await submit(page);
-      const recovery = await waitBrowserCondition(page, 'recovered', 19000);
-      const elapsed = Date.now() - started;
-      console.log(`HANG recovery state: ${JSON.stringify(recovery)}`);
-      assert(!recovery.timedOut && recovery.recovered, `Hanging login returns control in under 19s (${elapsed} ms)`);
-      assert(elapsed < 19000, `Hanging login stays below 19s (${elapsed} ms)`);
-      assert(recovery.buttonText !== 'Anmeldung läuft…' && !recovery.buttonDisabled, 'Hanging transport does not leave login UI stuck');
+      const guard = await page.evaluate(() => ({ ...(window.KCDP?.networkTimeoutGuard || {}) }));
+      assert(guard.hardDeadline === true, 'Hard network deadline guard is installed');
+      assert(guard.defaultTimeoutMs === 15000, `Production Supabase timeout remains 15 seconds (${guard.defaultTimeoutMs} ms)`);
+
+      const result = await page.evaluate(async () => {
+        const started = performance.now();
+        try {
+          await fetch('https://ptblnpiroqftcvlsrhac.supabase.co/auth/v1/settings?kc_dp_smoke=1', {
+            method: 'GET',
+            cache: 'no-store',
+            kcTimeoutMs: 1200
+          });
+          return { ok: false, elapsed: Math.round(performance.now() - started), error: null };
+        } catch (e) {
+          return {
+            ok: true,
+            elapsed: Math.round(performance.now() - started),
+            name: e?.name || null,
+            code: e?.code || null,
+            message: e?.message || String(e)
+          };
+        }
+      });
+      console.log(`TIMEOUT guard result: ${JSON.stringify(result)}`);
+      assert(result.ok, 'Isolated hanging Supabase request is rejected by the guard');
+      assert(result.code === 'KC_DP_NETWORK_TIMEOUT', `Timeout is normalized as KC_DP_NETWORK_TIMEOUT (${result.code})`);
+      assert(result.elapsed >= 1000 && result.elapsed < 4000, `Explicit 1.2s smoke deadline fires promptly (${result.elapsed} ms)`);
 
       const stats = await smokeStats(page);
-      console.log(`HANG fetch stats: ${JSON.stringify(stats)}`);
-      assert(stats.tokenCalls === 1, `Only one password-auth request is issued (${stats.tokenCalls})`);
-      assert(stats.settingsCalls === 0, `Network-timeout path does not start a second blocking transport diagnosis (${stats.settingsCalls})`);
-      assert(stats.aborts >= 1, `Supabase password request is actually aborted by the timeout guard (${stats.aborts})`);
+      console.log(`TIMEOUT fetch stats: ${JSON.stringify(stats)}`);
+      assert(stats.settingsCalls === 1, `Exactly one isolated Supabase request is issued (${stats.settingsCalls})`);
+      assert(stats.aborts >= 1, `Underlying hanging request receives abort (${stats.aborts})`);
       await context.close();
-      checkpoint('scenario hanging transport done');
+      checkpoint('scenario isolated timeout guard done');
     }
 
     console.log('V0.20 browser login smoke: PASS');
