@@ -85,8 +85,10 @@ async function loginDomState(page, label) {
 }
 
 async function setPasswordViaDom(page, value) {
-  checkpoint('set password via DOM events start');
-  const actual = await page.locator('#uxPassword').evaluate((el, nextValue) => {
+  checkpoint('set password via direct page DOM start');
+  const actual = await page.evaluate(nextValue => {
+    const el = document.querySelector('#uxPassword');
+    if (!el || !el.isConnected || el.disabled) return null;
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     setter.call(el, nextValue);
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -94,19 +96,20 @@ async function setPasswordViaDom(page, value) {
     return el.value;
   }, value);
   if (actual !== value) throw new Error(`DOM password input mismatch: ${JSON.stringify(actual)}`);
-  checkpoint('set password via DOM events done');
+  checkpoint('set password via direct page DOM done');
 }
 
 async function nativeSubmit(page) {
-  checkpoint('native requestSubmit start');
-  const ok = await page.locator('#uxLoginForm').evaluate(form => {
-    const button = form.querySelector('button[type="submit"]');
-    if (!button) return false;
+  checkpoint('direct page requestSubmit start');
+  const ok = await page.evaluate(() => {
+    const form = document.querySelector('#uxLoginForm');
+    const button = form?.querySelector('button[type="submit"]');
+    if (!form || !button) return false;
     form.requestSubmit(button);
     return true;
   });
   if (!ok) throw new Error('Could not requestSubmit login form');
-  checkpoint('native requestSubmit done');
+  checkpoint('direct page requestSubmit done');
 }
 
 async function submit(page) {
