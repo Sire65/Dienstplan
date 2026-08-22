@@ -21,10 +21,26 @@ const assert = require('assert');
   });
 
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess,{timeout:20000});
+  await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess&&window.KCDP?.storage,{timeout:20000});
   await page.evaluate(()=>{
-    window.__kcOriginalPersistSessionIfNeeded=window.KCDP.memberAccess.persistSessionIfNeeded;
-    window.KCDP.memberAccess.persistSessionIfNeeded=async()=>false;
+    const K=window.KCDP;
+    K.memberAccess.persistSessionIfNeeded=async()=>false;
+    window.__kcStorageTrace=[];
+    const wrap=(name)=>{
+      const original=K.storage[name].bind(K.storage);
+      K.storage[name]=async function(...args){
+        window.__kcStorageTrace.push({name,phase:'start',at:performance.now()});
+        try{
+          const out=await original(...args);
+          window.__kcStorageTrace.push({name,phase:'done',at:performance.now()});
+          return out;
+        }catch(e){
+          window.__kcStorageTrace.push({name,phase:'error',at:performance.now(),error:String(e?.message||e)});
+          throw e;
+        }
+      };
+    };
+    ['getMany','_sessionKey','_cryptoMeta','_rawGet'].forEach(wrap);
   });
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
   await page.evaluate(()=>{
@@ -49,6 +65,8 @@ const assert = require('assert');
       currentUser:window.KCDP?.currentUser||null,
       memberAccess:window.KCDP?.memberAccess?.state||null,
       storageUnlocked:!!window.KCDP?.storage?.unlocked,
+      storageTrace:window.__kcStorageTrace||[],
+      storageStats:window.KCDP?.storage?.stats?.()||null,
       supabase:window.KCDP?.supabaseConnection?.state||null,
       startup:window.KCDP?.startupStabilityGuard?.state||null,
       hasUnlock:!!document.getElementById('unlockSecret'),
@@ -60,8 +78,6 @@ const assert = require('assert');
     throw err;
   }
 
-  await page.waitForSelector('.ux-topbar',{timeout:10000});
-  await page.waitForSelector('#kcRecoveryDbBlock',{state:'attached',timeout:10000});
   const result=await page.evaluate(()=>({
     text:document.body.innerText,
     role:window.KCDP?.currentUser?.role||null,
@@ -69,6 +85,7 @@ const assert = require('assert');
     storageUnlocked:!!window.KCDP?.storage?.unlocked,
     recoveryLeds:window.KCDP?.recoveryStatusLeds?.status?.()||null,
     startupReady:!!window.KCDP?.startupStabilityGuard?.state?.ready,
+    storageTrace:window.__kcStorageTrace||[],
     startChoiceAutoLoad:window.KCDP?.deviceUX?.startChoiceAutoLoad
   }));
   assert.strictEqual(result.role,'admin');
@@ -78,7 +95,7 @@ const assert = require('assert');
   assert(result.recoveryLeds);
   assert.strictEqual(result.startupReady,true);
   assert.strictEqual(result.startChoiceAutoLoad,false);
-  console.log('KC DP2 V0.20 recovery mobile login A/B smoke: PASS');
+  console.log('KC DP2 V0.20 recovery mobile login storage trace: PASS');
   console.log(JSON.stringify(result,null,2));
   await browser.close();
-})().catch(err=>{console.error('KC DP2 V0.20 recovery mobile login A/B smoke: FAIL');console.error(err.stack||err);process.exit(1);});
+})().catch(err=>{console.error('KC DP2 V0.20 recovery mobile login storage trace: FAIL');console.error(err.stack||err);process.exit(1);});
