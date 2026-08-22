@@ -72,5 +72,10 @@
     wrapped.__kcCommunicationWrapped=true;K.pushAdapter.createReplacement=wrapped;
   }
 
-  K.communicationBridge={version:'0.20.0-p8',state,emit,fire,manualHealth,describe:()=>adapter?.describe?.()||null};
+  K.communicationBridge={version:'0.20.0-p9',state,emit,fire,manualHealth,describe:()=>adapter?.describe?.()||null};
+
+  // P9 status UI is a local-only companion. Loading it performs no KC Communication request.
+  if(typeof document!=='undefined'&&!document.getElementById('kcDpCommunicationStatusUi')){
+    const s=document.createElement('script');s.id='kcDpCommunicationStatusUi';s.src='src/ui/communication-status-ui.js?v=0.20.0-p9';s.defer=true;document.head.appendChild(s);
+  }
 })();
