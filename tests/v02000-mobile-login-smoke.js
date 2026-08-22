@@ -22,6 +22,10 @@ const assert = require('assert');
 
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.KCDP?.roleUx&&window.KCDP?.memberAccess,{timeout:20000});
+  await page.evaluate(()=>{
+    window.__kcOriginalPersistSessionIfNeeded=window.KCDP.memberAccess.persistSessionIfNeeded;
+    window.KCDP.memberAccess.persistSessionIfNeeded=async()=>false;
+  });
   await page.waitForSelector('#uxLocalTest',{state:'attached',timeout:20000});
   await page.evaluate(()=>{
     const details=document.querySelector('#uxLocalTest')?.closest('details'); if(details)details.open=true;
@@ -49,8 +53,7 @@ const assert = require('assert');
       startup:window.KCDP?.startupStabilityGuard?.state||null,
       hasUnlock:!!document.getElementById('unlockSecret'),
       hasMain:!!document.getElementById('mainView'),
-      hasTopbar:!!document.querySelector('.ux-topbar'),
-      rootHtml:document.getElementById('kcdpUxRoot')?.innerHTML?.slice(0,2500)||''
+      hasTopbar:!!document.querySelector('.ux-topbar')
     }));
     console.error('RECOVERY_START_DIAG',JSON.stringify(diag,null,2));
     console.error('BROWSER_ERRORS',JSON.stringify(browserErrors,null,2));
@@ -65,6 +68,7 @@ const assert = require('assert');
     personId:window.KCDP?.currentUser?.personId||null,
     storageUnlocked:!!window.KCDP?.storage?.unlocked,
     recoveryLeds:window.KCDP?.recoveryStatusLeds?.status?.()||null,
+    startupReady:!!window.KCDP?.startupStabilityGuard?.state?.ready,
     startChoiceAutoLoad:window.KCDP?.deviceUX?.startChoiceAutoLoad
   }));
   assert.strictEqual(result.role,'admin');
@@ -72,8 +76,9 @@ const assert = require('assert');
   assert.strictEqual(result.storageUnlocked,true);
   assert(!/Anmeldung läuft/i.test(result.text));
   assert(result.recoveryLeds);
+  assert.strictEqual(result.startupReady,true);
   assert.strictEqual(result.startChoiceAutoLoad,false);
-  console.log('KC DP2 V0.20 recovery mobile login smoke: PASS');
+  console.log('KC DP2 V0.20 recovery mobile login A/B smoke: PASS');
   console.log(JSON.stringify(result,null,2));
   await browser.close();
-})().catch(err=>{console.error('KC DP2 V0.20 recovery mobile login smoke: FAIL');console.error(err.stack||err);process.exit(1);});
+})().catch(err=>{console.error('KC DP2 V0.20 recovery mobile login A/B smoke: FAIL');console.error(err.stack||err);process.exit(1);});
