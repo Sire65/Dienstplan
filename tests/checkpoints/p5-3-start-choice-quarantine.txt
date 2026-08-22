@@ -1,0 +1,1 @@
+start-choice autoload must remain disabled during P5.3
