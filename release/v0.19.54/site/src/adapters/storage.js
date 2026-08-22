@@ -71,7 +71,10 @@
     async getMany(keys,{onProgress,migrate=true}={}){
       this.requireUnlock();if(!this.db)await this.init();const list=[...keys];if(!list.length)return [];
       const started=performance.now(),raw=await new Promise((resolve,reject)=>{let settled=false;const out=new Array(list.length),tx=this.db.transaction(STORE,'readonly'),os=tx.objectStore(STORE),timer=setTimeout(()=>{if(settled)return;settled=true;try{tx.abort()}catch(_){}reject(new Error('Lokale Datenbank antwortet beim Lesen nicht. Bitte andere KC-DP-Tabs schließen und erneut laden.'));},12000),finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);fn(value)};list.forEach((key,i)=>{const q=os.get(key);q.onsuccess=()=>out[i]=q.result;q.onerror=()=>finish(reject,q.error)});tx.oncomplete=()=>finish(resolve,out);tx.onerror=()=>finish(reject,tx.error);tx.onabort=()=>finish(reject,tx.error||new Error('Lokaler Lesevorgang abgebrochen.'))});
-      idbTraffic('get');await this._sessionKey();
+      idbTraffic('get');
+      const existingCount=raw.filter(Boolean).length;
+      if(!existingCount){const values=new Array(list.length);for(let i=0;i<list.length;i++){values[i]=undefined;onProgress?.(i+1,list.length,{key:list[i],phase:'read',legacy:false});}this._metrics.lastReadMs=Math.round((performance.now()-started)*10)/10;return values;}
+      await this._sessionKey();
       const values=new Array(list.length),legacy=[];
       for(let i=0;i<raw.length;i++){
         const row=raw[i];if(!row){values[i]=undefined;onProgress?.(i+1,list.length,{key:list[i],phase:'read',legacy:false});continue;}
@@ -80,7 +83,7 @@
         this._fingerprints.set(list[i],this._serialize(values[i]));onProgress?.(i+1,list.length,{key:list[i],phase:'read',legacy:row.envelope?.format!==FORMAT});if(i&&i%4===0)await tick();
       }
       if(migrate&&legacy.length){await this.putMany(legacy,{force:true,onProgress:(done,total,info)=>onProgress?.(list.length+done,list.length+legacy.length,{...info,phase:'migrate'})});this._migration.migrated+=legacy.length;}
-      this._metrics.reads+=raw.filter(Boolean).length;this._metrics.lastReadMs=Math.round((performance.now()-started)*10)/10;return values;
+      this._metrics.reads+=existingCount;this._metrics.lastReadMs=Math.round((performance.now()-started)*10)/10;return values;
     },
     async put(key,value){return this.putMany([[key,value]])},
     async get(key){return (await this.getMany([key]))[0]},
