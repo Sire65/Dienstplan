@@ -53,7 +53,7 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.strictEqual(calls[0].body.eventKey,'plan_released');
   assert.strictEqual(calls[0].body.testOnly,true,'plan_released muss TEST-only bleiben');
   assert.strictEqual(calls[0].body.sourceProgram,'kc-dp2');
-  assert.strictEqual(calls[0].body.data.orgId,'ORG-TEST','plan_released muss die echte orgId verwenden');
+  assert.strictEqual(calls[0].body.orgId,'ORG-TEST','plan_released muss die echte orgId verwenden');
 
   const shift=K.mutations.saveShift({personId:'P-1',date:'2026-12-04',start:12,end:16,zone:'front',area:'Verkauf'});
   assert.strictEqual(shift.record.id,'S-1','saveShift-Rückgabewert darf nicht verändert werden');
@@ -75,8 +75,8 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   await K.pushAdapter.createReplacement({date:'2026-12-05',start:0,end:1,personIds:['P-5']});
   await tick();
   assert.strictEqual(calls.length,4,'replacement_requested muss numerische Startzeit 0 akzeptieren');
-  assert.strictEqual(calls[3].body.data.from,'0');
-  assert.strictEqual(calls[3].body.data.to,'1');
+  assert.strictEqual(calls[3].body.variables.from,'0');
+  assert.strictEqual(calls[3].body.variables.to,'1');
 
   const beforeNoOrg=calls.length;
   K.integrationConfig.supabase.orgId='';
