@@ -37,6 +37,8 @@ jobs:
         run: node tests/v02000-mobile-login-input-gate.js
       - name: Login performance gate
         run: node tests/v02000-login-performance-gate.js
+      - name: Standalone login bootstrap gate
+        run: node tests/v02000-login-bootstrap-gate.js
       - name: KC Communication bridge isolation gate
         run: node tests/v02000-communication-bridge-gate.js
       - name: KC Communication status gate

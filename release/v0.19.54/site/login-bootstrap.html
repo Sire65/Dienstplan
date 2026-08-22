@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>KC DP2 · Anmeldung</title>
+<meta name="theme-color" content="#741521">
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#241f1c;background:#171411}*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:18px;background:linear-gradient(180deg,#171411,#302a25)}main{width:min(100%,430px);background:#fffaf5;border-radius:28px;padding:26px 24px 24px;box-shadow:0 18px 60px #0008}img{display:block;width:min(76%,300px);height:auto;margin:0 auto 8px}h1{margin:8px 0 4px;text-align:center;color:#8f1425;font-size:34px;line-height:1.05}p{margin:0 0 22px;text-align:center;color:#6b645e;font-size:18px}.field{margin:15px 0}label{display:block;font-weight:700;font-size:18px;margin:0 0 8px}input{width:100%;font:inherit;font-size:19px;padding:16px 14px;border:2px solid #cfc8c1;border-radius:16px;background:#fff;outline:none}input:focus{border-color:#b88b32;box-shadow:0 0 0 3px #b88b3228}button{width:100%;border:0;border-radius:16px;background:#a6112b;color:white;font-size:20px;font-weight:700;padding:17px;margin-top:10px}button:disabled{opacity:.6}.remember{display:flex;align-items:center;gap:10px;margin:16px 2px;font-size:16px}.remember input{width:22px;height:22px}.status{min-height:24px;margin-top:14px;text-align:center;font-size:15px;color:#6b645e}.status.error{color:#a6112b;font-weight:700}.small{margin-top:18px;font-size:13px;color:#8a8179;text-align:center}
+</style>
+</head>
+<body>
+<main>
+<img src="assets/kc-login-logo.webp" alt="Köcheclub Werne · since 1991">
+<h1>KC DP2</h1>
+<p>Bitte melden Sie sich an.</p>
+<form id="loginForm" autocomplete="on">
+<div class="field"><label for="email">E-Mail-Adresse</label><input id="email" name="username" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required></div>
+<div class="field"><label for="password">Passwort</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+<label class="remember"><input id="remember" type="checkbox" checked> Auf diesem Gerät angemeldet bleiben</label>
+<button id="submit" type="submit">Anmelden</button>
+<div id="status" class="status" role="status" aria-live="polite">Bereit.</div>
+</form>
+<div class="small">Schnellstart P20 · vor der Anmeldung werden keine DP2-Fachmodule geladen.</div>
+</main>
+<script>
+(()=>{
+'use strict';
+const SUPABASE_URL='https://ptblnpiroqftcvlsrhac.supabase.co';
+const PUBLISHABLE_KEY='sb_publishable_SqXIeGN-clcZ4gjmpLdSww_4DLfyy24';
+const ORG_ID='KC_WERNE';
+const SESSION_KEY='kc_dp_bootstrap_session_v1';
+const form=document.getElementById('loginForm'),button=document.getElementById('submit'),status=document.getElementById('status');
+function message(text,error=false){status.textContent=text;status.classList.toggle('error',error)}
+async function request(path,options={},token=''){
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),8000);
+ try{
+  const headers={apikey:PUBLISHABLE_KEY,'Content-Type':'application/json','Accept':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(options.headers||{})};
+  const r=await fetch(SUPABASE_URL+path,{...options,headers,signal:ctl.signal,cache:'no-store'});
+  const text=await r.text();let data=null;try{data=text?JSON.parse(text):null}catch(_){data=text}
+  if(!r.ok){const raw=(data&&typeof data==='object'&&(data.msg||data.message||data.error_description))||String(data||'Anmeldung fehlgeschlagen');if(/invalid login credentials|invalid_credentials/i.test(raw))throw new Error('E-Mail-Adresse oder Passwort ist falsch.');throw new Error(raw)}
+  return data;
+ }catch(e){if(e?.name==='AbortError')throw new Error('Die Anmeldung antwortet nicht. Bitte Internetverbindung prüfen.');throw e}
+ finally{clearTimeout(timer)}
+}
+form.addEventListener('submit',async e=>{
+ e.preventDefault();button.disabled=true;message('Anmeldung wird geprüft …');
+ try{
+  const email=document.getElementById('email').value.trim(),password=document.getElementById('password').value;
+  const session=await request('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})});
+  if(!session?.access_token||!session?.user?.id)throw new Error('Supabase hat keine gültige Sitzung geliefert.');
+  message('Mitgliedschaft wird geprüft …');
+  const q=`/rest/v1/kc_dp_memberships?select=org_id,user_id,role,active,person_id,display_name,email,phone&org_id=eq.${encodeURIComponent(ORG_ID)}&user_id=eq.${encodeURIComponent(session.user.id)}&active=is.true&limit=1`;
+  const membership=await request(q,{method:'GET'},session.access_token);
+  if(!Array.isArray(membership)||!membership[0])throw new Error('Keine aktive KC-DP-Mitgliedschaft gefunden.');
+  sessionStorage.setItem(SESSION_KEY,JSON.stringify({session,remember:document.getElementById('remember').checked,createdAt:Date.now()}));
+  message('Anmeldung erfolgreich. KC DP2 wird geladen …');
+  location.replace('app.html?bootstrap=1');
+ }catch(err){message(err?.message||'Anmeldung fehlgeschlagen.',true);button.disabled=false}
+});
+})();
+</script>
+</body>
+</html>
