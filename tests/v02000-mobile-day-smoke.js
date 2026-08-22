@@ -1,0 +1,22 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.join(__dirname,'..','release','v0.19.54','site');
+const device=fs.readFileSync(path.join(root,'src','ui','device-ux.js'),'utf8');
+const mobile=fs.readFileSync(path.join(root,'src','ui','mobile-day.js'),'utf8');
+const css=fs.readFileSync(path.join(root,'src','ui','mobile-day.css'),'utf8');
+function ok(cond,msg){if(!cond){console.error('FAIL:',msg);process.exitCode=1}else console.log('OK:',msg)}
+ok(device.includes('const isPhone=()=>innerWidth<=600'),'Device-UX begrenzt Handyfunktion auf <=600px');
+ok(device.includes("if(!isPhone())return Promise.resolve(false)"),'Tablet/Desktop laden mobile-day nicht');
+ok(device.includes("src/ui/mobile-day.css?v=0.19.40"),'Handy-CSS wird dynamisch geladen');
+ok(device.includes("src/ui/mobile-day.js?v=0.19.40"),'Handy-JS wird dynamisch geladen');
+ok(device.includes('startChoiceAutoLoad:false'),'Startauswahl ist im Recovery-Stand automatisch deaktiviert');
+ok(!/\n\s*loadStartChoiceAssets\(\);\s*\n/.test(device),'Startauswahl wird beim Boot nicht automatisch gestartet');
+ok(mobile.includes("window.matchMedia('(max-width:600px)')"),'Mobile-Day prüft zusätzlich Smartphone-Media-Query');
+ok(mobile.includes("data-kc-phone-nav=\"-1\"")&&mobile.includes("data-kc-phone-nav=\"1\""),'Vorheriger/Nächster Tag vorhanden');
+ok(mobile.includes('data-kc-phone-mode="list"')&&mobile.includes('data-kc-phone-mode="bars"'),'Liste/Balken-Umschaltung vorhanden');
+ok(mobile.includes("K.state?.view==='day'")&&mobile.includes('!K.state?.mobileMode'),'Handyansicht greift nur in Tagesplaner');
+ok(css.includes('@media (max-width:600px)'),'CSS ist auf Smartphonebreite begrenzt');
+ok(css.includes('Tablet/desktop intentionally untouched'),'Desktop-/Tablet-Abgrenzung dokumentiert');
+if(process.exitCode)process.exit(process.exitCode);
+console.log('V0.20.0 Mobile-Day-Smoke GRÜN');
