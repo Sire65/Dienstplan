@@ -1,0 +1,25 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.join(__dirname,'..','release','v0.19.54','site');
+const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+function ok(cond,msg){if(!cond){console.error('FAIL:',msg);process.exitCode=1}else console.log('OK:',msg)}
+ok(fs.existsSync(path.join(root,'index.html')),'V0.19.54 Baseline vorhanden');
+ok(index.includes('KC DP2 V0.19.54'),'Release-Identität V0.19.54');
+ok(index.includes('id="idbStatusLed"'),'IDX Status-LED vorhanden');
+ok(index.includes('id="idbTrafficLed"'),'IDX Traffic-LED vorhanden');
+ok(index.includes('id="supabaseStatusLed"'),'SUP Status-LED vorhanden');
+ok(index.includes('id="supabaseTrafficLed"'),'SUP Traffic-LED vorhanden');
+ok(index.includes('src/core/member-access.js'),'Login-/Mitgliedszugang geladen');
+ok(index.includes('src/adapters/supabase-provider.js'),'Supabase-Adapter geladen');
+ok(index.includes('src/adapters/storage.js'),'lokaler Storage-Adapter geladen');
+ok(index.includes('src/ui/app.js'),'Haupt-UI geladen');
+ok(index.includes('src/ui/diagnostics-center.js'),'Diagnosezentrum geladen');
+ok(!index.includes('notification-channel-safety.js'),'Baseline enthält noch keine nachträgliche Notification-Safety-Schicht');
+ok(!index.includes('notification-channel-settings.js'),'Baseline enthält noch keine nachträgliche Notification-Settings-Schicht');
+ok(!index.includes('email-center.js'),'Baseline lädt keinen Mail-Admin in den DP2-Kern');
+const js=[];
+(function walk(dir){for(const name of fs.readdirSync(dir)){const p=path.join(dir,name),s=fs.statSync(p);if(s.isDirectory())walk(p);else if(name.endsWith('.js'))js.push(p)}})(root);
+ok(js.length>20,`JavaScript-Bestand plausibel (${js.length} Dateien)`);
+if(process.exitCode)process.exit(process.exitCode);
+console.log('V0.20.0 Baseline-Gate GRÜN');
