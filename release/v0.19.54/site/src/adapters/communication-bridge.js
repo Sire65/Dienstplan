@@ -1,9 +1,10 @@
 (function(){
   'use strict';
   const K=window.KCDP=window.KCDP||{};
-  const state={mode:'test',ready:false,lastEvent:null,lastOk:null,lastError:null,lastAt:null};
+  const state={mode:'test',ready:false,lastEvent:null,lastOk:null,lastError:null,lastAt:null,lastSkippedReason:null};
   const fmtTime=h=>`${String(Math.floor(Number(h))).padStart(2,'0')}:${String(Math.round((Number(h)%1)*60)).padStart(2,'0')}`;
   const orgId=()=>String(K.integrationConfig?.supabase?.orgId||'').trim()||null;
+  const present=v=>v!==null&&v!==undefined&&String(v).trim()!=='';
   const periodLabel=()=>{
     const days=Array.isArray(K.days)?K.days:[];
     if(!days.length)return 'Dienstplan';
@@ -21,7 +22,10 @@
   }catch(e){state.lastError=e?.message||String(e);}
 
   function remember(eventKey,ok,error=null){
-    state.lastEvent=eventKey;state.lastOk=!!ok;state.lastError=error?String(error?.message||error):null;state.lastAt=new Date().toISOString();
+    state.lastEvent=eventKey;state.lastOk=!!ok;state.lastError=error?String(error?.message||error):null;state.lastAt=new Date().toISOString();state.lastSkippedReason=null;
+  }
+  function rememberSkip(eventKey,reason){
+    state.lastEvent=eventKey;state.lastOk=null;state.lastError=null;state.lastAt=new Date().toISOString();state.lastSkippedReason=String(reason||'übersprungen');
   }
   function emit(eventKey,data={},options={}){
     if(!adapter){remember(eventKey,false,state.lastError||'KC Communication Adapter nicht bereit');return Promise.resolve({ok:false,skipped:true});}
@@ -40,7 +44,12 @@
     const original=K.publishPlan;
     const wrapped=function(...args){
       const snapshot=original.apply(this,args);
-      fire('plan_released',{orgId:orgId()||'kc-dp2',periodLabel:periodLabel(),version:snapshot?.version,publishedAt:snapshot?.publishedAt},{orgId:orgId()});
+      const oid=orgId();
+      if(oid){
+        fire('plan_released',{orgId:oid,periodLabel:periodLabel(),version:snapshot?.version,publishedAt:snapshot?.publishedAt},{orgId:oid});
+      }else{
+        rememberSkip('plan_released','Keine echte orgId vorhanden; zentrales Event nicht gesendet.');
+      }
       return snapshot;
     };
     wrapped.__kcCommunicationWrapped=true;K.publishPlan=wrapped;
@@ -64,7 +73,7 @@
     const wrapped=function(input={}){
       const result=original.apply(this,arguments);
       const ids=Array.isArray(input.personIds)?input.personIds.filter(Boolean):[];
-      if(input.date&&input.start&&input.end&&ids.length){
+      if(input.date&&present(input.start)&&present(input.end)&&ids.length){
         fire('replacement_requested',{date:String(input.date),from:String(input.start),to:String(input.end),recipientPersonIds:ids.map(String),area:input.area||null,zone:input.zone||null,reasonCategory:input.reasonCategory||null});
       }
       return result;
@@ -72,7 +81,7 @@
     wrapped.__kcCommunicationWrapped=true;K.pushAdapter.createReplacement=wrapped;
   }
 
-  K.communicationBridge={version:'0.20.0-p9',state,emit,fire,manualHealth,describe:()=>adapter?.describe?.()||null};
+  K.communicationBridge={version:'0.20.0-p12',state,emit,fire,manualHealth,describe:()=>adapter?.describe?.()||null};
 
   // P9 status UI is a local-only companion. Loading it performs no KC Communication request.
   if(typeof document!=='undefined'&&!document.getElementById('kcDpCommunicationStatusUi')){
