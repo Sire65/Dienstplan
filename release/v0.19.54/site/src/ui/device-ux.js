@@ -7,14 +7,18 @@
   function hideGuide(){document.getElementById('snapGuide')?.classList.add('hidden');}
   const isPhone=()=>innerWidth<=600;
   function loadStartChoiceAssets(){
-    if(startChoiceStarted)return;
+    if(startChoiceStarted)return Promise.resolve(true);
     startChoiceStarted=true;
     if(!document.querySelector('link[data-kc-start-choice]')){
       const link=document.createElement('link');link.rel='stylesheet';link.href='src/ui/start-choice.css?v=0.19.40';link.dataset.kcStartChoice='1';document.head.appendChild(link);
     }
-    if(!document.querySelector('script[data-kc-start-choice]')){
-      const script=document.createElement('script');script.src='src/ui/start-choice.js?v=0.19.40';script.dataset.kcStartChoice='1';script.async=false;document.head.appendChild(script);
-    }
+    if(document.querySelector('script[data-kc-start-choice]'))return Promise.resolve(true);
+    return new Promise(resolve=>{
+      const script=document.createElement('script');script.src='src/ui/start-choice.js?v=0.19.40';script.dataset.kcStartChoice='1';script.async=false;
+      script.addEventListener('load',()=>resolve(true),{once:true});
+      script.addEventListener('error',()=>{startChoiceStarted=false;resolve(false);},{once:true});
+      document.head.appendChild(script);
+    });
   }
   function loadPhoneDayAssets(){
     if(!isPhone())return Promise.resolve(false);
@@ -33,7 +37,8 @@
     });
   }
   function watchPhone(){loadPhoneDayAssets();window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},120);},{passive:true});window.addEventListener('orientationchange',()=>{loadPhoneDayAssets();K.phoneDayUx?.refresh?.();},{passive:true});}
-  K.deviceUX={version:'0.19.40',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets};
-  loadStartChoiceAssets();
+  K.deviceUX={version:'0.20.0-recovery-p5.3',bind,autoScroll,guide,hideGuide,isPhone,loadPhoneDayAssets,loadStartChoiceAssets,startChoiceAutoLoad:false};
+  // Recovery-Regel: Startauswahl bleibt vorhanden, wird aber NICHT automatisch geladen.
+  // Erst nach eigenem Startpfad-/Read-only-Regressionspaket darf loadStartChoiceAssets() bewusst aktiviert werden.
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchPhone,{once:true});else watchPhone();
 })();
