@@ -34,13 +34,22 @@ async function openLogin(browser, routeMode) {
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForSelector('#uxLoginForm', { timeout: 15000 });
+  // The app may render the login surface once more while startup guards finish.
+  // Wait briefly and then require a fresh, stable form before interacting.
+  await page.waitForTimeout(1200);
+  await page.waitForSelector('#uxLoginForm #uxEmail', { state: 'visible', timeout: 10000 });
+  await page.waitForSelector('#uxLoginForm #uxPassword', { state: 'visible', timeout: 10000 });
   return { context, page, requests };
 }
 
 async function submit(page) {
-  await page.fill('#uxEmail', 'smoke@example.com');
-  await page.fill('#uxPassword', 'wrong-password');
-  await page.click('#uxLoginForm button[type="submit"]');
+  const email = page.locator('#uxLoginForm #uxEmail');
+  const password = page.locator('#uxLoginForm #uxPassword');
+  await email.waitFor({ state: 'visible', timeout: 10000 });
+  await password.waitFor({ state: 'visible', timeout: 10000 });
+  await email.fill('smoke@example.com');
+  await password.fill('wrong-password');
+  await page.locator('#uxLoginForm button[type="submit"]').click();
 }
 
 (async () => {
