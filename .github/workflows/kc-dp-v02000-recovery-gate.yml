@@ -37,6 +37,8 @@ jobs:
         run: node tests/v02000-communication-status-gate.js
       - name: Supabase timeout behavior gate
         run: node tests/v02000-supabase-timeout-gate.js
+      - name: V0.20.0 RC freeze gate
+        run: node tests/v02000-release-candidate-freeze-gate.js
       - name: Syntax check stable release
         shell: bash
         run: |
