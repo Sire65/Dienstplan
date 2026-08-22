@@ -16,6 +16,8 @@ ok(handoff.includes('K.supabaseConnection.restoreSession(x.session)'),'Bestehend
 ok(handoff.includes("K.memberAccess.state.status='authenticated'"),'Member-Access wird vor Role-UX synchron als angemeldet gesetzt');
 ok(handoff.includes('K.auth.setCurrentUser({personId:m.person_id,role,displayName})'),'Verifizierte Person und Rolle werden vor Role-UX übernommen');
 ok(handoff.includes('K.session?.adoptAuthenticatedUser?.'),'DP2-Sitzung übernimmt den Bootstrap-Benutzer');
-ok(handoff.includes("version:'0.20.0-p21'"),'P21 Session-Handoff ist aktiv');
+ok(handoff.includes("provider:'supabase'"),'Bootstrap-Sitzung verwendet den kanonischen Supabase-Provider');
+ok(handoff.includes('memberAccess.setRememberHint?.(!!x.remember)'),'Angemeldet-bleiben-Hinweis wird persistent übernommen');
+ok(handoff.includes("version:'0.20.0-p23'"),'P23 Session-Handoff ist aktiv');
 ok(handoff.includes("120000"),'Bootstrap-Session ist kurzlebig begrenzt');
-console.log('P21 standalone login bootstrap handoff gate OK');
+console.log('P23 standalone login bootstrap handoff gate OK');
