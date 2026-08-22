@@ -1,4 +1,4 @@
-name: KC DP2 P20 Bootstrap Handtest Deploy
+name: KC DP2 P21 Bootstrap Handoff Handtest Deploy
 
 on:
   push:
@@ -64,6 +64,11 @@ jobs:
         with:
           ref: c30c13f71bd6c22e4be91ba7742300c1d7fc6aa9
           path: p20
+      - name: Checkout P21
+        uses: actions/checkout@v6
+        with:
+          ref: 875c073fc9e9941cf72f0788161c884c3aee732b
+          path: p21
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -80,8 +85,8 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Verify P20 bootstrap candidate
-        working-directory: p20
+      - name: Verify P21 bootstrap handoff candidate
+        working-directory: p21
         shell: bash
         run: |
           set -euo pipefail
@@ -91,9 +96,11 @@ jobs:
           node tests/v02000-login-bootstrap-gate.js
           test -f release/v0.19.54/site/login-bootstrap.html
           test -f release/v0.19.54/site/src/core/bootstrap-session.js
+          grep -q "0.20.0-p21" release/v0.19.54/site/src/core/bootstrap-session.js
+          grep -q "memberAccess.state.status='authenticated'" release/v0.19.54/site/src/core/bootstrap-session.js
           while IFS= read -r -d '' f; do node --check "$f"; done < <(find release/v0.19.54/site -type f -name '*.js' -print0)
 
-      - name: Build complete Pages artifact with P20
+      - name: Build complete Pages artifact with P21
         shell: bash
         run: |
           set -euo pipefail
@@ -131,6 +138,11 @@ jobs:
           cp dist/rc-v02000-p20-bootstrap/index.html dist/rc-v02000-p20-bootstrap/app.html
           cp dist/rc-v02000-p20-bootstrap/login-bootstrap.html dist/rc-v02000-p20-bootstrap/index.html
 
+          mkdir -p dist/rc-v02000-p21-bootstrap
+          cp -a p21/release/v0.19.54/site/. dist/rc-v02000-p21-bootstrap/
+          cp dist/rc-v02000-p21-bootstrap/index.html dist/rc-v02000-p21-bootstrap/app.html
+          cp dist/rc-v02000-p21-bootstrap/login-bootstrap.html dist/rc-v02000-p21-bootstrap/index.html
+
           node <<'NODE'
           const fs=require('fs');
           const variants=[
@@ -138,7 +150,8 @@ jobs:
             ['p17-isolated','P17_ISOLATED_1'],
             ['p18-isolated','P18_ISOLATED_1'],
             ['p19-isolated','P19_ISOLATED_1'],
-            ['p20-bootstrap','P20_BOOTSTRAP_1']
+            ['p20-bootstrap','P20_BOOTSTRAP_1'],
+            ['p21-bootstrap','P21_BOOTSTRAP_1']
           ];
           for(const [folder,suffix] of variants){
             const base=`dist/rc-v02000-${folder}`;
@@ -154,32 +167,35 @@ jobs:
             fs.writeFileSync(backup,b);
           }
 
-          const app='dist/rc-v02000-p20-bootstrap/app.html';
-          let html=fs.readFileSync(app,'utf8');
-          const marker='<script src="src/adapters/supabase-provider.js?v=0.19.37"></script>';
-          if(!html.includes(marker)) throw new Error('P20 app Supabase marker missing');
-          html=html.replace(marker,marker+'<script src="src/core/bootstrap-session.js?v=0.20.0-p20"></script>');
-          fs.writeFileSync(app,html);
+          for(const [folder,version] of [['p20-bootstrap','0.20.0-p20'],['p21-bootstrap','0.20.0-p21']]){
+            const app=`dist/rc-v02000-${folder}/app.html`;
+            let html=fs.readFileSync(app,'utf8');
+            const marker='<script src="src/adapters/supabase-provider.js?v=0.19.37"></script>';
+            if(!html.includes(marker)) throw new Error(`${folder}: Supabase marker missing`);
+            html=html.replace(marker,marker+`<script src="src/core/bootstrap-session.js?v=${version}"></script>`);
+            fs.writeFileSync(app,html);
+          }
           NODE
 
           printf '%s\n' \
-            'candidate=0.20.0-p20-bootstrap-handtest' \
-            'source=c30c13f71bd6c22e4be91ba7742300c1d7fc6aa9' \
+            'candidate=0.20.0-p21-bootstrap-handoff-handtest' \
+            'source=875c073fc9e9941cf72f0788161c884c3aee732b' \
             'entry=index.html lightweight bootstrap' \
-            'app=app.html full runtime after authentication' \
-            'storage=KC_DP_SECURE_CANDIDATE_P20_BOOTSTRAP_1' \
-            'device_key_db=KC_DP_DEVICE_KEY_P20_BOOTSTRAP_1' > dist/rc-v02000-p20-bootstrap/P20_BUILD.txt
+            'app=app.html authenticated runtime handoff' \
+            'storage=KC_DP_SECURE_CANDIDATE_P21_BOOTSTRAP_1' \
+            'device_key_db=KC_DP_DEVICE_KEY_P21_BOOTSTRAP_1' > dist/rc-v02000-p21-bootstrap/P21_BUILD.txt
 
           test -f dist/index.html
-          test -f dist/rc-v02000-p19-isolated/index.html
           test -f dist/rc-v02000-p20-bootstrap/index.html
-          test -f dist/rc-v02000-p20-bootstrap/app.html
-          grep -q 'Schnellstart P20' dist/rc-v02000-p20-bootstrap/index.html
-          ! grep -q 'planning.js' dist/rc-v02000-p20-bootstrap/index.html
-          ! grep -q 'service-worker.js' dist/rc-v02000-p20-bootstrap/index.html
-          grep -q 'bootstrap-session.js?v=0.20.0-p20' dist/rc-v02000-p20-bootstrap/app.html
-          grep -q 'KC_DP_SECURE_CANDIDATE_P20_BOOTSTRAP_1' dist/rc-v02000-p20-bootstrap/src/adapters/storage.js
-          grep -q 'KC_DP_DEVICE_KEY_P20_BOOTSTRAP_1' dist/rc-v02000-p20-bootstrap/src/adapters/backup.js
+          test -f dist/rc-v02000-p21-bootstrap/index.html
+          test -f dist/rc-v02000-p21-bootstrap/app.html
+          grep -q 'Schnellstart P21' dist/rc-v02000-p21-bootstrap/index.html
+          ! grep -q 'planning.js' dist/rc-v02000-p21-bootstrap/index.html
+          ! grep -q 'service-worker.js' dist/rc-v02000-p21-bootstrap/index.html
+          grep -q 'bootstrap-session.js?v=0.20.0-p21' dist/rc-v02000-p21-bootstrap/app.html
+          grep -q "memberAccess.state.status='authenticated'" dist/rc-v02000-p21-bootstrap/src/core/bootstrap-session.js
+          grep -q 'KC_DP_SECURE_CANDIDATE_P21_BOOTSTRAP_1' dist/rc-v02000-p21-bootstrap/src/adapters/storage.js
+          grep -q 'KC_DP_DEVICE_KEY_P21_BOOTSTRAP_1' dist/rc-v02000-p21-bootstrap/src/adapters/backup.js
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
