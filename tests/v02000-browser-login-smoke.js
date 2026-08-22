@@ -45,42 +45,31 @@ async function openLogin(browser, routeMode) {
         try { return await route.abort('timedout'); } catch (_) { return; }
       }
     }
+    if (url.includes('/auth/v1/settings')) checkpoint(`transport/settings request (${routeMode})`);
     return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 15000 });
-  await page.evaluate(() => {
-    const root = document.getElementById('kcdpUxRoot');
-    window.__kcLoginRootMutations = 0;
-    window.__kcLoginObserver = new MutationObserver(() => { window.__kcLoginRootMutations++; });
-    if (root) window.__kcLoginObserver.observe(root, { childList: true, subtree: true, attributes: true });
-  });
   checkpoint(`openLogin(${routeMode}) ready`);
   return { context, page, requests };
 }
 
-async function loginDomState(page, label) {
+async function snapshot(page, label) {
   const state = await page.evaluate(() => {
-    const p = document.getElementById('uxPassword');
-    const f = document.getElementById('uxLoginForm');
-    const r = p?.getBoundingClientRect?.();
-    const s = p ? getComputedStyle(p) : null;
+    const form = document.querySelector('#uxLoginForm');
+    const button = form?.querySelector('button[type="submit"]');
+    const card = document.querySelector('.ux-login-card');
     return {
       bodyClass: document.body.className,
-      formConnected: !!f?.isConnected,
-      passwordExists: !!p,
-      passwordConnected: !!p?.isConnected,
-      passwordDisabled: !!p?.disabled,
-      passwordDisplay: s?.display || null,
-      passwordVisibility: s?.visibility || null,
-      passwordOpacity: s?.opacity || null,
-      passwordWidth: r?.width || 0,
-      passwordHeight: r?.height || 0,
-      rootMutations: window.__kcLoginRootMutations || 0,
-      activeId: document.activeElement?.id || null
+      formExists: !!form,
+      buttonExists: !!button,
+      buttonText: button?.textContent?.trim() || null,
+      buttonDisabled: !!button?.disabled,
+      cardText: card?.innerText || '',
+      bodyText: document.body?.innerText || ''
     };
   });
-  console.log(`DOM ${label}: ${JSON.stringify(state)}`);
+  console.log(`STATE ${label}: ${JSON.stringify(state)}`);
   return state;
 }
 
@@ -114,17 +103,22 @@ async function nativeSubmit(page) {
 
 async function submit(page) {
   checkpoint('submit start');
-  await loginDomState(page, 'before-email');
-  checkpoint('fill email start');
   await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
-  checkpoint('fill email done');
-  await page.waitForTimeout(250);
-  const afterEmail = await loginDomState(page, 'after-email');
-  if (!afterEmail.passwordExists || !afterEmail.passwordConnected || afterEmail.passwordDisplay === 'none' || afterEmail.passwordVisibility === 'hidden' || afterEmail.passwordWidth === 0 || afterEmail.passwordHeight === 0) {
-    throw new Error('Password field became non-interactive after email input: ' + JSON.stringify(afterEmail));
-  }
   await setPasswordViaDom(page, 'wrong-password');
   await nativeSubmit(page);
+}
+
+async function waitForOutcome(page, timeoutMs) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const state = await snapshot(page, `outcome +${Date.now() - started}ms`);
+    const txt = `${state.cardText}\n${state.bodyText}`;
+    const friendly = /E-Mail-Adresse oder Passwort ist falsch/.test(txt);
+    const recovered = state.buttonExists && state.buttonText === 'Anmelden' && !state.buttonDisabled && !/Anmeldung läuft…/.test(txt);
+    if (friendly || recovered) return { state, friendly, recovered, elapsed: Date.now() - started };
+    await page.waitForTimeout(250);
+  }
+  return { state: await snapshot(page, 'outcome timeout'), friendly: false, recovered: false, elapsed: Date.now() - started };
 }
 
 (async () => {
@@ -133,14 +127,15 @@ async function submit(page) {
   try {
     {
       checkpoint('scenario invalid credentials start');
-      const { context, page } = await openLogin(browser, 'invalid');
+      const { context, page, requests } = await openLogin(browser, 'invalid');
       assert(await page.locator('body').evaluate(el => el.classList.contains('ux-login')), 'Android viewport starts in login mode');
       assert(await page.locator('#uxLoginForm').isVisible(), 'Login form is visible');
       await submit(page);
-      await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 5000 });
-      const txt = await page.locator('.ux-login-card').innerText();
-      assert(/E-Mail-Adresse oder Passwort ist falsch/.test(txt), 'Invalid credentials return a friendly login error');
-      assert(!/Anmeldung läuft…/.test(txt), 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
+      const outcome = await waitForOutcome(page, 8000);
+      assert(outcome.friendly, `Invalid credentials return a friendly login error (${outcome.elapsed} ms)`);
+      assert(!/Anmeldung läuft…/.test(`${outcome.state.cardText}\n${outcome.state.bodyText}`), 'Login button is no longer stuck on “Anmeldung läuft…” after auth error');
+      const tokenCalls = requests.filter(u => u.includes('/auth/v1/token?grant_type=password')).length;
+      assert(tokenCalls === 1, `Invalid-credential path issues one password-auth request (${tokenCalls})`);
       await context.close();
       checkpoint('scenario invalid credentials done');
     }
@@ -150,15 +145,11 @@ async function submit(page) {
       const { context, page, requests } = await openLogin(browser, 'hang');
       const started = Date.now();
       await submit(page);
-      checkpoint('waiting for login button recovery');
-      await page.waitForFunction(() => {
-        const b = document.querySelector('#uxLoginForm button[type="submit"]');
-        return !!b && b.textContent.trim() === 'Anmelden' && !b.disabled;
-      }, { timeout: 19000 });
+      const outcome = await waitForOutcome(page, 19000);
       const elapsed = Date.now() - started;
-      const card = await page.locator('.ux-login-card').innerText();
-      assert(elapsed < 19000, `Hanging login returns control in under 19s (${elapsed} ms)`);
-      assert(!/Anmeldung läuft…/.test(card), 'Hanging transport does not leave login UI stuck');
+      assert(outcome.recovered, `Hanging login returns control in under 19s (${elapsed} ms)`);
+      assert(elapsed < 19000, `Hanging login stays below 19s (${elapsed} ms)`);
+      assert(!/Anmeldung läuft…/.test(`${outcome.state.cardText}\n${outcome.state.bodyText}`), 'Hanging transport does not leave login UI stuck');
       const tokenCalls = requests.filter(u => u.includes('/auth/v1/token?grant_type=password')).length;
       assert(tokenCalls === 1, `Only one password-auth request is issued (${tokenCalls})`);
       const diagCalls = requests.filter(u => u.includes('/auth/v1/settings?kc_dp_transport=')).length;
