@@ -16,6 +16,7 @@ assert(html.indexOf('src/ui/app.js')<html.indexOf('src/adapters/communication-br
 assert(bridgeCode.includes("defaultTestOnly:true"),'Bridge muss TEST als Default erzwingen');
 assert(bridgeCode.includes("testOnly:true"),'Bridge darf LIVE nicht freischalten');
 assert(!bridgeCode.includes('.health()')||bridgeCode.includes('manualHealth'),'Health darf nur manuell aufgerufen werden');
+assert(!bridgeCode.includes("orgId:orgId()||'kc-dp2'"),'Bridge darf keine erfundene orgId senden');
 
 const calls=[];
 let failNetwork=false;
@@ -52,6 +53,7 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.strictEqual(calls[0].body.eventKey,'plan_released');
   assert.strictEqual(calls[0].body.testOnly,true,'plan_released muss TEST-only bleiben');
   assert.strictEqual(calls[0].body.sourceProgram,'kc-dp2');
+  assert.strictEqual(calls[0].body.orgId,'ORG-TEST','plan_released muss die echte orgId verwenden');
 
   const shift=K.mutations.saveShift({personId:'P-1',date:'2026-12-04',start:12,end:16,zone:'front',area:'Verkauf'});
   assert.strictEqual(shift.record.id,'S-1','saveShift-Rückgabewert darf nicht verändert werden');
@@ -70,6 +72,22 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.strictEqual(calls[2].body.testOnly,true);
   assert.deepStrictEqual(calls[2].body.recipients,[{personId:'P-2'},{personId:'P-3'}]);
 
+  await K.pushAdapter.createReplacement({date:'2026-12-05',start:0,end:1,personIds:['P-5']});
+  await tick();
+  assert.strictEqual(calls.length,4,'replacement_requested muss numerische Startzeit 0 akzeptieren');
+  assert.strictEqual(calls[3].body.variables.from,'0');
+  assert.strictEqual(calls[3].body.variables.to,'1');
+
+  const beforeNoOrg=calls.length;
+  K.integrationConfig.supabase.orgId='';
+  const pubNoOrg=K.publishPlan({publishedBy:'Test'});
+  assert.strictEqual(pubNoOrg.version,7,'publishPlan muss auch ohne orgId normal zurückkehren');
+  await tick();
+  assert.strictEqual(calls.length,beforeNoOrg,'plan_released darf ohne echte orgId nicht gesendet werden');
+  assert.strictEqual(K.communicationBridge.state.lastEvent,'plan_released');
+  assert(/Keine echte orgId/i.test(K.communicationBridge.state.lastSkippedReason||''),'fehlende orgId muss diagnostizierbar protokolliert werden');
+  K.integrationConfig.supabase.orgId='ORG-TEST';
+
   failNetwork=true;
   const before=calls.length;
   const out=K.mutations.saveShift({personId:'P-4',date:'2026-12-06',start:10,end:12});
@@ -79,5 +97,5 @@ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
   assert.strictEqual(K.communicationBridge.state.lastOk,false,'Kommunikationsfehler muss im Bridge-State sichtbar sein');
   assert(/nicht erreichbar|simulierter Kommunikationsausfall/i.test(K.communicationBridge.state.lastError||''),'Fehler muss diagnostizierbar bleiben');
 
-  console.log('KC DP2 V0.20 P8 Communication Bridge Gate PASS');
+  console.log('KC DP2 V0.20 P12 Communication Bridge Gate PASS');
 })().catch(err=>{console.error(err);process.exit(1);});
