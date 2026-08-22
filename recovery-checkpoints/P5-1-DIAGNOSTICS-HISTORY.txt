@@ -1,0 +1,3 @@
+KC DP2 V0.20.0 Recovery Checkpoint P5.1
+Scope: diagnostics history protection only
+No production/main merge.
