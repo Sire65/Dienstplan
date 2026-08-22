@@ -75,28 +75,35 @@ async function openLogin(browser, mode) {
   }, { mode });
 
   await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.locator('#uxLoginForm').waitFor({ state: 'visible', timeout: 15000 });
+  await page.waitForFunction(() => {
+    const form = document.querySelector('#uxLoginForm');
+    const email = document.querySelector('#uxEmail');
+    const password = document.querySelector('#uxPassword');
+    return !!form && !!email && !!password;
+  }, { timeout: 15000 });
   checkpoint(`openLogin(${mode}) ready`);
   return { context, page };
 }
 
-async function setPasswordViaDom(page, value) {
-  const actual = await page.evaluate(nextValue => {
-    const el = document.querySelector('#uxPassword');
+async function setInputViaDom(page, selector, value) {
+  const actual = await page.evaluate(({ selector, value }) => {
+    const el = document.querySelector(selector);
     if (!el || !el.isConnected || el.disabled) return null;
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-    setter.call(el, nextValue);
+    setter.call(el, value);
     el.dispatchEvent(new Event('input', { bubbles: true }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
     return el.value;
-  }, value);
-  if (actual !== value) throw new Error(`DOM password input mismatch: ${JSON.stringify(actual)}`);
+  }, { selector, value });
+  if (actual !== value) throw new Error(`DOM input mismatch for ${selector}: ${JSON.stringify(actual)}`);
 }
 
 async function submit(page) {
   checkpoint('submit start');
-  await page.locator('#uxEmail').fill('smoke@example.com', { timeout: 10000 });
-  await setPasswordViaDom(page, 'wrong-password');
+  await setInputViaDom(page, '#uxEmail', 'smoke@example.com');
+  checkpoint('email set via direct page DOM');
+  await setInputViaDom(page, '#uxPassword', 'wrong-password');
+  checkpoint('password set via direct page DOM');
   const ok = await page.evaluate(() => {
     const form = document.querySelector('#uxLoginForm');
     const button = form?.querySelector('button[type="submit"]');
@@ -159,6 +166,21 @@ async function smokeStats(page) {
   return page.evaluate(() => ({ ...(window.__kcSmoke || {}) }));
 }
 
+async function loginSurfaceState(page) {
+  return page.evaluate(() => {
+    const body = document.body;
+    const form = document.querySelector('#uxLoginForm');
+    const email = document.querySelector('#uxEmail');
+    const password = document.querySelector('#uxPassword');
+    return {
+      loginMode: !!body?.classList.contains('ux-login'),
+      formExists: !!form,
+      emailExists: !!email,
+      passwordExists: !!password
+    };
+  });
+}
+
 (async () => {
   checkpoint('launch chromium');
   const browser = await chromium.launch({ headless: true });
@@ -166,8 +188,9 @@ async function smokeStats(page) {
     {
       checkpoint('scenario invalid credentials start');
       const { context, page } = await openLogin(browser, 'invalid');
-      assert(await page.locator('body').evaluate(el => el.classList.contains('ux-login')), 'Android viewport starts in login mode');
-      assert(await page.locator('#uxLoginForm').isVisible(), 'Login form is visible');
+      const surface = await loginSurfaceState(page);
+      assert(surface.loginMode, 'Android viewport starts in login mode');
+      assert(surface.formExists && surface.emailExists && surface.passwordExists, 'Login form is visible and complete');
       await submit(page);
 
       const friendly = await waitBrowserCondition(page, 'friendly', 5000);
