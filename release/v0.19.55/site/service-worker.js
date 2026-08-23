@@ -1,11 +1,11 @@
-/* KC-DP2 stable PWA/update engine V1.6.
-   Startup Cache Guard: every controlled program start verifies the release manifest,
+/* KC-DP2 stable PWA/update engine V1.7.
+   Startup Cache Guard + Build Lock: every controlled program start verifies the release manifest,
    validates the current runtime cache by SHA-256, removes stale release caches only
    after a successful verification, and records a local green/yellow/red start log.
-   Network-critical runtime files are always network-first and may only fall back to
-   the verified active release cache, never to an older release cache.
+   The manifest fingerprint is derived only from version/cache/file identities and SHA-256 values.
+   If the same version is served later with a different fingerprint, startup is blocked RED.
 */
-const ENGINE='kc-dp-update-engine-v1.6-startguard';
+const ENGINE='kc-dp-update-engine-v1.7-buildlock';
 const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const START_LOG_URL=new URL('__kc_dp_start_guard_log__',self.registration.scope).toString();
@@ -27,9 +27,14 @@ async function readStartLogs(){const c=await caches.open(META_CACHE),r=await c.m
 async function appendStartLog(entry){const c=await caches.open(META_CACHE),logs=await readStartLogs();logs.unshift(entry);await c.put(START_LOG_URL,new Response(JSON.stringify(logs.slice(0,MAX_START_LOGS),null,2),{headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-KC-DP-Engine':ENGINE}}));return entry;}
 async function fetchManifest(timeoutMs=NETWORK_TIMEOUT_MS){const r=await fetchWithTimeout(`${UPDATE_MANIFEST}?sw=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},timeoutMs);if(!r.ok)throw new Error(`Manifest HTTP ${r.status}`);const m=await r.json();if(!m?.version||!Array.isArray(m.files))throw new Error('Manifest unvollständig');return m;}
 async function sha256Hex(buffer){const d=await crypto.subtle.digest('SHA-256',buffer);return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function manifestFingerprint(m){
+  const files=(m.files||[]).map(f=>({path:String(f.installPath||f.path||''),source:String(f.downloadPath||f.path||''),bytes:Number(f.bytes||0),sha256:String(f.sha256||'').toLowerCase(),runtime:f.runtime!==false,forceRefresh:f.forceRefresh===true})).sort((a,b)=>a.path.localeCompare(b.path));
+  const canonical=JSON.stringify({version:String(m.version||''),cacheName:String(m.cacheName||`kc-dp-release-${m.version||''}`),files});
+  return sha256Hex(new TextEncoder().encode(canonical));
+}
 async function verifiedResponse(file,response){const buffer=await response.arrayBuffer();if(Number(file.bytes||0)>0&&Math.abs(buffer.byteLength-Number(file.bytes))>4)throw new Error(`${file.installPath||file.path}: Dateigröße stimmt nicht`);if(file.sha256){const h=await sha256Hex(buffer);if(h.toLowerCase()!==String(file.sha256).toLowerCase())throw new Error(`${file.installPath||file.path}: SHA-256 stimmt nicht`);}const headers=new Headers(response.headers);headers.set('X-KC-DP-Verified','1');if(file.sha256)headers.set('X-KC-DP-SHA256',String(file.sha256));return new Response(buffer,{status:200,statusText:'OK',headers});}
 async function cacheRelease(m){const cacheName=m.cacheName||`kc-dp-release-${m.version}`,cache=await caches.open(cacheName),files=m.files.filter(x=>x.runtime!==false);for(const f of files){const source=new URL(f.downloadPath||f.path,self.registration.scope).toString(),target=new URL(f.installPath||f.path,self.registration.scope).toString(),hit=await cache.match(target,{ignoreSearch:true});if(hit)continue;const r=await fetchWithTimeout(source,{cache:'no-store'});if(!r.ok)throw new Error(`${f.installPath||f.path}: HTTP ${r.status}`);await cache.put(target,await verifiedResponse(f,r));}return cacheName;}
-async function ensureInitialRelease(){let meta=await readMeta();if(meta?.activeCache)return meta;const m=await fetchManifest(),cacheName=await cacheRelease(m);return writeMeta({activeCache:cacheName,activeVersion:m.version,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,engine:ENGINE});}
+async function ensureInitialRelease(){let meta=await readMeta();if(meta?.activeCache)return meta;const m=await fetchManifest(),cacheName=await cacheRelease(m),fingerprint=await manifestFingerprint(m);return writeMeta({activeCache:cacheName,activeVersion:m.version,manifestFingerprint:fingerprint,buildId:`${m.version}-${fingerprint.slice(0,12)}`,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,engine:ENGINE});}
 async function refreshForcedRuntime(meta){try{if(!meta?.activeCache)return meta;const m=await fetchManifest();if(String(m.version)!==String(meta.activeVersion))return meta;const forced=m.files.filter(x=>x.runtime!==false&&x.forceRefresh===true);if(!forced.length)return meta;const cache=await caches.open(meta.activeCache);for(const f of forced){const source=new URL(f.downloadPath||f.path,self.registration.scope),target=new URL(f.installPath||f.path,self.registration.scope).toString();source.searchParams.set('kc_sw_refresh',Date.now().toString());const r=await fetchWithTimeout(source.toString(),{cache:'no-store'});if(!r.ok)throw new Error(`${f.installPath||f.path}: HTTP ${r.status}`);const verified=await verifiedResponse(f,r);const headers=new Headers(verified.headers);headers.set('X-KC-DP-Release',String(m.version));headers.set('X-KC-DP-Forced-Refresh','1');await cache.put(target,new Response(await verified.arrayBuffer(),{status:200,headers}));}meta={...meta,forcedRefreshAt:new Date().toISOString(),engine:ENGINE};await writeMeta(meta);}catch(_){}return meta;}
 async function pruneCaches(meta){const keys=(await caches.keys()).filter(k=>k.startsWith('kc-dp-release-'));const keep=new Set([meta?.activeCache,meta?.previousCache].filter(Boolean));for(const k of keys)if(!keep.has(k))await caches.delete(k);}
 async function pruneAllOldReleaseCaches(activeCache){const keys=(await caches.keys()).filter(k=>k.startsWith('kc-dp-release-'));let removed=0;for(const k of keys){if(k!==activeCache){await caches.delete(k);removed++;}}return removed;}
@@ -61,15 +66,23 @@ async function verifyManifestRelease(m,run){
   startStep(run,'Runtime-Dateien','green',`${verified} geprüft, ${refreshed} erneuert`);
   return {cacheName,verified,refreshed};
 }
+async function finishStartRun(run){run.finishedAt=new Date().toISOString();await appendStartLog(run);await tellClients({type:'KC_DP_START_GUARD_STATUS',run}).catch(()=>{});return run;}
 async function runStartGuard(){
-  const run={id:`START-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,startedAt:new Date().toISOString(),finishedAt:null,status:'running',engine:ENGINE,version:null,activeCache:null,removedOldCaches:0,steps:[]};
+  const run={id:`START-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,startedAt:new Date().toISOString(),finishedAt:null,status:'running',engine:ENGINE,version:null,manifestFingerprint:null,buildId:null,buildConflict:false,activeCache:null,removedOldCaches:0,steps:[]};
   startStep(run,'Startprüfung','green','Wächter gestartet');
   try{
-    const m=await fetchManifest(START_GUARD_TIMEOUT_MS);run.version=String(m.version);startStep(run,'Update-Manifest','green',`Version ${m.version}, Cache ${m.cacheName||`kc-dp-release-${m.version}`}`);
-    const verified=await verifyManifestRelease(m,run);
+    const m=await fetchManifest(START_GUARD_TIMEOUT_MS);run.version=String(m.version);run.manifestFingerprint=await manifestFingerprint(m);run.buildId=`${run.version}-${run.manifestFingerprint.slice(0,12)}`;
+    startStep(run,'Update-Manifest','green',`Version ${m.version}, Cache ${m.cacheName||`kc-dp-release-${m.version}`}`);
+    startStep(run,'Build-Fingerprint','green',run.buildId);
     const old=await readMeta();
-    const next={...(old||{}),activeCache:verified.cacheName,activeVersion:String(m.version),previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,startGuardAt:new Date().toISOString(),engine:ENGINE};
-    await writeMeta(next);run.activeCache=verified.cacheName;startStep(run,'Aktiver Release','green',`${m.version} ist aktiv und verifiziert`);
+    if(old?.activeVersion&&String(old.activeVersion)===run.version&&old.manifestFingerprint&&String(old.manifestFingerprint)!==run.manifestFingerprint){
+      run.status='red';run.buildConflict=true;run.activeCache=old.activeCache||null;
+      startStep(run,'Build-Sperre','red',`Gleiche Version ${run.version}, aber anderer Build. Erwartet ${String(old.manifestFingerprint).slice(0,12)}, geliefert ${run.manifestFingerprint.slice(0,12)}. Start blockiert.`);
+      return finishStartRun(run);
+    }
+    const verified=await verifyManifestRelease(m,run);
+    const next={...(old||{}),activeCache:verified.cacheName,activeVersion:run.version,manifestFingerprint:run.manifestFingerprint,buildId:run.buildId,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,startGuardAt:new Date().toISOString(),engine:ENGINE};
+    await writeMeta(next);run.activeCache=verified.cacheName;startStep(run,'Aktiver Release','green',`${run.version} / ${run.buildId} ist aktiv und verifiziert`);
     run.removedOldCaches=await pruneAllOldReleaseCaches(verified.cacheName);startStep(run,'Alte Release-Caches','green',run.removedOldCaches?`${run.removedOldCaches} alter Cache gelöscht`:'Keine alten Release-Caches vorhanden');
     run.status='green';
   }catch(e){
@@ -79,7 +92,7 @@ async function runStartGuard(){
     startStep(run,'Startprüfung',run.status,e?.name==='AbortError'?'Zeitüberschreitung beim Servercheck':(e?.message||String(e)));
     if(hasFallback)startStep(run,'Offline-Fallback','yellow',`Nur verifizierter vorhandener Cache ${meta.activeCache} wird verwendet; alte Fremd-Caches werden nicht aktiviert.`);
   }
-  run.finishedAt=new Date().toISOString();await appendStartLog(run);await tellClients({type:'KC_DP_START_GUARD_STATUS',run}).catch(()=>{});return run;
+  return finishStartRun(run);
 }
 function isCriticalRuntime(req,url){return req.mode==='navigate'||['script','style'].includes(req.destination)||/\.(?:js|css)(?:$|\?)/i.test(url.pathname)||url.pathname.endsWith('/index.html');}
 async function activeCacheResponse(request){const meta=await activeMeta(),cache=await caches.open(meta.activeCache);return (await cache.match(request,{ignoreSearch:true}))||(await cache.match(new URL(FALLBACK,self.registration.scope).toString(),{ignoreSearch:true}))||Response.error();}
@@ -88,12 +101,16 @@ function badgeHtml(run){
   const details=(run?.steps||[]).map(s=>`${s.status==='green'?'✓':s.status==='yellow'?'⚠':'✕'} ${s.name}: ${s.detail}`).join('\n').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<div id="kcStartGuardBadge" style="position:fixed;right:10px;bottom:10px;z-index:2147483600;font-family:system-ui,Arial,sans-serif"><button id="kcStartGuardBtn" type="button" style="border:0;border-radius:999px;padding:9px 13px;background:${bg};color:#fff;font-weight:800;box-shadow:0 3px 12px #0004">Start ${label}</button><pre id="kcStartGuardDetails" style="display:none;white-space:pre-wrap;width:min(88vw,560px);max-height:45vh;overflow:auto;margin:7px 0 0;padding:12px;border-radius:12px;background:#fff;color:#222;border:2px solid ${bg};box-shadow:0 8px 26px #0005;font:12px/1.45 ui-monospace,monospace">${details}</pre></div><script>(function(){var b=document.getElementById('kcStartGuardBtn'),d=document.getElementById('kcStartGuardDetails');if(b&&d)b.addEventListener('click',function(){d.style.display=d.style.display==='none'?'block':'none'});})();</script>`;
 }
+function blockedBuildHtml(run){
+  const details=(run?.steps||[]).map(s=>`<li><b>${s.name}</b>: ${String(s.detail||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</li>`).join('');
+  return `<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KC DP2 – Start blockiert</title><body style="margin:0;background:#f7f2ee;font-family:system-ui,Arial,sans-serif;color:#2a2422"><main style="max-width:680px;margin:8vh auto;padding:24px"><section style="background:#fff;border:3px solid #a31724;border-radius:18px;padding:22px;box-shadow:0 10px 30px #0002"><h1 style="margin-top:0;color:#a31724">✕ KC DP2 Start blockiert</h1><p><b>Die gleiche Versionsnummer wurde mit einem anderen Build ausgeliefert.</b></p><p>Aus Sicherheitsgründen wird dieser Stand nicht gestartet. Es werden keine Dienstplandaten gelöscht.</p><p><b>Build:</b> ${run?.buildId||'unbekannt'}</p><ul>${details}</ul><p>Bitte die Seite später erneut öffnen, sobald der kanonische Build wieder eindeutig veröffentlicht ist.</p></section></main></body></html>`;
+}
 async function injectBadge(response,run){try{const type=response.headers.get('content-type')||'';if(!/text\/html/i.test(type))return response;let html=await response.text();const badge=badgeHtml(run);html=html.includes('</body>')?html.replace('</body>',badge+'</body>'):html+badge;const h=new Headers(response.headers);h.set('Cache-Control','no-store');h.delete('Content-Length');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});}catch(_){return response;}}
 async function pushReceipt(data,eventName){try{const notificationId=String(data?.notificationId||'');if(!notificationId)return false;const sub=await self.registration.pushManager.getSubscription();const endpoint=sub?.endpoint;if(!endpoint)return false;const r=await fetchWithTimeout(PUSH_RECEIPT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notificationId,endpoint,event:eventName}),cache:'no-store'});return r.ok;}catch(_){return false;}}
 
 self.addEventListener('install',event=>event.waitUntil((async()=>{await ensureInitialRelease();await self.skipWaiting();})()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{let meta=await ensureInitialRelease();meta=await refreshForcedRuntime(meta);meta=await normalizeRecoveryCache(meta);await pruneCaches(meta);await self.clients.claim();})()));
-self.addEventListener('message',event=>{if(event.origin!==self.location.origin)return;const d=event.data||{};if(d.type==='KC_DP_SWITCH_RELEASE')event.waitUntil((async()=>{try{const cache=await caches.open(String(d.cacheName||'')),expected=Array.isArray(d.expectedFiles)?d.expectedFiles:[];for(const p of expected){const u=new URL(p,self.registration.scope).toString();if(!await cache.match(u,{ignoreSearch:true}))throw new Error(`Update-Datei fehlt im geprüften Cache: ${p}`);}const old=await activeMeta(),next={activeCache:String(d.cacheName),activeVersion:String(d.version),previousCache:old?.activeCache||null,previousVersion:old?.activeVersion||null,pendingBoot:true,switchedAt:Date.now(),engine:ENGINE};await writeMeta(next);await pruneCaches(next);await tellClients({type:'KC_DP_UPDATE_ACTIVATED',version:String(d.version)});}catch(e){await tellClients({type:'KC_DP_UPDATE_ACTIVATION_FAILED',version:String(d.version||''),message:e instanceof Error?e.message:String(e)});}})());if(d.type==='KC_DP_BOOT_OK')event.waitUntil((async()=>{const meta=await readMeta();if(meta?.pendingBoot&&String(d.version||'')===String(meta.activeVersion||'')){meta.pendingBoot=false;meta.bootConfirmedAt=new Date().toISOString();await writeMeta(meta);await pruneCaches(meta);}})());if(d.type==='KC_DP_RELEASE_STATUS')event.waitUntil((async()=>{const meta=await activeMeta();event.source?.postMessage?.({type:'KC_DP_RELEASE_STATUS_RESULT',meta});})());if(d.type==='KC_DP_START_GUARD_LOG')event.waitUntil((async()=>{event.source?.postMessage?.({type:'KC_DP_START_GUARD_LOG_RESULT',logs:await readStartLogs()});})());});
+self.addEventListener('message',event=>{if(event.origin!==self.location.origin)return;const d=event.data||{};if(d.type==='KC_DP_SWITCH_RELEASE')event.waitUntil((async()=>{try{const cache=await caches.open(String(d.cacheName||'')),expected=Array.isArray(d.expectedFiles)?d.expectedFiles:[];for(const p of expected){const u=new URL(p,self.registration.scope).toString();if(!await cache.match(u,{ignoreSearch:true}))throw new Error(`Update-Datei fehlt im geprüften Cache: ${p}`);}const old=await activeMeta(),next={activeCache:String(d.cacheName),activeVersion:String(d.version),manifestFingerprint:null,buildId:null,previousCache:old?.activeCache||null,previousVersion:old?.activeVersion||null,pendingBoot:true,switchedAt:Date.now(),engine:ENGINE};await writeMeta(next);await pruneCaches(next);await tellClients({type:'KC_DP_UPDATE_ACTIVATED',version:String(d.version)});}catch(e){await tellClients({type:'KC_DP_UPDATE_ACTIVATION_FAILED',version:String(d.version||''),message:e instanceof Error?e.message:String(e)});}})());if(d.type==='KC_DP_BOOT_OK')event.waitUntil((async()=>{const meta=await readMeta();if(meta?.pendingBoot&&String(d.version||'')===String(meta.activeVersion||'')){meta.pendingBoot=false;meta.bootConfirmedAt=new Date().toISOString();await writeMeta(meta);await pruneCaches(meta);}})());if(d.type==='KC_DP_RELEASE_STATUS')event.waitUntil((async()=>{const meta=await activeMeta();event.source?.postMessage?.({type:'KC_DP_RELEASE_STATUS_RESULT',meta});})());if(d.type==='KC_DP_START_GUARD_LOG')event.waitUntil((async()=>{event.source?.postMessage?.({type:'KC_DP_START_GUARD_LOG_RESULT',logs:await readStartLogs()});})());});
 
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
@@ -105,6 +122,7 @@ self.addEventListener('fetch',event=>{
   if(event.request.mode==='navigate'){
     event.respondWith((async()=>{
       const run=await runStartGuard();
+      if(run.status==='red'&&run.buildConflict)return new Response(blockedBuildHtml(run),{status:409,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-KC-DP-Build-Lock':'blocked'}});
       let r;
       try{r=await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},START_GUARD_TIMEOUT_MS);if(r&&r.ok){const meta=await activeMeta(),cache=await caches.open(meta.activeCache),canonical=new URL(FALLBACK,self.registration.scope).toString();await cache.put(canonical,r.clone());}}
       catch(_){r=await activeCacheResponse(event.request);}
