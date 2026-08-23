@@ -82,35 +82,19 @@
     if(e.type==='touchend')e.preventDefault();
     openDiagnostics();
   }
-  function sourceClass(id){const el=$(id);if(!el)return 'maintenance';if(el.classList.contains('ok'))return 'ok';if(el.classList.contains('error'))return 'error';return 'maintenance';}
-  function ensureMobileLeds(){
-    const right=document.querySelector('.top-right');if(!right)return;
-    let box=$('kcMobileDbStatus');
-    if(!box){
-      box=document.createElement('div');box.id='kcMobileDbStatus';box.setAttribute('aria-label','Datenbankstatus');
-      Object.assign(box.style,{display:'flex',alignItems:'center',gap:'7px',padding:'5px 8px',border:'1px solid #d9dee6',borderRadius:'12px',background:'#fff',fontSize:'10px',fontWeight:'800'});
-      box.innerHTML='<span>IDX <i id="kcMobileIdbLed"></i></span><span>SUP <i id="kcMobileSupLed"></i></span>';
-      right.insertBefore(box,$('userBtn')||right.firstChild);
-    }
-    const paint=(id,cls)=>{const led=$(id);if(!led)return;Object.assign(led.style,{display:'inline-block',width:'10px',height:'10px',borderRadius:'50%',marginLeft:'2px',verticalAlign:'-1px',background:cls==='ok'?'#1f8f4e':cls==='error'?'#c83d3d':'#2f77c6',boxShadow:cls==='ok'?'0 0 0 1px #1f8f4e22':'none'});};
-    paint('kcMobileIdbLed',sourceClass('idbStatusLed'));paint('kcMobileSupLed',sourceClass('supabaseStatusLed'));
-    if(matchMedia('(max-width:760px)').matches)box.style.display='flex';else box.style.display='none';
-  }
   function markFallback(){
     if(!isSession()||K.session?.state?.provider)return;
     const modal=$('modal');const boxes=[...modal.querySelectorAll('.ai-summary')];
     const target=boxes.find(x=>(x.textContent||'').includes('Candidate-Fallback'));
     if(target){target.style.borderColor='#d7a34a';target.style.background='#fff8e8';target.title='Produktivbetrieb ohne verbundenen KC-Auth-Provider';}
   }
-  function wire(){ensureMobileLeds();if(!isSession())return;ensureClose();markFallback();}
+  function wire(){if(!isSession())return;ensureClose();markFallback();}
   const observer=new MutationObserver(()=>requestAnimationFrame(wire));observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',interceptDiagnostics,true);
   document.addEventListener('pointerup',interceptDiagnostics,true);
   document.addEventListener('touchend',interceptDiagnostics,{capture:true,passive:false});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn')setTimeout(wire,0)},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('kcDiagEmergencyOverlay'))$('kcDiagEmergencyOverlay').remove();else if(isSession())hardClose()}},true);
-  window.addEventListener('resize',ensureMobileLeds);
-  setInterval(ensureMobileLeds,1500);
   wire();
-  K.sessionDiagnosticsGuard={version:'0.19.62',wire,hardClose,openDiagnostics,ensureMobileLeds};
+  K.sessionDiagnosticsGuard={version:'0.19.63-no-duplicate-leds',wire,hardClose,openDiagnostics};
 })();
