@@ -21,3 +21,63 @@
   window.addEventListener('KC_DP_UPDATE_CHECK_ERROR',e=>toast(`Updateprüfung nicht möglich: ${e.detail.message}`));
   K.updateUi={version:'0.19.37',showAvailable,checkNow:()=>K.updateManager.check({manual:true})};
 })();
+
+/* KC DP2 V0.19.55 – konsolidierter Anmelde-/Entsperrpfad */
+(function(){
+  'use strict';
+  const K=window.KCDP=window.KCDP||{};
+  if(K.__authFlowConsolidated)return;
+  K.__authFlowConsolidated=true;
+  const flow=K.authFlow={version:'0.19.55-login-consolidation-1',pendingLogin:null,pendingPassword:null,steps:[]};
+  const mark=(stage,detail='')=>{flow.steps.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.steps.length>40)flow.steps.shift();try{K.databaseDiagnostics?.markStartup?.('auth-'+stage,String(detail||''));}catch(_){}};
+
+  if(typeof K.roleUx?.ensureLogin==='function'){
+    const baseEnsure=K.roleUx.ensureLogin.bind(K.roleUx);
+    K.roleUx.ensureLogin=function(){
+      if(K.memberAccess?.state?.status==='authenticated')return Promise.resolve(K.currentUser);
+      if(flow.pendingLogin)return flow.pendingLogin;
+      mark('login-request');
+      flow.pendingLogin=Promise.resolve().then(()=>baseEnsure()).then(v=>{mark('login-complete',K.currentUser?.role||'');return v;}).catch(e=>{mark('login-error',e?.message||e);throw e;}).finally(()=>{flow.pendingLogin=null;});
+      return flow.pendingLogin;
+    };
+  }
+
+  if(typeof K.memberAccess?.signInPassword==='function'){
+    const baseSignIn=K.memberAccess.signInPassword.bind(K.memberAccess);
+    K.memberAccess.signInPassword=function(args){
+      if(flow.pendingPassword)return flow.pendingPassword;
+      const started=performance.now();mark('password-start');
+      flow.pendingPassword=Promise.resolve().then(()=>baseSignIn(args)).then(v=>{mark('password-complete',`${Math.round(performance.now()-started)} ms`);return v;}).catch(e=>{mark('password-error',e?.message||e);throw e;}).finally(()=>{flow.pendingPassword=null;});
+      return flow.pendingPassword;
+    };
+  }
+
+  function localUnlockDialog(message=''){
+    return new Promise(resolve=>{
+      const back=document.getElementById('modalBackdrop'),modal=document.getElementById('modal');
+      if(!back||!modal){resolve(false);return;}
+      modal.classList.remove('wide');
+      modal.innerHTML=`<h2>🔐 Lokale Daten entsperren</h2><div class="ai-summary"><b>Die KC-DP-Anmeldung ist bereits bestätigt.</b><br>Dieser Schlüssel gehört ausschließlich zur lokalen Verschlüsselung auf diesem Gerät und ist <b>nicht</b> Ihr Supabase-/KC-DP-Passwort.</div>${message?`<div id="kcUnlockRetryError" class="ai-summary" style="border-color:#ef4444;background:#fff1f2;color:#991b1b">${String(message).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</div>`:'<div id="kcUnlockRetryError"></div>'}<div class="field"><label>Sicherheitsschlüssel (mind. 16 Zeichen)</label><input id="kcUnlockRetrySecret" type="password" autocomplete="current-password" placeholder="Lokaler Sicherheitsschlüssel"></div><div class="modal-actions"><button class="primary" id="kcUnlockRetryBtn">Lokale Daten entsperren</button></div>`;
+      back.classList.remove('hidden');document.body.classList.add('modal-open');
+      const input=document.getElementById('kcUnlockRetrySecret'),err=document.getElementById('kcUnlockRetryError'),btn=document.getElementById('kcUnlockRetryBtn');
+      const submit=()=>{try{K.storage.setSecret(input.value);back.classList.add('hidden');modal.innerHTML='';document.body.classList.remove('modal-open');mark('local-key-entered');resolve(true);}catch(e){if(err){err.className='ai-summary';err.style.cssText='border-color:#ef4444;background:#fff1f2;color:#991b1b';err.textContent=e.message;}}};
+      btn.onclick=submit;input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();submit();}});setTimeout(()=>input.focus(),40);
+    });
+  }
+
+  if(typeof K.storage?.getMany==='function'&&!K.storage.__unlockRetryGuard){
+    const baseGetMany=K.storage.getMany.bind(K.storage);
+    K.storage.getMany=async function(keys,opt){
+      for(;;){
+        try{return await baseGetMany(keys,opt);}catch(e){
+          const text=String(e?.message||e||'');
+          if(!/falscher Schlüssel|Paketprüfung fehlgeschlagen|manipulierte Daten/i.test(text))throw e;
+          mark('local-key-retry',text);K.storage.lock?.();
+          const ok=await localUnlockDialog('Der eingegebene lokale Sicherheitsschlüssel passt nicht zu den gespeicherten Daten. Bitte erneut eingeben.');
+          if(!ok)throw e;
+        }
+      }
+    };
+    Object.defineProperty(K.storage,'__unlockRetryGuard',{value:true,enumerable:false});
+  }
+})();
