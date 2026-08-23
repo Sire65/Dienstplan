@@ -1,0 +1,51 @@
+name: KC DP2 Codex Export Build 82
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/codex-export-build82.yml'
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify current build
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/refresh-update-manifest.js
+          node --check release/v0.19.55/site/src/ui/session-mobile-hotfix.js
+          test -f release/v0.19.55/site/index.html
+      - name: Prepare Codex package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p export/KC-DP2-Build82
+          cp -a release/v0.19.55/site export/KC-DP2-Build82/site
+          cp release/current.json export/KC-DP2-Build82/current.json
+          cp scripts/refresh-update-manifest.js export/KC-DP2-Build82/refresh-update-manifest.js
+          cat > export/KC-DP2-Build82/README_CODEX.txt <<'EOF'
+KC DP2 V0.19.55 Build 82 - Codex review package
+
+Runnable web root: site/
+Start locally from the site directory using an HTTP server, for example:
+  python -m http.server 8000
+Then open http://localhost:8000/
+
+Important review focus:
+- login/logout/local unlock flow
+- duplicate password prompt after local-key-valid
+- session-mobile-hotfix and post-unlock auth guard
+- automatic update/build detection
+- service worker/cache migration
+
+No passwords, private tokens, or user secrets are added by this export workflow.
+EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KC-DP2-Build82-Codex
+          path: export/KC-DP2-Build82
+          if-no-files-found: error
+          retention-days: 2
