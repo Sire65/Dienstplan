@@ -1,19 +1,21 @@
-/* KC-DP2 stable PWA/update engine V1.7.
-   Startup Cache Guard + Build Lock: every controlled program start verifies the release manifest,
-   validates the current runtime cache by SHA-256, removes stale release caches only
-   after a successful verification, and records a local green/yellow/red start log.
+/* KC-DP2 stable PWA/update engine V1.8.
+   Startup Cache Guard + Build Lock + Supabase Auth Preflight: every controlled program start
+   verifies the release manifest, validates the current runtime cache by SHA-256, checks the
+   Supabase Auth service before login, and records a local green/yellow/red start log.
    The manifest fingerprint is derived only from version/cache/file identities and SHA-256 values.
    If the same version is served later with a different fingerprint, startup is blocked RED.
 */
-const ENGINE='kc-dp-update-engine-v1.7-buildlock';
+const ENGINE='kc-dp-update-engine-v1.8-auth-preflight';
 const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const START_LOG_URL=new URL('__kc_dp_start_guard_log__',self.registration.scope).toString();
 const UPDATE_MANIFEST='./update-manifest.json';
 const FALLBACK='./index.html';
+const SUPABASE_AUTH_HEALTH='https://ptblnpiroqftcvlsrhac.supabase.co/auth/v1/health';
 const PUSH_RECEIPT_ENDPOINT='https://ptblnpiroqftcvlsrhac.supabase.co/functions/v1/kc-dp-push-receipt';
 const NETWORK_TIMEOUT_MS=12000;
 const START_GUARD_TIMEOUT_MS=8000;
+const AUTH_PREFLIGHT_TIMEOUT_MS=5000;
 const MAX_START_LOGS=20;
 
 async function fetchWithTimeout(input,opt={},timeoutMs=NETWORK_TIMEOUT_MS){
@@ -44,6 +46,23 @@ async function activeMeta(){return maybeRollback((await readMeta())||await ensur
 async function tellClients(payload){const list=await clients.matchAll({type:'window',includeUncontrolled:true});for(const c of list)c.postMessage(payload);}
 
 function startStep(run,name,status,detail){run.steps.push({at:new Date().toISOString(),name,status,detail:String(detail||'')});}
+async function runAuthPreflight(run){
+  const started=Date.now();
+  try{
+    const url=`${SUPABASE_AUTH_HEALTH}?kc_start_guard=${Date.now()}`;
+    const r=await fetchWithTimeout(url,{cache:'no-store',headers:{Accept:'application/json','Cache-Control':'no-cache'}},AUTH_PREFLIGHT_TIMEOUT_MS);
+    const latencyMs=Date.now()-started;
+    run.authPreflight={ok:r.ok,httpStatus:r.status,latencyMs,endpoint:SUPABASE_AUTH_HEALTH,error:null};
+    if(r.ok){startStep(run,'Supabase Auth','green',`Erreichbar · HTTP ${r.status} · ${latencyMs} ms`);return 'green';}
+    if(r.status>=500){startStep(run,'Supabase Auth','red',`Serverfehler HTTP ${r.status} nach ${latencyMs} ms`);return 'red';}
+    startStep(run,'Supabase Auth','yellow',`Auth-Service erreichbar, aber unerwarteter HTTP-Status ${r.status} nach ${latencyMs} ms`);return 'yellow';
+  }catch(e){
+    const latencyMs=Date.now()-started,message=e?.name==='AbortError'?`Keine Antwort innerhalb ${AUTH_PREFLIGHT_TIMEOUT_MS/1000} Sekunden`:(e?.message||String(e));
+    run.authPreflight={ok:false,httpStatus:null,latencyMs,endpoint:SUPABASE_AUTH_HEALTH,error:message};
+    startStep(run,'Supabase Auth','yellow',`${message} · ${latencyMs} ms`);
+    return 'yellow';
+  }
+}
 async function verifyManifestRelease(m,run){
   const cacheName=m.cacheName||`kc-dp-release-${m.version}`,cache=await caches.open(cacheName),files=m.files.filter(f=>f&&f.runtime!==false&&f.path);
   let verified=0,refreshed=0;
@@ -68,7 +87,7 @@ async function verifyManifestRelease(m,run){
 }
 async function finishStartRun(run){run.finishedAt=new Date().toISOString();await appendStartLog(run);await tellClients({type:'KC_DP_START_GUARD_STATUS',run}).catch(()=>{});return run;}
 async function runStartGuard(){
-  const run={id:`START-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,startedAt:new Date().toISOString(),finishedAt:null,status:'running',engine:ENGINE,version:null,manifestFingerprint:null,buildId:null,buildConflict:false,activeCache:null,removedOldCaches:0,steps:[]};
+  const run={id:`START-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,startedAt:new Date().toISOString(),finishedAt:null,status:'running',engine:ENGINE,version:null,manifestFingerprint:null,buildId:null,buildConflict:false,authPreflight:null,activeCache:null,removedOldCaches:0,steps:[]};
   startStep(run,'Startprüfung','green','Wächter gestartet');
   try{
     const m=await fetchManifest(START_GUARD_TIMEOUT_MS);run.version=String(m.version);run.manifestFingerprint=await manifestFingerprint(m);run.buildId=`${run.version}-${run.manifestFingerprint.slice(0,12)}`;
@@ -80,11 +99,12 @@ async function runStartGuard(){
       startStep(run,'Build-Sperre','red',`Gleiche Version ${run.version}, aber anderer Build. Erwartet ${String(old.manifestFingerprint).slice(0,12)}, geliefert ${run.manifestFingerprint.slice(0,12)}. Start blockiert.`);
       return finishStartRun(run);
     }
+    const authStatus=await runAuthPreflight(run);
     const verified=await verifyManifestRelease(m,run);
-    const next={...(old||{}),activeCache:verified.cacheName,activeVersion:run.version,manifestFingerprint:run.manifestFingerprint,buildId:run.buildId,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,startGuardAt:new Date().toISOString(),engine:ENGINE};
+    const next={...(old||{}),activeCache:verified.cacheName,activeVersion:run.version,manifestFingerprint:run.manifestFingerprint,buildId:run.buildId,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,startGuardAt:new Date().toISOString(),lastAuthPreflight:run.authPreflight,engine:ENGINE};
     await writeMeta(next);run.activeCache=verified.cacheName;startStep(run,'Aktiver Release','green',`${run.version} / ${run.buildId} ist aktiv und verifiziert`);
     run.removedOldCaches=await pruneAllOldReleaseCaches(verified.cacheName);startStep(run,'Alte Release-Caches','green',run.removedOldCaches?`${run.removedOldCaches} alter Cache gelöscht`:'Keine alten Release-Caches vorhanden');
-    run.status='green';
+    run.status=authStatus;
   }catch(e){
     const meta=await readMeta().catch(()=>null);run.activeCache=meta?.activeCache||null;
     const hasFallback=!!meta?.activeCache;
