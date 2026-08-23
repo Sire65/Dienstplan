@@ -1,0 +1,163 @@
+diff --git a/release/current.json b/release/current.json
+index 835b178..8e97e0d 100644
+--- a/release/current.json
++++ b/release/current.json
+@@ -1,7 +1,7 @@
+ {
+   "app": "KC DP2",
+   "version": "0.19.55",
+-  "build": 82,
++  "build": 84,
+   "mode": "verified-direct-site-candidate",
+   "baseVersion": "0.19.54",
+   "previousVersion": "0.19.54",
+diff --git a/release/v0.19.55/site/RELEASE.txt b/release/v0.19.55/site/RELEASE.txt
+index de9d081..efdb1e0 100644
+--- a/release/v0.19.55/site/RELEASE.txt
++++ b/release/v0.19.55/site/RELEASE.txt
+@@ -1 +1 @@
+-KC-DP2 0.19.42
++KC-DP2 0.19.55 Build 84
+diff --git a/release/v0.19.55/site/index.html b/release/v0.19.55/site/index.html
+index 6ed34be..224583b 100644
+--- a/release/v0.19.55/site/index.html
++++ b/release/v0.19.55/site/index.html
+@@ -1,7 +1,7 @@
+ <!DOCTYPE html>
+ <html lang="de">
+ <head>
+-  <script>window.KC_DP_BUILD=82;</script>
++  <script>window.KC_DP_BUILD=84;</script>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+   <title>KC DP2 V0.19.55</title>
+@@ -71,9 +71,9 @@
+   <script src="src/core/planner-engine.js?v=0.19.42"></script><script src="src/core/planner-recommendations.js?v=0.19.42"></script><script src="src/core/replacement-recommendations.js?v=0.19.42"></script><script src="src/core/day-availability.js?v=0.19.42"></script><script src="src/core/planner-audit.js?v=0.19.42"></script><script src="src/core/source-health.js?v=0.19.42"></script>
+   <script src="src/core/workflow.js?v=0.17.10"></script><script src="src/core/actual.js?v=0.17.10"></script><script src="src/core/analytics.js?v=0.17.10"></script><script src="src/core/export.js?v=0.17.10"></script><script src="src/core/documents.js?v=0.17.10"></script><script src="src/core/distribution.js?v=0.17.10"></script><script src="src/core/packages.js?v=0.17.10"></script><script src="src/core/security-core.js?v=0.17.10"></script>
+   <script src="src/adapters/storage.js?v=0.19.37"></script><script src="src/adapters/backup.js?v=0.17.10"></script><script src="src/adapters/person-provider.js?v=0.19.54-security-1"></script><script src="src/adapters/context-providers.js?v=0.17.10"></script><script src="src/adapters/pdf.js?v=0.17.10"></script><script src="src/adapters/host.js?v=0.17.10"></script><script src="src/adapters/email.js?v=0.17.10"></script><script src="src/adapters/sync.js?v=0.17.10"></script><script src="src/adapters/pc-manager.js?v=0.17.10"></script><script src="src/adapters/supabase-provider.js?v=0.19.37"></script><script src="src/adapters/diagnostics.js?v=0.19.51h"></script><script src="src/core/table-core-adapter.js?v=0.19.51-install-1"></script><script src="src/adapters/installations.js?v=0.19.51-install-1"></script><script src="src/core/manager-auto-sync.js?v=0.19.42"></script><script src="src/core/multidevice-test.js?v=0.19.37"></script><script src="src/adapters/photo-recognition.js?v=0.17.10"></script><script src="src/adapters/timeclock-import.js?v=0.17.10"></script><script src="src/adapters/wish-import.js?v=0.19.53-vhb-1"></script><script src="src/core/notification-channel-safety.js?v=0.19.56"></script><script src="src/core/notifications.js?v=0.19.56-safety"></script><script src="src/adapters/push.js?v=0.19.55"></script>
+-  <script src="src/ui/device-ux.js?v=0.17.10"></script><script src="src/ui/wish-sprint.js?v=0.19.51"></script><script src="src/ui/role-ux.js?v=0.19.37"></script><script src="src/core/update-manager.js?v=0.19.55"></script><script src="src/core/update-build-guard.js?build=82"></script><script src="src/ui/update-ui.js?v=0.19.37"></script><script src="src/ui/app.js?v=0.19.37"></script><script src="src/ui/day-availability-filter.js?v=0.19.42"></script><script src="src/ui/quick-plan-recommendations.js?v=0.19.42"></script><script src="src/ui/planner-audit-ui.js?v=0.19.42"></script><script src="src/ui/source-health-ui.js?v=0.19.63"></script><script src="src/ui/session-mobile-hotfix.js?build=82"></script><script src="src/ui/post-unlock-auth-guard.js?build=82"></script><script src="src/core/planner-application-guard.js?v=0.19.42"></script><script src="src/ui/installation-center.js?v=0.19.51-install-1"></script><script src="src/ui/diagnostics-center.js?v=0.19.67-direct-gate-2"></script><script src="src/ui/kc-ux-polish.js?v=0.19.55-early-diag-gate-1"></script><script src="src/ui/notification-safety-ui.js?v=0.19.56-preview-guard"></script><script src="src/ui/notification-channel-settings.js?v=0.19.56"></script>
++  <script src="src/ui/device-ux.js?v=0.17.10"></script><script src="src/ui/wish-sprint.js?v=0.19.51"></script><script src="src/ui/role-ux.js?v=0.19.37"></script><script src="src/core/update-manager.js?v=0.19.55"></script><script src="src/core/update-build-guard.js?build=84"></script><script src="src/ui/update-ui.js?v=0.19.37"></script><script src="src/ui/app.js?v=0.19.37"></script><script src="src/ui/day-availability-filter.js?v=0.19.42"></script><script src="src/ui/quick-plan-recommendations.js?v=0.19.42"></script><script src="src/ui/planner-audit-ui.js?v=0.19.42"></script><script src="src/ui/source-health-ui.js?v=0.19.63"></script><script src="src/ui/session-mobile-hotfix.js?build=84"></script><script src="src/ui/post-unlock-auth-guard.js?build=84"></script><script src="src/core/planner-application-guard.js?v=0.19.42"></script><script src="src/ui/installation-center.js?v=0.19.51-install-1"></script><script src="src/ui/diagnostics-center.js?v=0.19.67-direct-gate-2"></script><script src="src/ui/kc-ux-polish.js?v=0.19.55-early-diag-gate-1"></script><script src="src/ui/notification-safety-ui.js?v=0.19.56-preview-guard"></script><script src="src/ui/notification-channel-settings.js?v=0.19.56"></script>
+ <script>
+ (function(){const EXPECTED='0.19.55';const actual=window.KC_DP?.VERSION||window.KCDP?.VERSION||window.KC_DP_VERSION||'';if(actual&&actual!==EXPECTED){document.body.insertAdjacentHTML('afterbegin','<div id="releaseMismatch" style="position:fixed;z-index:99999;left:12px;right:12px;top:12px;padding:14px 18px;border:2px solid #c62828;border-radius:10px;background:#fff3f3;color:#8b0000;font:700 15px Arial,sans-serif;box-shadow:0 4px 18px #0003">⚠ Versionskonflikt: Oberfläche '+EXPECTED+' erwartet, geladen ist '+actual+'. Bitte diesen Ordner neu öffnen; alte Browserdateien werden nicht verwendet.</div>');}})();
+ </script>
+ </body>
+-</html>
+\ No newline at end of file
++</html>
+diff --git a/release/v0.19.55/site/service-worker.js b/release/v0.19.55/site/service-worker.js
+index 187297c..715aa72 100644
+--- a/release/v0.19.55/site/service-worker.js
++++ b/release/v0.19.55/site/service-worker.js
+@@ -5,7 +5,7 @@
+    Same-version fingerprint changes from the canonical production pipeline are treated as a controlled
+    migration and are accepted only after full runtime verification.
+ */
+-const ENGINE='kc-dp-update-engine-v1.9-controlled-build-migration';
++const ENGINE='kc-dp-update-engine-v2.0-atomic-release';
+ const META_CACHE='kc-dp-release-meta-v1';
+ const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
+ const START_LOG_URL=new URL('__kc_dp_start_guard_log__',self.registration.scope).toString();
+@@ -139,16 +139,20 @@ self.addEventListener('fetch',event=>{
+     event.respondWith((async()=>{
+       const run=await runStartGuard();
+       let r;
+-      try{r=await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},START_GUARD_TIMEOUT_MS);if(r&&r.ok){const meta=await activeMeta(),cache=await caches.open(meta.activeCache),canonical=new URL(FALLBACK,self.registration.scope).toString();await cache.put(canonical,r.clone());}}
+-      catch(_){r=await activeCacheResponse(event.request);}
++      try{
++        const meta=await activeMeta(),cache=await caches.open(meta.activeCache),canonical=new URL(FALLBACK,self.registration.scope).toString();
++        r=(await cache.match(canonical,{ignoreSearch:true}))||await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},START_GUARD_TIMEOUT_MS);
++      }catch(_){r=await activeCacheResponse(event.request);}
+       return injectBadge(r,run);
+     })());return;
+   }
+   if(isCriticalRuntime(event.request,url)){
+     event.respondWith((async()=>{
+       const meta=await activeMeta(),cache=await caches.open(meta.activeCache);
+-      try{const r=await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});if(r&&r.ok)await cache.put(event.request,r.clone());return r;}
+-      catch(_){return (await cache.match(event.request,{ignoreSearch:true}))||Response.error();}
++      const verified=await cache.match(event.request,{ignoreSearch:true});
++      if(verified)return verified;
++      try{return await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});}
++      catch(_){return Response.error();}
+     })());return;
+   }
+   event.respondWith((async()=>{const meta=await activeMeta(),cache=await caches.open(meta.activeCache),hit=await cache.match(event.request,{ignoreSearch:true});if(hit)return hit;try{const r=await fetchWithTimeout(event.request);if(r&&r.ok)await cache.put(event.request,r.clone());return r;}catch(_){return (await cache.match(new URL(FALLBACK,self.registration.scope).toString(),{ignoreSearch:true}))||Response.error();}})());
+diff --git a/release/v0.19.55/site/src/ui/post-unlock-auth-guard.js b/release/v0.19.55/site/src/ui/post-unlock-auth-guard.js
+index 2c0746f..2fc6aa4 100644
+--- a/release/v0.19.55/site/src/ui/post-unlock-auth-guard.js
++++ b/release/v0.19.55/site/src/ui/post-unlock-auth-guard.js
+@@ -6,7 +6,7 @@
+ 
+   const MAX_AGE_MS=120000;
+   const state=K.postUnlockAuthGuard={
+-    version:'0.19.55-build82',
++    version:'0.19.55-build84',
+     confirmed:null,
+     confirmedAt:0,
+     explicitLogout:false
+@@ -46,6 +46,8 @@
+   function canRestore(){
+     if(state.explicitLogout||!state.confirmed?.personId)return false;
+     if(Date.now()-state.confirmedAt>MAX_AGE_MS)return false;
++    const tokenCheck=K.supabaseConnection?.hasAccessToken;
++    if(typeof tokenCheck==='function'&&!tokenCheck.call(K.supabaseConnection))return false;
+     return true;
+   }
+ 
+@@ -105,7 +107,7 @@
+       ru.ensureLogin=wrapped;
+     }
+ 
+-    trace('post-unlock-guard-ready','Build 82 · Doppel-Login-Schutz aktiv');
++    trace('post-unlock-guard-ready','Build 84 · Doppel-Login-Schutz aktiv');
+     return true;
+   }
+ 
+diff --git a/release/v0.19.55/site/src/ui/role-ux.css b/release/v0.19.55/site/src/ui/role-ux.css
+index 0eea137..76fa6f6 100644
+--- a/release/v0.19.55/site/src/ui/role-ux.css
++++ b/release/v0.19.55/site/src/ui/role-ux.css
+@@ -44,7 +44,7 @@ body.ux-login{background:#eee8e2}
+ body.ux-login .ux-login-shell{width:min(1450px,calc(100vw - 32px));min-height:min(815px,calc(100dvh - 32px));margin:16px auto;padding:26px;border-radius:34px;overflow:hidden;position:relative;display:grid;place-items:center;background-color:#2f231c;background-image:url("../../assets/kc-login-startbild-v01917.webp");background-position:center center;background-repeat:no-repeat;background-size:cover;box-shadow:0 20px 60px rgba(47,36,29,.18)}
+ body.ux-login .ux-login-shell:before,body.ux-login .ux-login-shell:after{content:none!important;display:none!important;background:none!important}
+ body.ux-login .ux-login-card{width:min(650px,calc(100% - 28px));z-index:2}
+-body.ux-login .ux-autofill-trap{position:fixed!important;left:-10000px!important;top:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
++body.ux-login .ux-autofill-trap{display:none!important}
+ @media(max-width:950px){body.ux-login .ux-login-shell{width:calc(100vw - 16px);min-height:calc(100dvh - 16px);margin:8px auto;padding:14px;border-radius:24px;background-position:center center;background-size:cover}}
+ @media(max-width:650px){body.ux-login .ux-login-shell{background-image:linear-gradient(rgba(39,29,23,.35),rgba(39,29,23,.35)),url("../../assets/kc-login-startbild-v01917.webp");background-position:center center;background-size:cover}}
+ 
+diff --git a/release/v0.19.55/site/src/ui/role-ux.js b/release/v0.19.55/site/src/ui/role-ux.js
+index 31f48f6..0f625b5 100644
+--- a/release/v0.19.55/site/src/ui/role-ux.js
++++ b/release/v0.19.55/site/src/ui/role-ux.js
+@@ -8,7 +8,7 @@ const dayVisualClass=d=>{const wd=new Date(d.date+'T12:00:00').getDay();return [
+ const timeNum=v=>{const [h,m]=String(v||'').split(':').map(Number);return Number.isFinite(h)&&Number.isFinite(m)?h+m/60:null};
+ const positive=w=>w.status!=='deleted'&&['available','preferred','if_needed'].includes(w.wishType);
+ let loginResolve=null,currentPage='home',selectedDay=null,importRows=[],importIssues=[];
+-const DEV_FAST_ACCESS={enabled:true,clicks:5,windowMs:4500,adminEmail:'ha-joko@web.de'};
++const DEV_FAST_ACCESS={enabled:['localhost','127.0.0.1'].includes(location.hostname),clicks:5,windowMs:4500,adminEmail:'ha-joko@web.de'};
+ let devLogoClicks=[];
+ const TEST_SCENARIO={
+   people:[
+@@ -34,7 +34,7 @@ function note(text,type=''){return `<div class="ux-note ${type?`ux-${type}`:''}"
+ function loginScreen(message=''){
+  K.databaseDiagnostics?.markLogin?.('prompt');
+  loginFrame(`<h1>Willkommen bei KC DP2</h1><p class="ux-lead">Bitte melden Sie sich jetzt an.</p>${message?note(esc(message),'error'):''}<form id="uxLoginForm" autocomplete="off"><div class="ux-autofill-trap" aria-hidden="true"><input type="text" name="username" autocomplete="username" tabindex="-1"><input type="password" name="password" autocomplete="current-password" tabindex="-1"></div><div class="ux-field"><label>E-Mail-Adresse</label><input id="uxEmail" name="kc_member_mail_0197" type="text" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="z. B. mitglied@koecheclub-werne.de"></div><div class="ux-field"><label>Passwort</label><input id="uxPassword" name="kc_member_pass_0197" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="z. B. Ihr persönliches Passwort"></div><label class="ux-check"><input id="uxRemember" type="checkbox" checked> Auf diesem Gerät angemeldet bleiben</label><div class="ux-login-actions"><button class="ux-btn primary full" type="submit">Anmelden</button></div></form><div class="ux-login-meta"><button class="ux-link" id="uxFirstAccess">Erstanmeldung</button><span class="ux-login-divider" aria-hidden="true"></span><button class="ux-link" id="uxForgot">Passwort vergessen?</button></div><div class="ux-note">Nach der Anmeldung wird automatisch Ihre passende Startansicht geöffnet.</div>${!K.memberAccess.configured()&&isLocal()?`<details style="margin-top:12px"><summary style="cursor:pointer;color:#7a1420;font-weight:700">Lokaler Prüfzugang</summary><div id="uxLocalTest" style="margin-top:10px"></div></details>`:''}`);
+- const email=$('uxEmail'),pass=$('uxPassword');
++ const email=$('uxEmail'),pass=$('uxPassword');email?.setAttribute('aria-label','E-Mail-Adresse');pass?.setAttribute('aria-label','Passwort');document.querySelector('.ux-autofill-trap')?.setAttribute('hidden','');
+  const scrubBadAutofill=()=>{if(!email?.isConnected)return false;const v=String(email.value||'').trim();if(/^https?:\/\//i.test(v)||/supabase\.co/i.test(v)||/^[a-z]+:\/\//i.test(v))email.value='';return true;};
+  scrubBadAutofill();const scrubTimer=setInterval(()=>{if(!scrubBadAutofill())clearInterval(scrubTimer);},200);
+  const scrubEvents=['focus','blur','change','input','animationstart'];for(const ev of scrubEvents)email?.addEventListener(ev,scrubBadAutofill);
+diff --git a/release/v0.19.55/site/src/ui/update-ui.js b/release/v0.19.55/site/src/ui/update-ui.js
+index b9cb031..21dcb9b 100644
+--- a/release/v0.19.55/site/src/ui/update-ui.js
++++ b/release/v0.19.55/site/src/ui/update-ui.js
+@@ -195,7 +195,7 @@
+   function restore(reason='startup'){
+     if(!guard.accepted||guard.logout||!guard.snapshot?.personId)return false;
+     const tokenFn=K.supabaseConnection?.hasAccessToken;
+-    if(typeof tokenFn==='function'&&!tokenFn.call(K.supabaseConnection)&&Date.now()-guard.acceptedAt>120000)return false;
++    if(typeof tokenFn==='function'&&!tokenFn.call(K.supabaseConnection))return false;
+     const s=guard.snapshot;
+     try{K.auth?.setCurrentUser?.({personId:s.personId,role:s.role,displayName:s.displayName});}catch(_){}
+     try{

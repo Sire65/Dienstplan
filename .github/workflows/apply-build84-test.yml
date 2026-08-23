@@ -1,0 +1,65 @@
+name: KC DP2 Apply Build 84 Test Branch
+
+on:
+  push:
+    branches: ['test/build84-stabilisiert']
+    paths:
+      - '.github/workflows/apply-build84-test.yml'
+      - '.kc-build84/build84-source.patch'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build84:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: test/build84-stabilisiert
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Normalize Build 82 baseline
+        run: node scripts/refresh-update-manifest.js
+      - name: Apply stabilized Build 84 source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check .kc-build84/build84-source.patch
+          git apply .kc-build84/build84-source.patch
+      - name: Generate exact Build 84 manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          SITE='release/v0.19.55/site'
+          if [ -d "$SITE/handtest-v01955" ]; then mv "$SITE/handtest-v01955" /tmp/handtest-v01955; fi
+          node "$SITE/tools/generate-release-manifest.mjs"
+          if [ -d /tmp/handtest-v01955 ]; then mv /tmp/handtest-v01955 "$SITE/handtest-v01955"; fi
+      - name: Verify Build 84 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          SITE='release/v0.19.55/site'
+          node "$SITE/tools/verify-release.mjs"
+          node "$SITE/tools/smoke-core.mjs"
+          node --check "$SITE/service-worker.js"
+          node --check "$SITE/src/ui/post-unlock-auth-guard.js"
+          node --check "$SITE/src/ui/role-ux.js"
+          node --check "$SITE/src/ui/update-ui.js"
+          test "$(sha256sum "$SITE/index.html" | awk '{print $1}')" = '24dbbca38ce19d11ba7230d98405cebde11975dffbcd9a3dd8e97499e0ad4b35'
+          test "$(sha256sum "$SITE/service-worker.js" | awk '{print $1}')" = '6535b53a0c655b8bd9aba17191eb6cea8add13637d3a6f0eecbbd2db97e1fcf2'
+          test "$(sha256sum "$SITE/src/ui/session-mobile-hotfix.js" | awk '{print $1}')" = '3967487dc40dd48a0a97e3b78763ae4bee92ffd31b94f977ffd9234f941d16c1'
+          test "$(sha256sum "$SITE/src/ui/post-unlock-auth-guard.js" | awk '{print $1}')" = 'a5396d7c0c64171509e7038b8276390f0917c50ba066e25175be2db8cb1736b7'
+          test "$(sha256sum "$SITE/src/ui/update-ui.js" | awk '{print $1}')" = 'ba6a47a67dcdc19ccf254666c0d1437f628d3643b6aa1fff9312b0bd1ecb8819'
+          test "$(sha256sum "$SITE/src/ui/role-ux.js" | awk '{print $1}')" = 'b313d287bba7f81ef0f67168eec364b0baa5b9015f2dfa3a627d24244bf2e9f5'
+      - name: Commit Build 84 to isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release/current.json release/v0.19.55/site
+          git commit -m 'test(build84): load stabilized KC DP2 Build 84'
+          git push origin HEAD:test/build84-stabilisiert
