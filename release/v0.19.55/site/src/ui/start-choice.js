@@ -30,6 +30,20 @@
   }
   function hideLegacyReturn(){const b=$('uxLegacyReturn');if(b)b.style.display='none';}
 
+  function wishDeadlineChip(){
+    const phase=K.wishPhaseGuard?.state?.()||{};
+    const deadline=phase.deadline||K.state?.wishDeadline||null;
+    if(!deadline)return '<span class="kc-wish-deadline-chip green" role="status" aria-label="Wunschphase offen, keine Frist hinterlegt"><i aria-hidden="true"></i>Offen · keine Frist</span>';
+    let d;
+    try{d=new Date(`${deadline}T23:59:59`);}catch(_){d=null;}
+    const fmt=()=>{try{return new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit'}).format(new Date(`${deadline}T12:00:00`));}catch(_){return String(deadline)}};
+    if(phase.phase==='closed'||phase.published)return `<span class="kc-wish-deadline-chip red" role="status" aria-label="Wunschphase geschlossen"><i aria-hidden="true"></i>Geschlossen</span>`;
+    const days=d&&!Number.isNaN(d.getTime())?Math.ceil((d.getTime()-Date.now())/86400000):99;
+    const tone=days<=0?'red':days<=6?'orange':days<=14?'yellow':'green';
+    const label=days<=0?`Frist ${fmt()}`:`bis ${fmt()}`;
+    return `<span class="kc-wish-deadline-chip ${tone}" role="status" aria-label="Wunschphase ${label}"><i aria-hidden="true"></i>${label}</span>`;
+  }
+
   function launcherHtml(){
     const user=K.currentUser||{},role=K.auth?.roleDef?.(user.role),edit=canEdit();
     return `<div class="kc-start-choice-shell"><section class="kc-start-choice-card" aria-labelledby="kcStartChoiceTitle">
@@ -39,7 +53,7 @@
         <button type="button" class="kc-start-choice-option primary" id="kcChoiceView"><span class="kc-start-choice-icon">👁</span><span class="kc-start-choice-copy"><b>Dienstplan ansehen</b><span>Gesamten Dienstplan sicher lesen und durch die Tage blättern. Keine Änderungen möglich.</span></span></button>
         ${edit?'<button type="button" class="kc-start-choice-option" id="kcChoiceEdit"><span class="kc-start-choice-icon">✏️</span><span class="kc-start-choice-copy"><b>Dienstplan bearbeiten</b><span>Dienste einplanen, verschieben und den Sollplan bearbeiten. Nur für berechtigte Planer.</span></span></button>':''}
         <button type="button" class="kc-start-choice-option" id="kcChoiceMine"><span class="kc-start-choice-icon">👤</span><span class="kc-start-choice-copy"><b>Meine Dienste</b><span>Nur die eigenen Einsatzzeiten und den persönlichen Plan übersichtlich anzeigen.</span></span></button>
-        <button type="button" class="kc-start-choice-option" id="kcChoiceWish"><span class="kc-start-choice-icon">📝</span><span class="kc-start-choice-copy"><b>Wunschplan</b><span>Eigene Wunschzeiten ansehen und – solange freigegeben – eintragen oder ändern.</span></span></button>
+        <button type="button" class="kc-start-choice-option" id="kcChoiceWish"><span class="kc-start-choice-icon">📝</span><span class="kc-start-choice-copy"><span class="kc-start-choice-titleline"><b>Wunschplan</b>${wishDeadlineChip()}</span><span>Eigene Wunschzeiten ansehen und – solange freigegeben – eintragen oder ändern.</span></span></button>
       </div>
       <div class="kc-start-choice-footer"><span>Angemeldet als <b>${esc(user.displayName||'Benutzer')}</b>${role?.label?` · ${esc(role.label)}`:''}</span><button type="button" class="kc-start-choice-logout" id="kcChoiceLogout">Abmelden</button></div>
     </section></div>`;
@@ -127,7 +141,7 @@
       if(!deepLink)setTimeout(showLauncher,0);
       return out;
     };
-    K.startChoice={version:'0.19.40',show:showLauncher,openView:()=>openLegacy('view'),openEdit:()=>openLegacy('edit'),openMine:()=>openPersonal('plan'),openWish:()=>openPersonal('wish'),isReadonly};
+    K.startChoice={version:'0.19.55-wish-deadline-chip-1',show:showLauncher,openView:()=>openLegacy('view'),openEdit:()=>openLegacy('edit'),openMine:()=>openPersonal('plan'),openWish:()=>openPersonal('wish'),isReadonly};
     const root=roleRoot();
     if(root){roleObserver=new MutationObserver(()=>ensureChoiceReturn());roleObserver.observe(root,{childList:true,subtree:false});}
     lastBodyMode=bodyMode();
@@ -137,6 +151,7 @@
       lastBodyMode=next;ensureChoiceReturn();
     });
     bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
+    window.addEventListener('kc-dp-wish-phase-changed',()=>{if(launcherVisible)showLauncher();});
     if(document.readyState!=='loading'&&bodyMode()==='role'&&K.currentUser?.personId&&!replacementRoute())setTimeout(showLauncher,0);
     return true;
   }
