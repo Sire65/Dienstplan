@@ -81,3 +81,94 @@
     Object.defineProperty(K.storage,'__unlockRetryGuard',{value:true,enumerable:false});
   }
 })();
+
+/* KC DP2 V0.19.55 – Tiefenkonsolidierung Login/Logout und erster lokaler Schlüssel */
+(function(){
+  'use strict';
+  const K=window.KCDP=window.KCDP||{};
+  if(K.__sessionFlowDeepGuard)return;
+  K.__sessionFlowDeepGuard=true;
+  const flow=K.authFlow=K.authFlow||{steps:[]};
+  const mark=(stage,detail='')=>{try{flow.steps=flow.steps||[];flow.steps.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.steps.length>80)flow.steps.shift();K.loginTrace?.add?.(stage,'info',detail);}catch(_){}};
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  async function validateCurrentSecret(){
+    const probeKeys=['supabaseSession','peopleSnapshot','workflow','shifts','eventConfig'];
+    for(const key of probeKeys){
+      let row=null;
+      try{row=await K.storage?._rawGet?.(key);}catch(_){row=null;}
+      if(!row?.envelope)continue;
+      try{
+        if(row.envelope.format==='KC_DP_LOCAL_V2'&&typeof K.storage?._decryptFast==='function')await K.storage._decryptFast(row.envelope);
+        else if(window.KCSecureSync?.decryptEnvelope)await window.KCSecureSync.decryptEnvelope(row.envelope,{secret:K.storage.secret,projectId:'KC_DP'});
+        return true;
+      }catch(e){throw new Error('Der lokale Sicherheitsschlüssel passt nicht zu den auf diesem Gerät gespeicherten Daten.');}
+    }
+    return true;
+  }
+
+  function installPrimaryUnlockValidator(){
+    const bind=()=>{
+      const modal=document.getElementById('modal'),btn=document.getElementById('unlockBtn'),input=document.getElementById('unlockSecret');
+      const h2=modal?.querySelector('h2');
+      if(!btn||!input||!/Dieses Gerät entsperren/i.test(h2?.textContent||'')||btn.dataset.kcDeepUnlock==='1')return;
+      btn.dataset.kcDeepUnlock='1';
+      const original=btn.onclick;
+      btn.onclick=async ev=>{
+        ev?.preventDefault?.();
+        if(btn.dataset.kcBusy==='1')return;
+        btn.dataset.kcBusy='1';const old=btn.textContent;btn.disabled=true;btn.textContent='Schlüssel wird geprüft …';
+        let errorBox=modal.querySelector('#kcPrimaryUnlockError');
+        if(!errorBox){errorBox=document.createElement('div');errorBox.id='kcPrimaryUnlockError';errorBox.className='ai-summary';errorBox.style.display='none';input.closest('.field')?.before(errorBox);}
+        try{
+          K.storage.setSecret(input.value);
+          await validateCurrentSecret();
+          mark('local-key-valid','Lokaler Schlüssel vor Fortsetzung geprüft');
+          if(typeof original==='function')original.call(btn,ev);
+        }catch(e){
+          K.storage.lock?.();
+          errorBox.style.display='block';errorBox.style.borderColor='#ef4444';errorBox.style.background='#fff1f2';errorBox.style.color='#991b1b';errorBox.textContent=esc(e?.message||e);
+          input.value='';input.focus();mark('local-key-invalid',e?.message||e);
+        }finally{
+          btn.dataset.kcBusy='0';if(btn.isConnected){btn.disabled=false;btn.textContent=old;}
+        }
+      };
+    };
+    const obs=new MutationObserver(()=>bind());obs.observe(document.body,{subtree:true,childList:true});bind();
+  }
+
+  function installCleanSignOut(){
+    const ma=K.memberAccess;if(!ma||typeof ma.signOut!=='function'||ma.signOut.__kcDeepLogout)return;
+    const original=ma.signOut.bind(ma);
+    const wrapped=async function(){
+      if(flow.pendingSignOut)return flow.pendingSignOut;
+      mark('logout-start','Abmeldung gestartet');
+      flow.pendingLogin=null;flow.pendingPassword=null;
+      flow.pendingSignOut=(async()=>{
+        try{await ma.setRememberHint?.(false);}catch(_){}
+        try{if(K.storage?.unlocked)await K.storage.remove?.('supabaseSession');}catch(_){}
+        let remote=null;
+        try{
+          remote=Promise.resolve().then(()=>original());
+          await Promise.race([remote,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Logout-Netzwerk-Timeout')),4500))]);
+        }catch(e){
+          mark('logout-network-fallback',e?.message||e);
+          try{await K.supabaseConnection?.clearSession?.();}catch(_){}
+          try{K.session?.logout?.('KC-DP Abmeldung lokal abgeschlossen');}catch(_){}
+          remote?.catch?.(()=>{});
+        }
+        try{if(K.storage?.unlocked)await K.storage.remove?.('supabaseSession');}catch(_){}
+        try{await ma.setRememberHint?.(false);}catch(_){}
+        if(ma.state){ma.state.status='signed_out';ma.state.user=null;ma.state.membership=null;ma.state.firstAccess=false;ma.state.remember=false;}
+        mark('logout-complete','Lokale Sitzung und Merker entfernt');
+        return true;
+      })().finally(()=>{flow.pendingSignOut=null;});
+      return flow.pendingSignOut;
+    };
+    wrapped.__kcDeepLogout=true;ma.signOut=wrapped;
+  }
+
+  installPrimaryUnlockValidator();
+  installCleanSignOut();
+  K.sessionFlowDeepGuard={version:'0.19.55-deep-session-1',validateCurrentSecret,installPrimaryUnlockValidator,installCleanSignOut};
+})();
