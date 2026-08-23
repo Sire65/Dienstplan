@@ -5,7 +5,7 @@
    Same-version fingerprint changes from the canonical production pipeline are treated as a controlled
    migration and are accepted only after full runtime verification.
 */
-const ENGINE='kc-dp-update-engine-v1.9-controlled-build-migration';
+const ENGINE='kc-dp-update-engine-v2.0-atomic-release';
 const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const START_LOG_URL=new URL('__kc_dp_start_guard_log__',self.registration.scope).toString();
@@ -139,16 +139,20 @@ self.addEventListener('fetch',event=>{
     event.respondWith((async()=>{
       const run=await runStartGuard();
       let r;
-      try{r=await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},START_GUARD_TIMEOUT_MS);if(r&&r.ok){const meta=await activeMeta(),cache=await caches.open(meta.activeCache),canonical=new URL(FALLBACK,self.registration.scope).toString();await cache.put(canonical,r.clone());}}
-      catch(_){r=await activeCacheResponse(event.request);}
+      try{
+        const meta=await activeMeta(),cache=await caches.open(meta.activeCache),canonical=new URL(FALLBACK,self.registration.scope).toString();
+        r=(await cache.match(canonical,{ignoreSearch:true}))||await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},START_GUARD_TIMEOUT_MS);
+      }catch(_){r=await activeCacheResponse(event.request);}
       return injectBadge(r,run);
     })());return;
   }
   if(isCriticalRuntime(event.request,url)){
     event.respondWith((async()=>{
       const meta=await activeMeta(),cache=await caches.open(meta.activeCache);
-      try{const r=await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});if(r&&r.ok)await cache.put(event.request,r.clone());return r;}
-      catch(_){return (await cache.match(event.request,{ignoreSearch:true}))||Response.error();}
+      const verified=await cache.match(event.request,{ignoreSearch:true});
+      if(verified)return verified;
+      try{return await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});}
+      catch(_){return Response.error();}
     })());return;
   }
   event.respondWith((async()=>{const meta=await activeMeta(),cache=await caches.open(meta.activeCache),hit=await cache.match(event.request,{ignoreSearch:true});if(hit)return hit;try{const r=await fetchWithTimeout(event.request);if(r&&r.ok)await cache.put(event.request,r.clone());return r;}catch(_){return (await cache.match(new URL(FALLBACK,self.registration.scope).toString(),{ignoreSearch:true}))||Response.error();}})());

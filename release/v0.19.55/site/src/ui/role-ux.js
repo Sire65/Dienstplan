@@ -8,7 +8,7 @@ const dayVisualClass=d=>{const wd=new Date(d.date+'T12:00:00').getDay();return [
 const timeNum=v=>{const [h,m]=String(v||'').split(':').map(Number);return Number.isFinite(h)&&Number.isFinite(m)?h+m/60:null};
 const positive=w=>w.status!=='deleted'&&['available','preferred','if_needed'].includes(w.wishType);
 let loginResolve=null,currentPage='home',selectedDay=null,importRows=[],importIssues=[];
-const DEV_FAST_ACCESS={enabled:true,clicks:5,windowMs:4500,adminEmail:'ha-joko@web.de'};
+const DEV_FAST_ACCESS={enabled:['localhost','127.0.0.1'].includes(location.hostname),clicks:5,windowMs:4500,adminEmail:'ha-joko@web.de'};
 let devLogoClicks=[];
 const TEST_SCENARIO={
   people:[
@@ -34,7 +34,7 @@ function note(text,type=''){return `<div class="ux-note ${type?`ux-${type}`:''}"
 function loginScreen(message=''){
  K.databaseDiagnostics?.markLogin?.('prompt');
  loginFrame(`<h1>Willkommen bei KC DP2</h1><p class="ux-lead">Bitte melden Sie sich jetzt an.</p>${message?note(esc(message),'error'):''}<form id="uxLoginForm" autocomplete="off"><div class="ux-autofill-trap" aria-hidden="true"><input type="text" name="username" autocomplete="username" tabindex="-1"><input type="password" name="password" autocomplete="current-password" tabindex="-1"></div><div class="ux-field"><label>E-Mail-Adresse</label><input id="uxEmail" name="kc_member_mail_0197" type="text" inputmode="email" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="z. B. mitglied@koecheclub-werne.de"></div><div class="ux-field"><label>Passwort</label><input id="uxPassword" name="kc_member_pass_0197" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" required placeholder="z. B. Ihr persönliches Passwort"></div><label class="ux-check"><input id="uxRemember" type="checkbox" checked> Auf diesem Gerät angemeldet bleiben</label><div class="ux-login-actions"><button class="ux-btn primary full" type="submit">Anmelden</button></div></form><div class="ux-login-meta"><button class="ux-link" id="uxFirstAccess">Erstanmeldung</button><span class="ux-login-divider" aria-hidden="true"></span><button class="ux-link" id="uxForgot">Passwort vergessen?</button></div><div class="ux-note">Nach der Anmeldung wird automatisch Ihre passende Startansicht geöffnet.</div>${!K.memberAccess.configured()&&isLocal()?`<details style="margin-top:12px"><summary style="cursor:pointer;color:#7a1420;font-weight:700">Lokaler Prüfzugang</summary><div id="uxLocalTest" style="margin-top:10px"></div></details>`:''}`);
- const email=$('uxEmail'),pass=$('uxPassword');
+ const email=$('uxEmail'),pass=$('uxPassword');email?.setAttribute('aria-label','E-Mail-Adresse');pass?.setAttribute('aria-label','Passwort');document.querySelector('.ux-autofill-trap')?.setAttribute('hidden','');
  const scrubBadAutofill=()=>{if(!email?.isConnected)return false;const v=String(email.value||'').trim();if(/^https?:\/\//i.test(v)||/supabase\.co/i.test(v)||/^[a-z]+:\/\//i.test(v))email.value='';return true;};
  scrubBadAutofill();const scrubTimer=setInterval(()=>{if(!scrubBadAutofill())clearInterval(scrubTimer);},200);
  const scrubEvents=['focus','blur','change','input','animationstart'];for(const ev of scrubEvents)email?.addEventListener(ev,scrubBadAutofill);

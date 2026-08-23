@@ -44,7 +44,7 @@ body.ux-login{background:#eee8e2}
 body.ux-login .ux-login-shell{width:min(1450px,calc(100vw - 32px));min-height:min(815px,calc(100dvh - 32px));margin:16px auto;padding:26px;border-radius:34px;overflow:hidden;position:relative;display:grid;place-items:center;background-color:#2f231c;background-image:url("../../assets/kc-login-startbild-v01917.webp");background-position:center center;background-repeat:no-repeat;background-size:cover;box-shadow:0 20px 60px rgba(47,36,29,.18)}
 body.ux-login .ux-login-shell:before,body.ux-login .ux-login-shell:after{content:none!important;display:none!important;background:none!important}
 body.ux-login .ux-login-card{width:min(650px,calc(100% - 28px));z-index:2}
-body.ux-login .ux-autofill-trap{position:fixed!important;left:-10000px!important;top:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important}
+body.ux-login .ux-autofill-trap{display:none!important}
 @media(max-width:950px){body.ux-login .ux-login-shell{width:calc(100vw - 16px);min-height:calc(100dvh - 16px);margin:8px auto;padding:14px;border-radius:24px;background-position:center center;background-size:cover}}
 @media(max-width:650px){body.ux-login .ux-login-shell{background-image:linear-gradient(rgba(39,29,23,.35),rgba(39,29,23,.35)),url("../../assets/kc-login-startbild-v01917.webp");background-position:center center;background-size:cover}}
 

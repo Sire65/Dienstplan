@@ -195,7 +195,7 @@
   function restore(reason='startup'){
     if(!guard.accepted||guard.logout||!guard.snapshot?.personId)return false;
     const tokenFn=K.supabaseConnection?.hasAccessToken;
-    if(typeof tokenFn==='function'&&!tokenFn.call(K.supabaseConnection)&&Date.now()-guard.acceptedAt>120000)return false;
+    if(typeof tokenFn==='function'&&!tokenFn.call(K.supabaseConnection))return false;
     const s=guard.snapshot;
     try{K.auth?.setCurrentUser?.({personId:s.personId,role:s.role,displayName:s.displayName});}catch(_){}
     try{

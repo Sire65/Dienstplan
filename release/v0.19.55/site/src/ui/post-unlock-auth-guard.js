@@ -6,7 +6,7 @@
 
   const MAX_AGE_MS=120000;
   const state=K.postUnlockAuthGuard={
-    version:'0.19.55-build82',
+    version:'0.19.55-build84',
     confirmed:null,
     confirmedAt:0,
     explicitLogout:false
@@ -46,6 +46,8 @@
   function canRestore(){
     if(state.explicitLogout||!state.confirmed?.personId)return false;
     if(Date.now()-state.confirmedAt>MAX_AGE_MS)return false;
+    const tokenCheck=K.supabaseConnection?.hasAccessToken;
+    if(typeof tokenCheck==='function'&&!tokenCheck.call(K.supabaseConnection))return false;
     return true;
   }
 
@@ -105,7 +107,7 @@
       ru.ensureLogin=wrapped;
     }
 
-    trace('post-unlock-guard-ready','Build 82 · Doppel-Login-Schutz aktiv');
+    trace('post-unlock-guard-ready','Build 84 · Doppel-Login-Schutz aktiv');
     return true;
   }
 
