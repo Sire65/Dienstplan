@@ -102,7 +102,7 @@
     loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');
     loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');
     loadModule('src/ui/session-diagnostics-guard.js?v=0.19.69-close-only-2','KCDP_SESSION_DIAG_GUARD');
-    loadModule('src/ui/supabase-session-guard.js?v=0.19.55-single-flight-1','KCDP_SUPABASE_SESSION_GUARD')
+    loadModule('src/ui/supabase-session-guard.js?v=0.19.55-single-flight-led-2','KCDP_SUPABASE_SESSION_GUARD')
   }
   function apply(){if(diagOpen())return;roleUx();humanize();updateSaveState();ensureSupabaseCloseX()}
   function scheduleApply(){
@@ -116,5 +116,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
   else{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-supabase-close-x-1',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate,ensureSupabaseCloseX};
+  K.kcUxPolish={version:'0.19.55-supabase-verified-led-2',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate,ensureSupabaseCloseX};
 })();
