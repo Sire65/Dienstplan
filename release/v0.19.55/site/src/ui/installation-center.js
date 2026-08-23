@@ -110,7 +110,12 @@
     if(!modal||modal.classList.contains('hidden'))return;
     const b=document.createElement('button');b.id='kcInstallationAdminEntry';b.type='button';b.className='kc-install-admin-entry';b.textContent='📲 Installationshistorie';b.title='Erfolgreiche KC-DP2-Installationen nach Gerät und Zeitpunkt';b.onclick=open;modal.appendChild(b);
   }
+  // Eine alte Installationsansicht darf beim Wiederherstellen/Wiederaufnehmen der PWA
+  // nicht automatisch über dem bereits gestarteten Dienstplan stehen bleiben.
+  window.addEventListener('pagehide',close);
+  window.addEventListener('pageshow',close);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',close,{once:true});else close();
   document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
   new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
-  K.installationCenter={version:'0.19.55-install-back-1',open,allowed};
+  K.installationCenter={version:'0.19.55-install-back-resume-2',open,allowed};
 })();
