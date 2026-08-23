@@ -13,7 +13,9 @@
   function semver(v){return String(v||'0').replace(/^v/i,'').split('.').map(x=>Number.parseInt(x,10)||0).slice(0,3).concat([0,0,0]).slice(0,3);}
   function cmpVersion(a,b){const A=semver(a),B=semver(b);for(let i=0;i<3;i++){if(A[i]>B[i])return 1;if(A[i]<B[i])return -1;}return 0;}
   function safeGet(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch(_){return null;}}
+  function safeSet(key,value){try{localStorage.setItem(key,JSON.stringify(value));return true;}catch(_){return false;}}
   function snoozed(version,build){const x=safeGet('kc_dp_update_snooze');return !!(x&&x.version===version&&Number(x.build||0)===Number(build||0)&&Date.now()-Number(x.at||0)<SNOOZE_MS);}
+  function snooze(version,build=state.lastSeenBuild||CURRENT_BUILD){safeSet('kc_dp_update_snooze',{version,build:Number(build||0),at:Date.now()});}
 
   async function fetchManifest(){
     if(!/^https?:$/.test(location.protocol))throw new Error('Updateprüfung benötigt die Web-Version über HTTPS/HTTP.');
@@ -57,6 +59,7 @@
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){const last=Date.parse(state.lastCheckAt||0)||0;if(Date.now()-last>60000)check();}});
   }
 
-  K.updateBuildGuard={version:'1.0.0',CURRENT_RELEASE,CURRENT_BUILD,state,check,isNewerBuild};
+  if(K.updateManager){K.updateManager.snooze=(version)=>snooze(version,state.lastSeenBuild||CURRENT_BUILD);}
+  K.updateBuildGuard={version:'1.0.1',CURRENT_RELEASE,CURRENT_BUILD,state,check,isNewerBuild,snooze};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
 })();
