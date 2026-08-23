@@ -11,15 +11,14 @@
   new MutationObserver(m=>{if(!diagOpen()&&m.some(x=>x.type==='childList'))schedule();}).observe(document.documentElement,{childList:true,subtree:true});
   document.addEventListener('click',e=>{if(e.target?.id==='prevDayBtn'||e.target?.id==='nextDayBtn'||e.target?.closest?.('[data-jump-date]')){last='';setTimeout(schedule,0);}});
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',()=>{if(diagOpen())return;last='';schedule();});
-  K.sourceHealthUi={version:'0.19.64-diag-safe',refresh(){if(diagOpen())return;last='';schedule();}};schedule();
+  K.sourceHealthUi={version:'0.19.65-no-diag-loader',refresh(){if(diagOpen())return;last='';schedule();}};schedule();
   function script(id,src,parent=document.head){if(document.getElementById(id))return null;const s=document.createElement('script');s.id=id;s.src=src;s.async=false;parent.appendChild(s);return s}
   function css(id,href){if(document.getElementById(id))return;const c=document.createElement('link');c.id=id;c.rel='stylesheet';c.href=href;document.head.appendChild(c)}
   function loadPushCenter(){if(document.getElementById('kcPushCenterCss')||window.KCDP?.pushCenter)return;css('kcPushCenterCss','src/ui/push-center.css?v=0.19.43');script('kcPushCenterUi','src/ui/push-center.js?v=0.19.43',document.body)}
-  function loadDiagnostics(){if(K.diagnosticsCenter)return;script('kcTableCoreAdapter','src/core/table-core-adapter.js?v=0.19.44');script('kcDiagnosticsAdapter','src/adapters/diagnostics.js?v=0.19.51');css('kcDiagnosticsCss','src/ui/diagnostics-center.css?v=0.19.51');script('kcDiagnosticsUi','src/ui/diagnostics-center.js?v=0.19.51',document.body)}
   function loadEmailCenter(){if(window.KCDP?.emailCenter||document.getElementById('kcEmailCenterUi'))return;script('kcEmailCenterUi','src/ui/email-center.js?v=0.19.57',document.body)}
   function loadSessionMobileHotfix(){if(window.KCDP?.sessionMobileHotfix||document.getElementById('kcSessionMobileHotfix'))return;script('kcSessionMobileHotfix','src/ui/session-mobile-hotfix.js?v=0.19.58',document.body)}
   function loadUxPolish(){css('kcUxPolishCss','src/ui/kc-ux-polish.css?v=0.19.55');if(window.KCDP?.kcUxPolish)return;script('kcUxPolishJs','src/ui/kc-ux-polish.js?v=0.19.55',document.body)}
   function loadMobileColleagueSearch(){script('kcMobileColleagueSearchJs','src/ui/mobile-colleague-search.js?v=0.19.51',document.body)}
   function loadWishPhaseGuard(){script('kcWishPhaseGuardJs','src/ui/wish-phase-guard.js?v=0.19.52-safe-7',document.body)}
-  function loadExtras(){loadPushCenter();loadDiagnostics();loadEmailCenter();loadSessionMobileHotfix();loadUxPolish();loadMobileColleagueSearch();loadWishPhaseGuard();setTimeout(ensureMailSettingsTab,0)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadExtras,{once:true});else loadExtras();
+  function loadExtras(){loadPushCenter();loadEmailCenter();loadSessionMobileHotfix();loadUxPolish();loadMobileColleagueSearch();loadWishPhaseGuard();setTimeout(ensureMailSettingsTab,0)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadExtras,{once:true});else loadExtras();
 })();
