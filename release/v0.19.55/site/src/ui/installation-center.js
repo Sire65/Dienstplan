@@ -24,7 +24,8 @@
     if(!allowed()||!K.installationHistory)return;
     let host=document.getElementById('kcInstallOverlay');
     if(!host){host=document.createElement('div');host.id='kcInstallOverlay';host.className='kc-install-overlay';document.body.appendChild(host)}
-    host.innerHTML=`<div class="kc-install-card">
+    host.scrollTop=0;
+    host.innerHTML=`<button id="kcInstallFloatingClose" type="button" aria-label="Installationshistorie schließen" title="Schließen" style="position:fixed;right:18px;top:calc(env(safe-area-inset-top, 0px) + 18px);z-index:260001;width:56px;height:56px;border:1px solid #d8c9c1;border-radius:16px;background:#fff;color:#111;font-size:34px;line-height:48px;box-shadow:0 4px 14px rgba(0,0,0,.18);touch-action:manipulation">×</button><div class="kc-install-card">
       <div class="kc-install-head"><div><h2>📲 Installationshistorie</h2><p>KC DP2 · Wer hat wann auf welchem Gerät installiert?</p></div><button id="kcInstallClose" aria-label="Schließen">✕</button></div>
       <div class="kc-install-toolbar">
         <button id="kcInstallBack" type="button" aria-label="Zurück zum KC-DP2-Programm">← Zurück zum Programm</button>
@@ -35,6 +36,7 @@
       <div id="kcInstallTable">Lade Installationen …</div>
       <div id="kcInstallUpdated" class="kc-install-updated"></div>
     </div>`;
+    host.querySelector('#kcInstallFloatingClose').onclick=close;
     host.querySelector('#kcInstallClose').onclick=close;
     host.querySelector('#kcInstallBack').onclick=close;
     let allRows=[],loading=false;
@@ -114,8 +116,10 @@
   // nicht automatisch über dem bereits gestarteten Dienstplan stehen bleiben.
   window.addEventListener('pagehide',close);
   window.addEventListener('pageshow',close);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')close()});
+  window.addEventListener('pagereveal',close);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',close,{once:true});else close();
   document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
   new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
-  K.installationCenter={version:'0.19.55-install-back-resume-2',open,allowed};
+  K.installationCenter={version:'0.19.55-install-back-resume-3',open,close,allowed};
 })();
