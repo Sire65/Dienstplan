@@ -16,11 +16,30 @@
     ov.innerHTML=`<section style="width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fff;border:3px solid #a31724;border-radius:20px;padding:20px;font-family:system-ui,Arial"><h2 style="margin:0 0 12px;color:#a31724">⚠ Diagnose-Freeze sicher erkannt</h2><p>Der letzte Klick auf <b>Zentrale Fehlerdiagnose</b> wurde vor dem Öffnen der Diagnose dauerhaft gespeichert und nicht erfolgreich abgeschlossen.</p><p style="padding:12px;background:#fff3f3;border-radius:12px"><b>Capture:</b> ${String(a.stage||'button-capture')}<br><b>Zeit:</b> ${String(a.at||'–')}<br><b>Build:</b> ${String(a.build||'0.19.55')}</p><p>${detail}</p><button id="kcDiagCaptureClose" type="button" style="min-height:48px;padding:0 18px">Meldung schließen</button></section>`;
     document.body.appendChild(ov);document.getElementById('kcDiagCaptureClose').onclick=()=>{ov.remove();clearDiagCapture()};
   }
+  function startDiagnosticsThroughWatchdog(){
+    let tries=0;
+    const launch=()=>{
+      if(K.diagnosticsWatchdog?.run){
+        writeDiagCapture({active:true,stage:'watchdog-dispatch',at:new Date().toISOString(),build:'0.19.55',href:location.href});
+        K.diagnosticsWatchdog.run();
+        return;
+      }
+      tries++;
+      if(tries<15){setTimeout(launch,100);return;}
+      writeDiagCapture({active:true,stage:'watchdog-missing',at:new Date().toISOString(),build:'0.19.55',href:location.href});
+      alert('Fehlerdiagnose kann nicht gestartet werden: Diagnose-Wächter ist nicht geladen. Bitte KC DP2 neu starten.');
+    };
+    setTimeout(launch,0);
+  }
   function armDiagCapture(){
-    if(document.documentElement.dataset.kcDiagCapture==='1')return;document.documentElement.dataset.kcDiagCapture='1';
+    if(document.documentElement.dataset.kcDiagCapture==='2')return;document.documentElement.dataset.kcDiagCapture='2';
     document.addEventListener('click',e=>{
       if(!e.target?.closest?.('#kcDiagnosticsAdminEntry'))return;
-      writeDiagCapture({active:true,stage:'button-capture',at:new Date().toISOString(),build:'0.19.55',href:location.href});
+      writeDiagCapture({active:true,stage:'button-capture-gated',at:new Date().toISOString(),build:'0.19.55',href:location.href});
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+      startDiagnosticsThroughWatchdog();
       if(diagCaptureTimer)clearInterval(diagCaptureTimer);
       diagCaptureTimer=setInterval(()=>{
         const host=document.getElementById('kcDiagOverlay'),table=host?.querySelector?.('#kcDiagTable'),txt=String(table?.textContent||'');
@@ -75,5 +94,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
   else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-diag-router-1',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture};
+  K.kcUxPolish={version:'0.19.55-diag-hard-gate-2',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughWatchdog};
 })();
