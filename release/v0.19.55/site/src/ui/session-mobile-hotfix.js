@@ -42,17 +42,55 @@
     if(K.__singleLoginGateInstalled)return;
     if(typeof K.roleUx?.ensureLogin!=='function'||typeof K.memberAccess?.signInPassword!=='function')return;
     K.__singleLoginGateInstalled=true;
-    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-4',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,events:[]};
-    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>80)flow.events.shift();trace(stage,detail);};
+    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-5-state-repair',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,lastPasswordUser:null,events:[]};
+    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>100)flow.events.shift();trace(stage,detail);};
+
+    function repairRecentAuthenticatedState(){
+      const age=flow.lastPasswordOkAt?Date.now()-flow.lastPasswordOkAt:Infinity;
+      if(age>120000)return false;
+      if(K.memberAccess?.state?.status==='authenticated')return true;
+
+      let user=flow.lastPasswordUser||K.currentUser||K.postLoginIdentityGuard?.state?.snapshot||null;
+      if(!user?.personId)return false;
+
+      const hasToken=typeof K.supabaseConnection?.hasAccessToken==='function'?K.supabaseConnection.hasAccessToken():true;
+      if(!hasToken)return false;
+
+      try{
+        const role=user.role||K.currentUser?.role||'employee';
+        const displayName=user.displayName||user.name||K.currentUser?.displayName||'';
+        K.auth?.setCurrentUser?.({personId:user.personId,role,displayName});
+        if(K.memberAccess?.state){
+          K.memberAccess.state.status='authenticated';
+          K.memberAccess.state.user={...(K.memberAccess.state.user||{}),personId:user.personId,role,displayName};
+          K.memberAccess.state.lastError=null;
+        }
+        K.session?.adoptAuthenticatedUser?.({personId:user.personId,role,displayName,provider:'supabase'});
+        mark('login-gate-state-repair',`Authentifizierter Zustand nach lokalem Entsperren repariert · ${user.personId}`);
+        return true;
+      }catch(e){
+        mark('login-gate-state-repair-error',e?.message||e);
+        return false;
+      }
+    }
 
     const originalEnsure=K.roleUx.ensureLogin.bind(K.roleUx);
     K.roleUx.ensureLogin=function(){
       if(K.memberAccess?.state?.status==='authenticated')return Promise.resolve(K.currentUser);
 
+      if(repairRecentAuthenticatedState()){
+        mark('login-gate-restored','Bestätigte Identität nach lokalem Entsperren wiederverwendet');
+        return Promise.resolve(K.currentUser);
+      }
+
       const recentPassword=flow.lastPasswordOkAt&&Date.now()-flow.lastPasswordOkAt<120000;
       if(recentPassword&&K.postLoginIdentityGuard?.restore){
         try{
           if(K.postLoginIdentityGuard.restore('recent-password-reentry')){
+            if(K.memberAccess?.state){
+              K.memberAccess.state.status='authenticated';
+              if(K.currentUser?.personId)K.memberAccess.state.user={...(K.memberAccess.state.user||{}),personId:K.currentUser.personId,role:K.currentUser.role,displayName:K.currentUser.displayName||''};
+            }
             mark('login-gate-restored','Bestätigte Identität nach lokalem Entsperren wiederhergestellt');
             return Promise.resolve(K.currentUser);
           }
@@ -72,7 +110,12 @@
       if(flow.passwordPromise){mark('password-gate-reuse','Doppeltes Absenden unterdrückt');return flow.passwordPromise;}
       const started=performance.now();mark('password-gate-start','Passwortprüfung gestartet');
       const p=Promise.resolve().then(()=>originalPassword(args));
-      flow.passwordPromise=p.then(user=>{flow.lastPasswordOkAt=Date.now();mark('password-gate-ok',`${Math.round(performance.now()-started)} ms`);return user;},err=>{mark('password-gate-error',err?.message||err);throw err;});
+      flow.passwordPromise=p.then(user=>{
+        flow.lastPasswordOkAt=Date.now();
+        flow.lastPasswordUser=user?{...user}:K.currentUser?{...K.currentUser}:null;
+        mark('password-gate-ok',`${Math.round(performance.now()-started)} ms`);
+        return user;
+      },err=>{mark('password-gate-error',err?.message||err);throw err;});
       flow.passwordPromise.finally(()=>{flow.passwordPromise=null;});
       return flow.passwordPromise;
     };
@@ -138,7 +181,7 @@
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.78-startprotocol-delete',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
+  K.sessionMobileHotfix={version:'0.19.79-auth-state-repair',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
   let applyQueued=false;
   const scheduleApply=()=>{
     if(applyQueued)return;
