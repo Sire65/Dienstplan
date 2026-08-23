@@ -21,6 +21,7 @@ if(fs.existsSync(indexPath)){
   if(/window\.KC_DP_BUILD\s*=\s*\d+/.test(html))html=html.replace(/window\.KC_DP_BUILD\s*=\s*\d+/g,`window.KC_DP_BUILD=${build}`);
   else html=html.replace(/<head>/i,`<head>\n  <script>window.KC_DP_BUILD=${build};<\/script>`);
   html=html.replace(/src\/ui\/session-mobile-hotfix\.js\?[^\"']*/g,`src/ui/session-mobile-hotfix.js?build=${build}`);
+  html=html.replace(/src\/ui\/post-unlock-auth-guard\.js\?[^\"']*/g,`src/ui/post-unlock-auth-guard.js?build=${build}`);
   html=html.replace(/src\/core\/update-build-guard\.js\?[^\"']*/g,`src/core/update-build-guard.js?build=${build}`);
   fs.writeFileSync(indexPath,html);
 }
@@ -47,6 +48,7 @@ const extras=[
   ['src/core/diagnostics-watchdog.js',true,true],
   ['src/core/diagnostics-button-router.js',true,true],
   ['src/ui/session-mobile-hotfix.js',true,true],
+  ['src/ui/post-unlock-auth-guard.js',true,true],
   ['src/ui/session-diagnostics-guard.js',true,true],
   ['src/ui/kc-ux-polish.js',true,true],
   ['src/ui/kc-ux-polish.css',true,true],
@@ -78,6 +80,7 @@ const forceRefreshPaths=new Set([
   'src/core/diagnostics-watchdog.js',
   'src/core/diagnostics-button-router.js',
   'src/ui/session-mobile-hotfix.js',
+  'src/ui/post-unlock-auth-guard.js',
   'src/ui/session-diagnostics-guard.js',
   'src/ui/kc-ux-polish.js',
   'src/ui/kc-ux-polish.css'
