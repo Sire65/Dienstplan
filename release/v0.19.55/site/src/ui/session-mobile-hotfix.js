@@ -49,10 +49,6 @@
     K.roleUx.ensureLogin=function(){
       if(K.memberAccess?.state?.status==='authenticated')return Promise.resolve(K.currentUser);
 
-      // Nach erfolgreichem Passwortlogin + lokaler Schlüsselprüfung darf ein späterer
-      // Startup-Schritt nicht noch einmal die Passwortmaske öffnen. Die bereits
-      // bestätigte Identität wird ausschließlich innerhalb eines kurzen Fensters
-      // aus dem bestehenden In-Memory-Snapshot wiederhergestellt.
       const recentPassword=flow.lastPasswordOkAt&&Date.now()-flow.lastPasswordOkAt<120000;
       if(recentPassword&&K.postLoginIdentityGuard?.restore){
         try{
@@ -120,7 +116,7 @@
   }
   function loadLoginTrace(){
     if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-startprotokoll-4-continuous','kcLoginTrace');
-    loadScriptOnce('script[data-kc-start-protocol-copy]','src/ui/start-protocol-copy.js?v=0.19.55-copy-1','kcStartProtocolCopy');
+    loadScriptOnce('script[data-kc-start-protocol-copy]','src/ui/start-protocol-copy.js?v=0.19.55-copy-2-delete-confirm','kcStartProtocolCopy');
   }
 
   function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d&&d.style.display!=='none')d.style.display='none'}
@@ -142,7 +138,7 @@
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.77-recent-auth-reentry',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
+  K.sessionMobileHotfix={version:'0.19.78-startprotocol-delete',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
   let applyQueued=false;
   const scheduleApply=()=>{
     if(applyQueued)return;
