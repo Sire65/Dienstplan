@@ -2,12 +2,14 @@
   'use strict';
   const K=window.KCDP=window.KCDP||{};
   const $=id=>document.getElementById(id);
+
   const isSession=()=>{
     const modal=$('modal');
     if(!modal)return false;
     const title=modal.querySelector('h2')?.textContent||'';
     return title.includes('Anmeldung')&&title.includes('Monitor');
   };
+
   function hardClose(){
     const back=$('modalBackdrop'),modal=$('modal');
     back?.classList.add('hidden');
@@ -15,14 +17,14 @@
     document.body.classList.remove('modal-open');
     document.documentElement.classList.remove('modal-open');
   }
+
   function bindHardClose(el){
     if(!el||el.dataset.kcHardClose==='1')return;
     el.dataset.kcHardClose='1';
     const close=e=>{e?.preventDefault?.();e?.stopPropagation?.();hardClose()};
     el.addEventListener('click',close,{capture:true});
-    el.addEventListener('pointerup',close,{capture:true});
-    el.addEventListener('touchend',close,{capture:true,passive:false});
   }
+
   function ensureClose(){
     if(!isSession())return;
     const modal=$('modal'),h2=modal?.querySelector('h2');
@@ -38,63 +40,26 @@
     bindHardClose(x);
     bindHardClose($('sessionClose'));
   }
-  function showDiagnosticsShell(){
-    hardClose();
-    let host=$('kcDiagEmergencyOverlay');
-    if(host)host.remove();
-    host=document.createElement('div');host.id='kcDiagEmergencyOverlay';
-    Object.assign(host.style,{position:'fixed',inset:'0',zIndex:'150000',background:'rgba(0,0,0,.48)',padding:'16px',display:'flex',alignItems:'center',justifyContent:'center'});
-    host.innerHTML='<section style="width:min(720px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;border:1px solid #ddd;padding:18px;box-shadow:0 20px 60px #0004"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h2 style="margin:0;color:#7a1420">🛠 Zentrale Fehlerdiagnose</h2><button id="kcDiagEmergencyClose" type="button" aria-label="Fehlerdiagnose schließen" style="width:52px;height:52px;border-radius:50%;border:1px solid #d8c9c1;background:#fff;font-size:32px">×</button></div><div id="kcDiagEmergencyState" style="margin-top:14px;padding:14px;border:1px solid #e4ddd4;border-radius:14px;background:#faf8f5">Diagnose wird geladen …</div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button id="kcDiagEmergencyRetry" type="button" style="min-height:48px;padding:0 16px;border-radius:12px;border:1px solid #cdbab7;background:#fff;color:#7a1420;font-weight:700">Erneut versuchen</button><button id="kcDiagEmergencyClose2" type="button" style="min-height:48px;padding:0 16px;border-radius:12px;border:0;background:#7a1420;color:#fff;font-weight:700">Schließen</button></div></section>';
-    document.body.appendChild(host);
-    const close=()=>host.remove();
-    bindHardClose($('kcDiagEmergencyClose'));
-    $('kcDiagEmergencyClose').onclick=close;$('kcDiagEmergencyClose2').onclick=close;
-    host.addEventListener('click',e=>{if(e.target===host)close()});
-    return host;
-  }
-  function setDiagState(text,error=false){
-    const box=$('kcDiagEmergencyState');if(!box)return;
-    box.textContent=text;box.style.background=error?'#fff1f1':'#faf8f5';box.style.color=error?'#8b0000':'#3f3935';box.style.borderColor=error?'#e3b4b4':'#e4ddd4';
-  }
-  async function runDiagnostics(){
-    setDiagState('Diagnose wird geladen …');
-    try{
-      if(!K.diagnosticsCenter?.open)throw new Error('Diagnose-Modul ist nicht geladen.');
-      const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Die Fehlerdiagnose antwortet nach 8 Sekunden nicht.')),8000));
-      const result=await Promise.race([Promise.resolve(K.diagnosticsCenter.open()),timeout]);
-      if($('kcDiagOverlay')){$('kcDiagEmergencyOverlay')?.remove();return result;}
-      setDiagState('Diagnosemodul wurde gestartet, aber die Oberfläche ist nicht erschienen.',true);
-    }catch(e){
-      const provider=!!K.session?.state?.provider;
-      const extra=provider?'':' KC-Auth-Provider ist auf diesem Gerät derzeit nicht verbunden.';
-      setDiagState('✕ '+String(e?.message||e)+extra,true);
-    }
-  }
-  function openDiagnostics(){
-    const host=showDiagnosticsShell();
-    host.querySelector('#kcDiagEmergencyRetry').onclick=runDiagnostics;
-    setTimeout(runDiagnostics,0);
-  }
-  function eventIsDiagnostics(e){return !!e.target?.closest?.('#kcDiagnosticsAdminEntry');}
-  function interceptDiagnostics(e){
-    if(!isSession()||!eventIsDiagnostics(e))return;
-    e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.();
-    if(e.type==='touchend')e.preventDefault();
-    openDiagnostics();
-  }
+
   function markFallback(){
     if(!isSession()||K.session?.state?.provider)return;
     const modal=$('modal');const boxes=[...modal.querySelectorAll('.ai-summary')];
     const target=boxes.find(x=>(x.textContent||'').includes('Candidate-Fallback'));
     if(target){target.style.borderColor='#d7a34a';target.style.background='#fff8e8';target.title='Produktivbetrieb ohne verbundenen KC-Auth-Provider';}
   }
-  function wire(){if(!isSession())return;ensureClose();markFallback();}
-  const observer=new MutationObserver(()=>requestAnimationFrame(wire));observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
-  document.addEventListener('click',interceptDiagnostics,true);
-  document.addEventListener('pointerup',interceptDiagnostics,true);
-  document.addEventListener('touchend',interceptDiagnostics,{capture:true,passive:false});
+
+  function wire(){
+    if(!isSession())return;
+    ensureClose();markFallback();
+    // Wichtig: Dieser Legacy-Guard greift die Fehlerdiagnose NICHT mehr ab.
+    // Der Diagnosebutton wird ausschließlich von K.diagnosticsWatchdog gesteuert.
+  }
+
+  const observer=new MutationObserver(()=>requestAnimationFrame(wire));
+  observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn')setTimeout(wire,0)},true);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('kcDiagEmergencyOverlay'))$('kcDiagEmergencyOverlay').remove();else if(isSession())hardClose()}},true);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isSession()){e.preventDefault();hardClose()}},true);
   wire();
-  K.sessionDiagnosticsGuard={version:'0.19.63-no-duplicate-leds',wire,hardClose,openDiagnostics};
+
+  K.sessionDiagnosticsGuard={version:'0.19.64-close-only',wire,hardClose};
 })();
