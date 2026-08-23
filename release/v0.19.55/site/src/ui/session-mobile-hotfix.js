@@ -4,6 +4,48 @@
   const byId=id=>document.getElementById(id);
   const isSessionModal=()=>{const modal=byId('modal'),h2=modal?.querySelector('h2');return !!h2&&/Anmeldung\s*\/\s*Monitor/.test(h2.textContent||'')};
 
+  function trace(stage,detail=''){
+    try{K.loginTrace?.add?.(stage,'info',detail)}catch(_){}
+  }
+
+  /*
+   * Nach einer expliziten Abmeldung ist die öffentliche Supabase-Konfiguration
+   * weiterhin im Arbeitsspeicher vorhanden. Der bisherige zweite Login rief
+   * trotzdem erneut IndexedDB/restorePublicConfig auf. Auf Android konnte genau
+   * dieser unnötige Schritt hängen bleiben, bevor die Loginmaske neu gezeichnet
+   * wurde. Wenn die Konfiguration bereits vollständig ist, wird dieser DB-Zugriff
+   * jetzt übersprungen. Nur beim echten Kaltstart wird sie weiterhin geladen.
+   */
+  function installPublicConfigFastPath(){
+    const ma=K.memberAccess;
+    if(!ma||typeof ma.restorePublicConfig!=='function'||ma.restorePublicConfig.__kcFastPath)return;
+    const original=ma.restorePublicConfig.bind(ma);
+    const wrapped=async function(){
+      if(ma.configured?.()){
+        trace('public-config-fast','Supabase-Konfiguration bereits im Speicher – IndexedDB-Laden übersprungen');
+        return true;
+      }
+      trace('public-config-load-start','Öffentliche Supabase-Konfiguration wird geladen');
+      const started=performance.now();
+      let timer;
+      try{
+        const timeout=new Promise(resolve=>{timer=setTimeout(()=>resolve('__timeout__'),1800)});
+        const result=await Promise.race([original(),timeout]);
+        if(result==='__timeout__'){
+          trace('public-config-load-timeout',`nach ${Math.round(performance.now()-started)} ms – Loginoberfläche wird trotzdem fortgesetzt`);
+          return false;
+        }
+        trace('public-config-load-ok',`${Math.round(performance.now()-started)} ms`);
+        return result;
+      }catch(e){
+        trace('public-config-load-error',e?.message||e);
+        return false;
+      }finally{clearTimeout(timer)}
+    };
+    wrapped.__kcFastPath=true;
+    ma.restorePublicConfig=wrapped;
+  }
+
   /*
    * Login-Gate muss vor dem asynchron weiterlaufenden app.js-Start greifen.
    * role-ux.js verwaltet intern nur einen loginResolve. Zwei parallele ensureLogin()-
@@ -15,8 +57,8 @@
     if(K.__singleLoginGateInstalled)return;
     if(typeof K.roleUx?.ensureLogin!=='function'||typeof K.memberAccess?.signInPassword!=='function')return;
     K.__singleLoginGateInstalled=true;
-    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-2',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,events:[]};
-    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>50)flow.events.shift();try{K.loginTrace?.add?.(stage,'info',detail)}catch(_){}};
+    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-3',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,events:[]};
+    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>50)flow.events.shift();trace(stage,detail);};
 
     const originalEnsure=K.roleUx.ensureLogin.bind(K.roleUx);
     K.roleUx.ensureLogin=function(){
@@ -76,7 +118,7 @@
     if(document.querySelector(selector))return;
     const s=document.createElement('script');s.src=src;s.async=false;s.dataset[datasetKey]='1';document.head.appendChild(s);
   }
-  function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-logintrace-2','kcLoginTrace')}
+  function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-startprotokoll-3','kcLoginTrace')}
 
   function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d&&d.style.display!=='none')d.style.display='none'}
   function manageStartGuardBadge(){
@@ -92,24 +134,23 @@
 
   function apply(){
     try{
-      installAuthGate();loadLoginTrace();manageStartGuardBadge();
+      installPublicConfigFastPath();installAuthGate();loadLoginTrace();manageStartGuardBadge();
       if(isSessionModal())addTopClose();
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.74-single-login-gate',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate};
+  K.sessionMobileHotfix={version:'0.19.75-public-config-fastpath',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
   let applyQueued=false;
   const scheduleApply=()=>{
     if(applyQueued)return;
     applyQueued=true;
     requestAnimationFrame(()=>{applyQueued=false;apply()});
   };
-  // Nur echte DOM-Strukturänderungen beobachten. class/style werden bewusst NICHT beobachtet,
-  // damit eigene UI-Anpassungen keine MutationObserver-Rückkopplung erzeugen können.
   new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isSessionModal()){e.preventDefault();hardClose()}},true);
   window.addEventListener('pageshow',()=>setTimeout(apply,0));
+  installPublicConfigFastPath();
   installAuthGate();
   apply();
 })();
