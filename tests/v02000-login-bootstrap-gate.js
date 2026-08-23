@@ -18,6 +18,11 @@ ok(handoff.includes('K.auth.setCurrentUser({personId:m.person_id,role,displayNam
 ok(handoff.includes('K.session?.adoptAuthenticatedUser?.'),'DP2-Sitzung übernimmt den Bootstrap-Benutzer');
 ok(handoff.includes("provider:'supabase'"),'Bootstrap-Sitzung verwendet den kanonischen Supabase-Provider');
 ok(handoff.includes('memberAccess.setRememberHint?.(!!x.remember)'),'Angemeldet-bleiben-Hinweis wird persistent übernommen');
-ok(handoff.includes("version:'0.20.0-p23'"),'P23 Session-Handoff ist aktiv');
+ok(handoff.includes("MEMBERSHIP_KEY='bootstrapMembership'"),'P24 speichert die verifizierte Mitgliedschaft getrennt verschlüsselt');
+ok(handoff.includes("K.storage.get('supabaseSession')")&&handoff.includes('K.storage.get(MEMBERSHIP_KEY)'),'P24 liest Sitzung und Mitgliedschaft beim Reload aus dem sicheren Speicher');
+ok(handoff.includes('restoreRemembered()'),'P24 besitzt einen Reload-Wiederherstellungspfad');
+ok(handoff.includes("/\\/app\\.html$/i.test(location.pathname)"),'P24 begrenzt den Reload-Gate auf app.html');
+ok(handoff.includes("location.replace(u.href)"),'Fehlende Reload-Sitzung fällt kontrolliert auf den leichten Bootstrap zurück');
+ok(handoff.includes("version:'0.20.0-p24'"),'P24 Session-Handoff ist aktiv');
 ok(handoff.includes("120000"),'Bootstrap-Session ist kurzlebig begrenzt');
-console.log('P23 standalone login bootstrap handoff gate OK');
+console.log('P24 standalone login bootstrap + reload gate OK');

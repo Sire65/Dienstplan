@@ -40,11 +40,16 @@ jobs:
         continue-on-error: true
         if: always()
         run: node tests/v02000-browser-functional-audit.js
-      - name: Android downstream audit with test-only loop neutralization
+      - name: Android downstream stability audit
         id: downstream_audit
         continue-on-error: true
         if: always()
         run: node tests/v02000-browser-downstream-audit.js
+      - name: Android reload session and LED stability audit
+        id: reload_audit
+        continue-on-error: true
+        if: always()
+        run: node tests/v02000-browser-reload-stability.js
       - name: Enforce audit results
         if: always()
         shell: bash
@@ -52,6 +57,7 @@ jobs:
           echo "login_smoke=${{ steps.login_smoke.outcome }}"
           echo "raw_audit=${{ steps.raw_audit.outcome }}"
           echo "downstream_audit=${{ steps.downstream_audit.outcome }}"
-          if [ "${{ steps.login_smoke.outcome }}" != "success" ] || [ "${{ steps.raw_audit.outcome }}" != "success" ] || [ "${{ steps.downstream_audit.outcome }}" != "success" ]; then
+          echo "reload_audit=${{ steps.reload_audit.outcome }}"
+          if [ "${{ steps.login_smoke.outcome }}" != "success" ] || [ "${{ steps.raw_audit.outcome }}" != "success" ] || [ "${{ steps.downstream_audit.outcome }}" != "success" ] || [ "${{ steps.reload_audit.outcome }}" != "success" ]; then
             exit 1
           fi
