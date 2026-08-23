@@ -39,6 +39,34 @@
       },0);
     },true);
   }
+  function ensureSupabaseCloseX(){
+    if(diagOpen())return;
+    const modal=document.getElementById('modal');
+    if(!modal)return;
+    const title=modal.querySelector('h2')?.textContent?.trim()||'';
+    if(title!=='Supabase / KC Sync')return;
+    if(document.getElementById('kcSupabaseCloseX'))return;
+    modal.style.position='relative';
+    const x=document.createElement('button');
+    x.id='kcSupabaseCloseX';
+    x.type='button';
+    x.textContent='×';
+    x.setAttribute('aria-label','Supabase/KC-Sync-Fenster schließen');
+    x.title='Schließen';
+    Object.assign(x.style,{position:'absolute',right:'18px',top:'16px',width:'52px',height:'52px',borderRadius:'14px',border:'1px solid #d8c9c1',background:'#fff',color:'#111',fontSize:'36px',lineHeight:'44px',zIndex:'20',touchAction:'manipulation'});
+    x.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const close=document.getElementById('dbClose');
+      if(close)close.click();
+      else{
+        document.getElementById('modalBackdrop')?.classList.add('hidden');
+        modal.innerHTML='';modal.classList.remove('wide');
+        document.body.classList.remove('modal-open');
+      }
+    });
+    modal.appendChild(x);
+  }
   function ensureSaveState(){
     if(diagOpen())return;
     const right=document.querySelector('.top-right');if(!right||document.getElementById('kcSaveState'))return;
@@ -76,7 +104,7 @@
     loadModule('src/ui/session-diagnostics-guard.js?v=0.19.69-close-only-2','KCDP_SESSION_DIAG_GUARD');
     loadModule('src/ui/supabase-session-guard.js?v=0.19.55-single-flight-1','KCDP_SUPABASE_SESSION_GUARD')
   }
-  function apply(){if(diagOpen())return;roleUx();humanize();updateSaveState()}
+  function apply(){if(diagOpen())return;roleUx();humanize();updateSaveState();ensureSupabaseCloseX()}
   function scheduleApply(){
     if(diagOpen()||applyScheduled)return;
     applyScheduled=true;
@@ -88,5 +116,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
   else{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-session-refresh-guard-1',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate};
+  K.kcUxPolish={version:'0.19.55-supabase-close-x-1',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate,ensureSupabaseCloseX};
 })();
