@@ -29,7 +29,7 @@ body.ux-legacy .modal{border-color:var(--kc-line);border-radius:18px;background:
 body.ux-legacy .context-menu{border-color:var(--kc-line);border-radius:12px}
 body.ux-legacy .search-wrap{border-color:var(--kc-line);border-radius:11px}
 body.ux-legacy .kc-plan-mode-badge{border-radius:999px;box-shadow:0 5px 18px #0002}
-body.kc-tech-simple .db-block{display:none!important}
+body.kc-tech-simple .db-block{display:grid!important}
 .kc-save-state{display:none;align-items:center;gap:6px;min-height:34px;padding:0 11px;border:1px solid #cfe2d4;border-radius:999px;background:#eef8f1;color:#276746;font-size:12px;font-weight:800;white-space:nowrap}
 body.kc-tech-simple .kc-save-state{display:flex}
 .kc-save-state.warn{background:#fff6e8;border-color:#edd6aa;color:#805716}
