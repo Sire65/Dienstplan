@@ -89,11 +89,16 @@
     b.addEventListener('pointerdown',run,{capture:true});b.addEventListener('touchend',run,{capture:true,passive:false});b.addEventListener('click',run,{capture:true});
   }
 
-  function apply(){
-    try{ensureMobileLeds();updateMobileLeds();if(isSessionModal()){addTopClose();wireDiagnostics()}}catch(e){console.error('KC DP2 mobile session hotfix:',e)}
+  function loadLoginTrace(){
+    if(window.KCDP?.loginTrace||document.querySelector('script[data-kc-login-trace]'))return;
+    const s=document.createElement('script');s.src='src/core/login-trace.js?v=0.19.55-logintrace-1';s.async=false;s.dataset.kcLoginTrace='1';document.head.appendChild(s);
   }
 
-  K.sessionMobileHotfix={version:'0.19.64',apply,hardClose,isSessionModal,openDiagnosticsImmediate,ensureMobileLeds,updateMobileLeds};
+  function apply(){
+    try{loadLoginTrace();ensureMobileLeds();updateMobileLeds();if(isSessionModal()){addTopClose();wireDiagnostics()}}catch(e){console.error('KC DP2 mobile session hotfix:',e)}
+  }
+
+  K.sessionMobileHotfix={version:'0.19.65-logintrace',apply,hardClose,isSessionModal,openDiagnosticsImmediate,ensureMobileLeds,updateMobileLeds,loadLoginTrace};
   const scheduleApply=()=>requestAnimationFrame(apply);
   new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
