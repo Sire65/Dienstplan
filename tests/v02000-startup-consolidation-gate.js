@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const ROOT=path.join(__dirname,'..','release','v0.19.54','site');
 const read=p=>fs.readFileSync(path.join(ROOT,p),'utf8');
-const polish=read('src/ui/kc-ux-polish.js'),device=read('src/ui/device-ux.js'),bootstrap=read('src/core/bootstrap-session.js'),mobileLogin=read('src/ui/mobile-login-input.js');
+const polish=read('src/ui/kc-ux-polish.js'),device=read('src/ui/device-ux.js'),bootstrap=read('src/core/bootstrap-session.js'),mobileLogin=read('src/ui/mobile-login-input.js'),leds=read('src/ui/recovery-status-leds.js');
 const ok=(v,m)=>{assert.ok(v,m);console.log('PASS',m)};
 ok(polish.includes("if(x.innerHTML!==html)x.innerHTML=html"),'Save-State DOM write is idempotent');
 ok(polish.includes('if(scheduled)return')&&polish.includes('scheduled=false;apply()'),'UX observer coalesces render work');
@@ -11,5 +11,8 @@ ok(device.includes('startChoiceAutoLoad:false'),'Existing start-choice ownership
 ok(bootstrap.includes("provider:'supabase'"),'Bootstrap session uses canonical Supabase provider');
 ok(!bootstrap.includes("provider:'supabase-bootstrap'"),'Bootstrap alias provider removed');
 ok(bootstrap.includes('memberAccess.setRememberHint?.(!!x.remember)'),'Remember hint is persisted through existing member-access API');
+ok(bootstrap.includes('restoreRemembered')&&bootstrap.includes("K.storage.get('supabaseSession')"),'Remembered encrypted session can be restored on app reload');
+ok(bootstrap.includes('redirectToBootstrap')&&bootstrap.includes("/\\/app\\.html$/i.test(location.pathname)"),'app.html falls back to lightweight bootstrap instead of legacy login');
 ok(mobileLogin.includes('observer.disconnect();state.observing=false'),'Legacy mobile-login observer stops after login');
-console.log('KC DP2 V0.20 P23 startup consolidation gate PASS');
+ok(leds.includes("document.querySelector('.ux-topbar')")&&leds.includes("document.querySelector('.kc-start-choice-brand')"),'Recovery LEDs are anchored in both role topbar and four-button start choice');
+console.log('KC DP2 V0.20 P24 startup/reload consolidation gate PASS');
