@@ -12,8 +12,9 @@
   function clearDiagCapture(){try{localStorage.removeItem(DIAG_CAPTURE_KEY)}catch(_){}}
   function showPreviousDiagFreeze(){
     const a=readDiagCapture();if(!a?.active||document.getElementById('kcDiagCaptureReport'))return;
-    const ov=document.createElement('div');ov.id='kcDiagCaptureReport';Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'2147483647',background:'rgba(0,0,0,.6)',display:'grid',placeItems:'center',padding:'14px'});
     const v5=readV5Active();
+    if(v5 && (v5.active===false || String(v5.stage||'')==='complete')){clearDiagCapture();return;}
+    const ov=document.createElement('div');ov.id='kcDiagCaptureReport';Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'2147483647',background:'rgba(0,0,0,.6)',display:'grid',placeItems:'center',padding:'14px'});
     const detail=v5?`V5 letzter Status: ${String(v5.stage||'–')} · ${String(v5.detail||'')}`:'Der isolierte V5-Diagnosecontroller hatte bis zum Freeze noch keinen gespeicherten Schritt.';
     ov.innerHTML=`<section style="width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fff;border:3px solid #a31724;border-radius:20px;padding:20px;font-family:system-ui,Arial"><h2 style="margin:0 0 12px;color:#a31724">⚠ Diagnose-Freeze sicher erkannt</h2><p>Der letzte Klick auf <b>Zentrale Fehlerdiagnose</b> wurde vor dem Öffnen der Diagnose dauerhaft gespeichert und nicht erfolgreich abgeschlossen.</p><p style="padding:12px;background:#fff3f3;border-radius:12px"><b>Capture:</b> ${String(a.stage||'button-capture')}<br><b>Zeit:</b> ${String(a.at||'–')}<br><b>Build:</b> ${String(a.build||'0.19.55')}</p><p>${detail}</p><button id="kcDiagCaptureClose" type="button" style="min-height:48px;padding:0 18px">Meldung schließen</button></section>`;
     document.body.appendChild(ov);document.getElementById('kcDiagCaptureClose').onclick=()=>{ov.remove();clearDiagCapture()};
@@ -29,12 +30,12 @@
       tries++;
       if(tries<20){setTimeout(launch,100);return;}
       writeDiagCapture({active:true,stage:'v5-missing',at:new Date().toISOString(),build:'0.19.55',href:location.href});
-      alert('Fehlerdiagnose kann nicht gestartet werden: Diagnose-Controller V5.2 ist nicht geladen. Bitte KC DP2 neu starten.');
+      alert('Fehlerdiagnose kann nicht gestartet werden: Diagnose-Controller V5.3 ist nicht geladen. Bitte KC DP2 neu starten.');
     };
     setTimeout(launch,0);
   }
   function armDiagCapture(){
-    if(document.documentElement.dataset.kcDiagCapture==='3')return;document.documentElement.dataset.kcDiagCapture='3';
+    if(document.documentElement.dataset.kcDiagCapture==='4')return;document.documentElement.dataset.kcDiagCapture='4';
     document.addEventListener('click',e=>{
       if(!e.target?.closest?.('#kcDiagnosticsAdminEntry'))return;
       writeDiagCapture({active:true,stage:'button-capture-v5',at:new Date().toISOString(),build:'0.19.55',href:location.href});
@@ -78,7 +79,7 @@
   }
   function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.async=false;s.dataset.kcdpModule=key;document.head.appendChild(s)}
   function loadV01955Modules(){
-    loadModule('src/core/diagnostics-controller-v5.js?v=0.19.55-diag-controller-v5-2','KCDP_DIAG_CONTROLLER_V5_2');
+    loadModule('src/core/diagnostics-controller-v5.js?v=0.19.55-diag-controller-v5-3','KCDP_DIAG_CONTROLLER_V5_3');
     loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');
     loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');
     loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');
@@ -91,5 +92,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
   else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-diag-controller-v5.2',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughV5};
+  K.kcUxPolish={version:'0.19.55-diag-controller-v5.3',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughV5};
 })();
