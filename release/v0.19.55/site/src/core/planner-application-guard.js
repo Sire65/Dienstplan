@@ -14,7 +14,10 @@
     if(!K.plannerEngine?.validateProposal)throw new Error('KI-Planer-Prüfung ist nicht geladen. Der Vorschlag wird aus Sicherheitsgründen nicht übernommen.');
     const day=(K.days||[]).find(d=>d.date===date);if(!day)throw new Error('Planungstag für KI-Vorschlag nicht gefunden.');
     const validation=K.plannerEngine.validateProposal(day,rows||[]);
-    if(!validation.ok){const e=new Error(`KI-Vorschlag nicht übernommen: ${summary(validation)}. Bitte Regeln/Besetzung prüfen und neu berechnen.`);e.code='KC_PLANNER_APPLY_BLOCKED';e.validation=validation;throw e;}
+    const hard=validation?.hardViolations?.length||0;
+    if(hard){const e=new Error(`KI-Vorschlag nicht übernommen: ${summary(validation)}. Bitte Regeln/Besetzung prüfen und neu berechnen.`);e.code='KC_PLANNER_APPLY_BLOCKED';e.validation=validation;throw e;}
+    // Ungedeckte Besetzungszeiten dürfen als unfertiger Soll-Entwurf übernommen werden.
+    // Sie werden anschließend in „Plan verbessern“ sichtbar und müssen vor der Freigabe gelöst werden.
     return validation;
   }
   function install(){
@@ -28,7 +31,7 @@
     Object.defineProperty(m,'__kcPlannerGuardV01942',{value:true,enumerable:false,configurable:false});
     return true;
   }
-  K.plannerApplicationGuard={version:'0.19.42',install,assertApplicable,isPlannerProposal};
+  K.plannerApplicationGuard={version:'0.19.55-draft-gaps-1',install,assertApplicable,isPlannerProposal};
   if(!install()){
     let tries=0;const timer=setInterval(()=>{tries++;if(install()||tries>=50)clearInterval(timer);},20);
   }
