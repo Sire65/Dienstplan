@@ -4,6 +4,42 @@
   const byId=id=>document.getElementById(id);
   const isSessionModal=()=>{const modal=byId('modal'),h2=modal?.querySelector('h2');return !!h2&&/Anmeldung\s*\/\s*Monitor/.test(h2.textContent||'')};
 
+  /*
+   * Login-Gate muss vor dem asynchron weiterlaufenden app.js-Start greifen.
+   * role-ux.js verwaltet intern nur einen loginResolve. Zwei parallele ensureLogin()-
+   * Aufrufe konnten diesen Resolver bisher überschreiben. Ergebnis: der sichtbare
+   * Login war bereits fertig, der Programmstart wartete aber weiter und konnte
+   * später erneut auf die Passwortmaske zurückfallen.
+   */
+  function installAuthGate(){
+    if(K.__singleLoginGateInstalled)return;
+    if(typeof K.roleUx?.ensureLogin!=='function'||typeof K.memberAccess?.signInPassword!=='function')return;
+    K.__singleLoginGateInstalled=true;
+    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-2',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,events:[]};
+    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>50)flow.events.shift();try{K.loginTrace?.add?.(stage,'info',detail)}catch(_){}};
+
+    const originalEnsure=K.roleUx.ensureLogin.bind(K.roleUx);
+    K.roleUx.ensureLogin=function(){
+      if(K.memberAccess?.state?.status==='authenticated')return Promise.resolve(K.currentUser);
+      if(flow.ensurePromise){mark('login-gate-reuse','Vorhandener Anmeldevorgang wird weiterverwendet');return flow.ensurePromise;}
+      mark('login-gate-open','Einziger Anmeldevorgang gestartet');
+      const p=Promise.resolve().then(()=>originalEnsure());
+      flow.ensurePromise=p.then(user=>{mark('login-gate-ok',K.currentUser?.role||'Benutzer');return user;},err=>{mark('login-gate-error',err?.message||err);throw err;});
+      flow.ensurePromise.finally(()=>{if(flow.ensurePromise)flow.ensurePromise=null;});
+      return flow.ensurePromise;
+    };
+
+    const originalPassword=K.memberAccess.signInPassword.bind(K.memberAccess);
+    K.memberAccess.signInPassword=function(args){
+      if(flow.passwordPromise){mark('password-gate-reuse','Doppeltes Absenden unterdrückt');return flow.passwordPromise;}
+      const started=performance.now();mark('password-gate-start','Passwortprüfung gestartet');
+      const p=Promise.resolve().then(()=>originalPassword(args));
+      flow.passwordPromise=p.then(user=>{flow.lastPasswordOkAt=Date.now();mark('password-gate-ok',`${Math.round(performance.now()-started)} ms`);return user;},err=>{mark('password-gate-error',err?.message||err);throw err;});
+      flow.passwordPromise.finally(()=>{flow.passwordPromise=null;});
+      return flow.passwordPromise;
+    };
+  }
+
   function hardClose(){
     const back=byId('modalBackdrop'),modal=byId('modal');
     back?.classList.add('hidden');
@@ -56,12 +92,12 @@
 
   function apply(){
     try{
-      loadLoginTrace();manageStartGuardBadge();
+      installAuthGate();loadLoginTrace();manageStartGuardBadge();
       if(isSessionModal())addTopClose();
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.73-no-style-observer-loop',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge};
+  K.sessionMobileHotfix={version:'0.19.74-single-login-gate',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate};
   let applyQueued=false;
   const scheduleApply=()=>{
     if(applyQueued)return;
@@ -74,5 +110,6 @@
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isSessionModal()){e.preventDefault();hardClose()}},true);
   window.addEventListener('pageshow',()=>setTimeout(apply,0));
+  installAuthGate();
   apply();
 })();
