@@ -172,3 +172,76 @@
   installCleanSignOut();
   K.sessionFlowDeepGuard={version:'0.19.55-deep-session-1',validateCurrentSecret,installPrimaryUnlockValidator,installCleanSignOut};
 })();
+
+/* KC DP2 V0.19.55 – bestätigte Identität über Entsperren/Laden stabil halten */
+(function(){
+  'use strict';
+  const K=window.KCDP=window.KCDP||{};
+  if(K.__postLoginIdentityGuard)return;
+  K.__postLoginIdentityGuard=true;
+  const flow=K.authFlow=K.authFlow||{steps:[]};
+  const guard={accepted:false,snapshot:null,acceptedAt:0,logout:false,startupComplete:false};
+  const mark=(stage,detail='')=>{try{K.loginTrace?.add?.(stage,'info',detail);flow.steps=flow.steps||[];flow.steps.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.steps.length>100)flow.steps.shift();}catch(_){}};
+
+  function capture(){
+    const u=K.currentUser;
+    if(!u?.personId)return false;
+    guard.snapshot={personId:u.personId,role:u.role||K.memberAccess?.state?.user?.role||'employee',displayName:u.displayName||K.memberAccess?.state?.user?.displayName||''};
+    guard.accepted=true;guard.acceptedAt=Date.now();guard.logout=false;
+    mark('identity-captured',`${guard.snapshot.personId} · ${guard.snapshot.role}`);
+    return true;
+  }
+
+  function restore(reason='startup'){
+    if(!guard.accepted||guard.logout||!guard.snapshot?.personId)return false;
+    const tokenFn=K.supabaseConnection?.hasAccessToken;
+    if(typeof tokenFn==='function'&&!tokenFn.call(K.supabaseConnection)&&Date.now()-guard.acceptedAt>120000)return false;
+    const s=guard.snapshot;
+    try{K.auth?.setCurrentUser?.({personId:s.personId,role:s.role,displayName:s.displayName});}catch(_){}
+    try{
+      const ma=K.memberAccess;
+      if(ma?.state){ma.state.status='authenticated';ma.state.user={...(ma.state.user||{}),personId:s.personId,role:s.role,displayName:s.displayName};}
+    }catch(_){}
+    try{K.session?.adoptAuthenticatedUser?.({personId:s.personId,role:s.role,displayName:s.displayName,provider:'supabase'});}catch(_){}
+    mark('identity-restored',reason);
+    return !!K.currentUser?.personId;
+  }
+
+  if(typeof K.memberAccess?.signInPassword==='function'&&!K.memberAccess.signInPassword.__kcIdentityHold){
+    const base=K.memberAccess.signInPassword.bind(K.memberAccess);
+    const wrapped=async function(args){const out=await base(args);capture();return out;};
+    wrapped.__kcIdentityHold=true;K.memberAccess.signInPassword=wrapped;
+  }
+
+  if(typeof K.roleUx?.ensureLogin==='function'&&!K.roleUx.ensureLogin.__kcIdentityHold){
+    const base=K.roleUx.ensureLogin.bind(K.roleUx);
+    const wrapped=function(){
+      if(K.memberAccess?.state?.status==='authenticated'&&K.currentUser?.personId)return Promise.resolve(K.currentUser);
+      if(restore('ensureLogin-reentry'))return Promise.resolve(K.currentUser);
+      return base();
+    };
+    wrapped.__kcIdentityHold=true;K.roleUx.ensureLogin=wrapped;
+  }
+
+  if(typeof K.roleUx?.afterDataLoaded==='function'&&!K.roleUx.afterDataLoaded.__kcIdentityHold){
+    const base=K.roleUx.afterDataLoaded.bind(K.roleUx);
+    const wrapped=function(){
+      if((!K.currentUser?.personId||K.memberAccess?.state?.status!=='authenticated')&&guard.accepted&&!guard.logout)restore('afterDataLoaded');
+      guard.startupComplete=true;mark('startup-auth-complete',K.currentUser?.personId||'kein Benutzer');
+      return base();
+    };
+    wrapped.__kcIdentityHold=true;K.roleUx.afterDataLoaded=wrapped;
+  }
+
+  if(typeof K.memberAccess?.signOut==='function'&&!K.memberAccess.signOut.__kcIdentityHold){
+    const base=K.memberAccess.signOut.bind(K.memberAccess);
+    const wrapped=async function(...args){
+      guard.logout=true;guard.accepted=false;guard.snapshot=null;guard.acceptedAt=0;mark('identity-cleared','Explizite Abmeldung');
+      try{return await base(...args);}finally{try{K.storage?.lock?.();}catch(_){}guard.startupComplete=false;}
+    };
+    wrapped.__kcIdentityHold=true;K.memberAccess.signOut=wrapped;
+  }
+
+  if(K.memberAccess?.state?.status==='authenticated'&&K.currentUser?.personId)capture();
+  K.postLoginIdentityGuard={version:'0.19.55-identity-hold-1',state:guard,capture,restore};
+})();
