@@ -4,8 +4,9 @@
   const PRIV=new Set(['planner','duty_manager','admin']);
   const DIAG_CAPTURE_KEY='kc_dp_diag_capture_freeze_v1';
   const V5_ACTIVE_KEY='kc_dp_diag_controller_v5_active';
-  let diagCaptureTimer=null;
+  let diagCaptureTimer=null,applyScheduled=false;
   function role(){return String(K.currentUser?.role||'')}
+  function diagOpen(){return !!document.getElementById('kcDiagOverlay')}
   function readDiagCapture(){try{return JSON.parse(localStorage.getItem(DIAG_CAPTURE_KEY)||'null')}catch(_){return null}}
   function readV5Active(){try{return JSON.parse(localStorage.getItem(V5_ACTIVE_KEY)||'null')}catch(_){return null}}
   function writeDiagCapture(v){try{localStorage.setItem(DIAG_CAPTURE_KEY,JSON.stringify(v))}catch(_){}}
@@ -54,10 +55,12 @@
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(showPreviousDiagFreeze,0)});
   }
   function ensureSaveState(){
+    if(diagOpen())return;
     const right=document.querySelector('.top-right');if(!right||document.getElementById('kcSaveState'))return;
     const x=document.createElement('div');x.id='kcSaveState';x.className='kc-save-state';x.setAttribute('role','status');x.innerHTML='<span>✓</span><span>Daten gespeichert</span>';right.insertBefore(x,right.firstChild);
   }
   function updateSaveState(){
+    if(diagOpen())return;
     const x=document.getElementById('kcSaveState');if(!x)return;
     const sup=document.getElementById('supabaseStatusLed'),idb=document.getElementById('idbStatusLed');
     const bad=sup?.classList.contains('error')&&idb?.classList.contains('error');const warn=sup?.classList.contains('error')&&!bad;
@@ -65,6 +68,7 @@
     x.innerHTML=bad?'<span>⚠</span><span>Speicher prüfen</span>':warn?'<span>●</span><span>Lokal gespeichert</span>':'<span>✓</span><span>Daten gespeichert</span>';
   }
   function roleUx(){
+    if(diagOpen())return;
     const r=role();document.body.classList.toggle('kc-tech-simple',!ADMIN.has(r));ensureSaveState();updateSaveState();
     ['photoBtn','actualImportBtn','pauseToggleBtn'].forEach(id=>document.getElementById(id)?.classList.add('kc-secondary-tool'));
     const search=document.getElementById('globalSearch');if(search)search.placeholder='Mitglied oder Dienst suchen…';
@@ -73,6 +77,7 @@
     if(!PRIV.has(r))document.querySelectorAll('#aiPlanBtn,#photoBtn,#actualImportBtn,#pauseToggleBtn,#publishBtn,#quickPlanBtn,#addShiftBtn,#checkBtn,#emailCenterBtn').forEach(x=>x.classList.add('hidden'));
   }
   function humanize(){
+    if(diagOpen())return;
     document.querySelectorAll('.db-label').forEach(x=>{if(x.textContent==='IDX')x.title='Lokaler Gerätespeicher';if(x.textContent==='SUP')x.title='Cloud-Synchronisierung'});
     const m=document.getElementById('messageText');if(m&&/kompakte Plansteuerung|V0\.17\.10|V0\.19\.42|V0\.19\.51|V0\.19\.52|V0\.19\.53|V0\.19\.54/.test(m.textContent||''))m.textContent='KC DP2 V0.19.55 – Dienstplanung bereit.';
     document.title='KC DP2 V0.19.55 · Köcheclub Werne';
@@ -86,11 +91,16 @@
     loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');
     loadModule('src/ui/session-diagnostics-guard.js?v=0.19.69-close-only-2','KCDP_SESSION_DIAG_GUARD')
   }
-  function apply(){roleUx();humanize();updateSaveState()}
-  const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
+  function apply(){if(diagOpen())return;roleUx();humanize();updateSaveState()}
+  function scheduleApply(){
+    if(diagOpen()||applyScheduled)return;
+    applyScheduled=true;
+    requestAnimationFrame(()=>{applyScheduled=false;apply()});
+  }
+  const obs=new MutationObserver(scheduleApply);
   armDiagCapture();
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
-  else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
+  else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-diag-controller-v5.3',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughV5};
+  K.kcUxPolish={version:'0.19.55-diag-controller-v5.3-observer-safe',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughV5};
 })();
