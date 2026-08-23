@@ -41,7 +41,7 @@
     const s=document.createElement('script');s.src=src;s.async=false;s.dataset[datasetKey]='1';document.head.appendChild(s);
   }
   function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-logintrace-2','kcLoginTrace')}
-  function loadDiagnosticsWatchdog(){if(!K.diagnosticsWatchdog)loadScriptOnce('script[data-kc-diag-watchdog]','src/core/diagnostics-watchdog.js?v=0.19.55-diagwatch-3','kcDiagWatchdog')}
+  function loadDiagnosticsWatchdog(){if(!K.diagnosticsWatchdog)loadScriptOnce('script[data-kc-diag-watchdog]','src/core/diagnostics-watchdog.js?v=0.19.55-diagwatch-4-entry-first','kcDiagWatchdog')}
 
   function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d)d.style.display='none'}
   function manageStartGuardBadge(){
@@ -63,7 +63,7 @@
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.69-diagwatch3',apply,hardClose,isSessionModal,loadLoginTrace,loadDiagnosticsWatchdog,collapseStartGuard,manageStartGuardBadge};
+  K.sessionMobileHotfix={version:'0.19.70-diagwatch4',apply,hardClose,isSessionModal,loadLoginTrace,loadDiagnosticsWatchdog,collapseStartGuard,manageStartGuardBadge};
   const scheduleApply=()=>requestAnimationFrame(apply);
   new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
