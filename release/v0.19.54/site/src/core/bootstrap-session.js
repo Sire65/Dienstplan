@@ -58,12 +58,33 @@ async function restoreRemembered(){
   return out;
  }catch(e){K.__bootstrapRestoreError=e?.message||String(e);return {ok:false,reason:'restore-error',error:K.__bootstrapRestoreError}}
 }
+function redirectToBootstrap(reason='reauth'){
+ K.__bootstrapReloadRedirectReason=reason;
+ try{const u=new URL('index.html',location.href);u.searchParams.set('reauth','1');location.replace(u.href);}catch(_){location.replace('index.html?reauth=1')}
+}
+function installReloadGate(){
+ const ma=K.memberAccess;if(!ma||ma.__p24ReloadGateInstalled)return false;ma.__p24ReloadGateInstalled=true;
+ const baseRestore=ma.restorePublicConfig?.bind(ma);
+ ma.restorePublicConfig=async function(...args){
+  const out=baseRestore?await baseRestore(...args):false;
+  if(!isAppEntry()||ma.state?.status==='authenticated')return out;
+  const restored=await restoreRemembered();
+  if(restored?.ok&&ma.state?.status==='authenticated')return out;
+  redirectToBootstrap(restored?.reason||'reauth');
+  await new Promise(()=>{});
+  return out;
+ };
+ const baseSignOut=ma.signOut?.bind(ma);
+ ma.signOut=async function(...args){try{if(K.storage?.unlocked)await K.storage.remove(MEMBERSHIP_KEY)}catch(_){}return baseSignOut?baseSignOut(...args):true};
+ return true;
+}
 function apply(){
  const x=take();if(!x)return {ok:false,reason:'none'};
  const out=adopt(x,{source:'handoff'});
  if(out.ok){Promise.resolve(K.memberAccess.setRememberHint?.(!!x.remember)).catch(()=>{});if(x.remember)persistRemembered(x);}
  return out;
 }
-K.bootstrapSession={version:'0.20.0-p24',take,apply,adopt,isAppEntry,persistRemembered,restoreRemembered,membershipKey:MEMBERSHIP_KEY};
+K.bootstrapSession={version:'0.20.0-p24',take,apply,adopt,isAppEntry,persistRemembered,restoreRemembered,redirectToBootstrap,installReloadGate,membershipKey:MEMBERSHIP_KEY};
 K.__bootstrapSessionResult=apply();
+installReloadGate();
 })();
