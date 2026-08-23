@@ -1,9 +1,10 @@
 name: KC DP2 Codex Export Build 82
 on:
   pull_request:
-    branches: [main]
+    branches: [main, codex/export-build82]
     paths:
       - '.github/workflows/codex-export-build82.yml'
+      - '.codex-export-trigger'
 permissions:
   contents: read
 jobs:
