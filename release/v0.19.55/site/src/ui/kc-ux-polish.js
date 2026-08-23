@@ -11,6 +11,34 @@
     document.getElementById('kcDiagCaptureReport')?.remove();
     document.getElementById('kcDiagWatchdogOverlay')?.remove();
   }
+  function closeSettingsBeforeDiagnostics(){
+    const back=document.getElementById('modalBackdrop'),modal=document.getElementById('modal');
+    back?.classList.add('hidden');
+    if(modal){modal.innerHTML='';modal.classList.remove('wide')}
+    document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
+  }
+  function installEarlyDiagnosticsGate(){
+    if(window.__KC_DP_DIAG_EARLY_GATE)return;
+    window.__KC_DP_DIAG_EARLY_GATE=true;
+    window.addEventListener('click',e=>{
+      const btn=e.target?.closest?.('#kcDiagnosticsAdminEntryDirect,#kcDiagnosticsAdminEntry');
+      if(!btn)return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+      clearLegacyDiagnosticsState();
+      closeSettingsBeforeDiagnostics();
+      setTimeout(()=>{
+        try{
+          const ok=K.diagnosticsCenter?.open?.();
+          if(ok===false)alert('Fehlerdiagnose konnte nicht geöffnet werden.');
+        }catch(err){
+          alert(`Fehlerdiagnose konnte nicht geöffnet werden: ${err?.message||err}`);
+        }
+      },0);
+    },true);
+  }
   function ensureSaveState(){
     if(diagOpen())return;
     const right=document.querySelector('.top-right');if(!right||document.getElementById('kcSaveState'))return;
@@ -55,8 +83,9 @@
   }
   const obs=new MutationObserver(scheduleApply);
   clearLegacyDiagnosticsState();
+  installEarlyDiagnosticsGate();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
   else{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-direct-diagnostics-no-v5',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState};
+  K.kcUxPolish={version:'0.19.55-direct-diagnostics-early-window-gate',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate};
 })();
