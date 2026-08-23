@@ -3,16 +3,18 @@
   const ADMIN=new Set(['admin']);
   const PRIV=new Set(['planner','duty_manager','admin']);
   const DIAG_CAPTURE_KEY='kc_dp_diag_capture_freeze_v1';
+  const V5_ACTIVE_KEY='kc_dp_diag_controller_v5_active';
   let diagCaptureTimer=null;
   function role(){return String(K.currentUser?.role||'')}
   function readDiagCapture(){try{return JSON.parse(localStorage.getItem(DIAG_CAPTURE_KEY)||'null')}catch(_){return null}}
+  function readV5Active(){try{return JSON.parse(localStorage.getItem(V5_ACTIVE_KEY)||'null')}catch(_){return null}}
   function writeDiagCapture(v){try{localStorage.setItem(DIAG_CAPTURE_KEY,JSON.stringify(v))}catch(_){}}
   function clearDiagCapture(){try{localStorage.removeItem(DIAG_CAPTURE_KEY)}catch(_){}}
   function showPreviousDiagFreeze(){
     const a=readDiagCapture();if(!a?.active||document.getElementById('kcDiagCaptureReport'))return;
     const ov=document.createElement('div');ov.id='kcDiagCaptureReport';Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'2147483647',background:'rgba(0,0,0,.6)',display:'grid',placeItems:'center',padding:'14px'});
-    const v5=K.diagnosticsControllerV5?.readActive?.();
-    const detail=v5?.active?`V5-Schritt: ${String(v5.stage||'–')} · ${String(v5.detail||'')}`:'Der isolierte V5-Diagnosecontroller hatte bis zum Freeze noch keinen gespeicherten Schritt.';
+    const v5=readV5Active()||K.diagnosticsControllerV5?.readActive?.();
+    const detail=v5?.active?`V5-Schritt: ${String(v5.stage||'–')} · ${String(v5.detail||'')}`:(v5?`V5 letzter Status: ${String(v5.stage||'–')} · ${String(v5.detail||'')}`:'Kein persistenter V5-Schritt gefunden.');
     ov.innerHTML=`<section style="width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fff;border:3px solid #a31724;border-radius:20px;padding:20px;font-family:system-ui,Arial"><h2 style="margin:0 0 12px;color:#a31724">⚠ Diagnose-Freeze sicher erkannt</h2><p>Der letzte Klick auf <b>Zentrale Fehlerdiagnose</b> wurde vor dem Öffnen der Diagnose dauerhaft gespeichert und nicht erfolgreich abgeschlossen.</p><p style="padding:12px;background:#fff3f3;border-radius:12px"><b>Capture:</b> ${String(a.stage||'button-capture')}<br><b>Zeit:</b> ${String(a.at||'–')}<br><b>Build:</b> ${String(a.build||'0.19.55')}</p><p>${detail}</p><button id="kcDiagCaptureClose" type="button" style="min-height:48px;padding:0 18px">Meldung schließen</button></section>`;
     document.body.appendChild(ov);document.getElementById('kcDiagCaptureClose').onclick=()=>{ov.remove();clearDiagCapture()};
   }
@@ -89,5 +91,5 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
   else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-diag-controller-v5',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughV5};
+  K.kcUxPolish={version:'0.19.55-diag-controller-v5-read-storage',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,readV5Active,startDiagnosticsThroughV5};
 })();
