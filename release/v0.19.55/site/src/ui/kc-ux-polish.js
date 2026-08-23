@@ -2,71 +2,14 @@
   const K=window.KCDP=window.KCDP||{};
   const ADMIN=new Set(['admin']);
   const PRIV=new Set(['planner','duty_manager','admin']);
-  const DIAG_CAPTURE_KEY='kc_dp_diag_capture_freeze_v1';
-  const V5_ACTIVE_KEY='kc_dp_diag_controller_v5_active';
-  const REQUIRED_DIAG_VERSION='0.19.55-diagnostic-controller-v5.4';
-  let diagCaptureTimer=null,applyScheduled=false;
+  let applyScheduled=false;
   function role(){return String(K.currentUser?.role||'')}
   function diagOpen(){return !!document.getElementById('kcDiagOverlay')}
-  function readDiagCapture(){try{return JSON.parse(localStorage.getItem(DIAG_CAPTURE_KEY)||'null')}catch(_){return null}}
-  function readV5Active(){try{return JSON.parse(localStorage.getItem(V5_ACTIVE_KEY)||'null')}catch(_){return null}}
-  function writeDiagCapture(v){try{localStorage.setItem(DIAG_CAPTURE_KEY,JSON.stringify(v))}catch(_){}}
-  function clearDiagCapture(){try{localStorage.removeItem(DIAG_CAPTURE_KEY)}catch(_){}}
-  function showPreviousDiagFreeze(){
-    const a=readDiagCapture();if(!a?.active||document.getElementById('kcDiagCaptureReport'))return;
-    const v5=readV5Active();
-    if(v5 && (v5.active===false || String(v5.stage||'')==='complete')){clearDiagCapture();return;}
-    const ov=document.createElement('div');ov.id='kcDiagCaptureReport';Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'2147483647',background:'rgba(0,0,0,.6)',display:'grid',placeItems:'center',padding:'14px'});
-    const detail=v5?`V5 letzter Status: ${String(v5.stage||'–')} · ${String(v5.detail||'')}`:'Der isolierte V5-Diagnosecontroller hatte bis zum Freeze noch keinen gespeicherten Schritt.';
-    ov.innerHTML=`<section style="width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fff;border:3px solid #a31724;border-radius:20px;padding:20px;font-family:system-ui,Arial"><h2 style="margin:0 0 12px;color:#a31724">⚠ Diagnose-Freeze sicher erkannt</h2><p>Der letzte Klick auf <b>Zentrale Fehlerdiagnose</b> wurde vor dem Öffnen der Diagnose dauerhaft gespeichert und nicht erfolgreich abgeschlossen.</p><p style="padding:12px;background:#fff3f3;border-radius:12px"><b>Capture:</b> ${String(a.stage||'button-capture')}<br><b>Zeit:</b> ${String(a.at||'–')}<br><b>Build:</b> ${String(a.build||'0.19.55')}</p><p>${detail}</p><button id="kcDiagCaptureClose" type="button" style="min-height:48px;padding:0 18px">Meldung schließen</button></section>`;
-    document.body.appendChild(ov);document.getElementById('kcDiagCaptureClose').onclick=()=>{ov.remove();clearDiagCapture()};
-  }
-  function ensureV54Loaded(){
-    if(K.diagnosticsControllerV5?.version===REQUIRED_DIAG_VERSION)return;
-    const stale=document.querySelector('script[data-kcdp-module="KCDP_DIAG_CONTROLLER_V5_4"]');
-    if(stale)return;
-    const s=document.createElement('script');
-    s.src='src/core/diagnostics-controller-v5.js?v=0.19.55-diag-controller-v5-4-force-1';
-    s.async=false;
-    s.dataset.kcdpModule='KCDP_DIAG_CONTROLLER_V5_4';
-    document.head.appendChild(s);
-  }
-  function startDiagnosticsThroughV5(){
-    let tries=0;
-    ensureV54Loaded();
-    const launch=()=>{
-      const ctrl=K.diagnosticsControllerV5;
-      if(ctrl?.version===REQUIRED_DIAG_VERSION&&typeof ctrl.run==='function'){
-        writeDiagCapture({active:true,stage:'v5.4-dispatch',at:new Date().toISOString(),build:'0.19.55',controller:ctrl.version,href:location.href});
-        ctrl.run();
-        return;
-      }
-      ensureV54Loaded();
-      tries++;
-      if(tries<30){setTimeout(launch,100);return;}
-      writeDiagCapture({active:true,stage:'v5.4-missing',at:new Date().toISOString(),build:'0.19.55',controller:String(ctrl?.version||'fehlt'),href:location.href});
-      alert('Fehlerdiagnose kann nicht gestartet werden: Diagnose-Controller V5.4 wurde nicht geladen. Bitte KC DP2 neu starten.');
-    };
-    setTimeout(launch,0);
-  }
-  function armDiagCapture(){
-    if(document.documentElement.dataset.kcDiagCapture==='5')return;document.documentElement.dataset.kcDiagCapture='5';
-    document.addEventListener('click',e=>{
-      if(!e.target?.closest?.('#kcDiagnosticsAdminEntry'))return;
-      writeDiagCapture({active:true,stage:'button-capture-v5.4',at:new Date().toISOString(),build:'0.19.55',href:location.href});
-      e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.();
-      startDiagnosticsThroughV5();
-      if(diagCaptureTimer)clearInterval(diagCaptureTimer);
-      diagCaptureTimer=setInterval(()=>{
-        const host=document.getElementById('kcDiagOverlay'),table=host?.querySelector?.('#kcDiagTable'),txt=String(table?.textContent||'');
-        if(host&&txt&&!/Diagnose wird geladen/i.test(txt)){
-          writeDiagCapture({active:false,stage:'diagnose-responsive',at:new Date().toISOString(),build:'0.19.55'});
-          clearInterval(diagCaptureTimer);diagCaptureTimer=null;
-        }
-      },400);
-    },true);
-    window.addEventListener('pageshow',()=>setTimeout(showPreviousDiagFreeze,0));
-    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(showPreviousDiagFreeze,0)});
+  function clearLegacyDiagnosticsState(){
+    try{localStorage.removeItem('kc_dp_diag_capture_freeze_v1')}catch(_){}
+    try{localStorage.removeItem('kc_dp_diag_controller_v5_active')}catch(_){}
+    document.getElementById('kcDiagCaptureReport')?.remove();
+    document.getElementById('kcDiagWatchdogOverlay')?.remove();
   }
   function ensureSaveState(){
     if(diagOpen())return;
@@ -98,7 +41,6 @@
   }
   function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.async=false;s.dataset.kcdpModule=key;document.head.appendChild(s)}
   function loadV01955Modules(){
-    ensureV54Loaded();
     loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');
     loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');
     loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');
@@ -112,9 +54,9 @@
     requestAnimationFrame(()=>{applyScheduled=false;apply()});
   }
   const obs=new MutationObserver(scheduleApply);
-  armDiagCapture();
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
-  else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true})}
+  clearLegacyDiagnosticsState();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
+  else{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-diag-controller-v5.4-required',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture,startDiagnosticsThroughV5};
+  K.kcUxPolish={version:'0.19.55-direct-diagnostics-no-v5',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState};
 })();
