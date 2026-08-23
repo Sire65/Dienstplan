@@ -59,13 +59,21 @@
     const m=document.getElementById('messageText');if(m&&/kompakte Plansteuerung|V0\.17\.10|V0\.19\.42|V0\.19\.51|V0\.19\.52|V0\.19\.53|V0\.19\.54/.test(m.textContent||''))m.textContent='KC DP2 V0.19.55 – Dienstplanung bereit.';
     document.title='KC DP2 V0.19.55 · Köcheclub Werne';
   }
-  function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.dataset.kcdpModule=key;document.head.appendChild(s)}
-  function loadV01955Modules(){loadModule('src/core/diagnostics-watchdog.js?v=0.19.55-diagwatch-4','KCDP_DIAG_WATCHDOG_BOOT');loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.69-close-only-2','KCDP_SESSION_DIAG_GUARD')}
+  function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.async=false;s.dataset.kcdpModule=key;document.head.appendChild(s)}
+  function loadV01955Modules(){
+    loadModule('src/core/diagnostics-watchdog.js?v=0.19.55-diagwatch-4','KCDP_DIAG_WATCHDOG_BOOT');
+    loadModule('src/core/diagnostics-button-router.js?v=0.19.55-router-1','KCDP_DIAG_ROUTER_BOOT');
+    loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');
+    loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');
+    loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');
+    loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');
+    loadModule('src/ui/session-diagnostics-guard.js?v=0.19.69-close-only-2','KCDP_SESSION_DIAG_GUARD')
+  }
   function apply(){roleUx();humanize();updateSaveState()}
   const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
   armDiagCapture();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
   else{loadV01955Modules();apply();showPreviousDiagFreeze();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-diag-capture-1',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture};
+  K.kcUxPolish={version:'0.19.55-diag-router-1',apply,updateSaveState,loadV01955Modules,showPreviousDiagFreeze,readDiagCapture};
 })();
