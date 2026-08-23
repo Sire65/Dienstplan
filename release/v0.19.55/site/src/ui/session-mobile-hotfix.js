@@ -36,51 +36,22 @@
     bindCloseTarget(b);bindCloseTarget(byId('sessionClose'));
   }
 
-  function authReady(){
-    try{return !!(K.supabaseConnection?.hasAccessToken?.()||K.memberAccess?.state?.status==='authenticated'||K.session?.state?.provider==='supabase')}catch(_){return false}
+  function loadScriptOnce(selector,src,datasetKey){
+    if(document.querySelector(selector))return;
+    const s=document.createElement('script');s.src=src;s.async=false;s.dataset[datasetKey]='1';document.head.appendChild(s);
   }
-
-  function diagOverlay(){
-    let ov=byId('kcDiagImmediateOverlay');if(ov)return ov;
-    ov=document.createElement('div');ov.id='kcDiagImmediateOverlay';
-    Object.assign(ov.style,{position:'fixed',inset:'0',zIndex:'140000',background:'rgba(0,0,0,.5)',display:'grid',placeItems:'center',padding:'18px'});
-    ov.innerHTML='<section style="width:min(680px,96vw);max-height:88vh;overflow:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 20px 60px #0005;font-family:system-ui,Arial,sans-serif"><div style="display:flex;gap:12px;align-items:center;justify-content:space-between"><h2 style="margin:0;color:#7a1420;font-size:24px">🛠 Zentrale Fehlerdiagnose</h2><button id="kcDiagImmediateClose" type="button" aria-label="Schließen" style="width:48px;height:48px;border-radius:50%;border:1px solid #d8c9c1;background:#fff;font-size:30px;touch-action:manipulation">×</button></div><div id="kcDiagImmediateState" style="margin-top:16px;padding:14px;border:1px solid #e2d9d2;border-radius:14px;background:#faf7f3;font-size:16px;line-height:1.4">Diagnose wird gestartet …</div><div style="margin-top:14px;font-size:14px;color:#666">Lokaler Speicher: <b id="kcDiagImmediateIdx">wird geprüft</b><br>Supabase: <b id="kcDiagImmediateSup">wird geprüft</b></div></section>';
-    document.body.appendChild(ov);
-    const close=()=>ov.remove();byId('kcDiagImmediateClose').onclick=close;ov.addEventListener('click',e=>{if(e.target===ov)close()});
-    return ov;
-  }
-
-  async function openDiagnosticsImmediate(){
-    hardClose();
-    const ov=diagOverlay(),state=byId('kcDiagImmediateState'),idx=byId('kcDiagImmediateIdx'),sup=byId('kcDiagImmediateSup');
-    if(idx)idx.textContent=K.localStorageStatus?.ok===false?'Fehler':'bereit';
-    if(sup)sup.textContent=authReady()?'angemeldet / verbunden':'nicht angemeldet';
-    if(!authReady()){state.innerHTML='<b>Lokale Diagnose ist verfügbar.</b><br>Für die zentrale Cloud-Diagnose ist eine gültige Supabase-Anmeldung erforderlich.';return}
-    try{
-      state.textContent='Cloud-Diagnose wird geladen …';
-      if(!K.diagnosticsCenter?.open)throw new Error('Diagnose-Modul ist noch nicht verfügbar.');
-      await Promise.race([Promise.resolve().then(()=>K.diagnosticsCenter.open()),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Cloud-Diagnose antwortet nicht innerhalb von 8 Sekunden.')),8000))]);
-      ov.remove();
-    }catch(e){state.innerHTML='<b>Diagnose konnte nicht vollständig geladen werden.</b><br>'+String(e?.message||e)}
-  }
-
-  function wireDiagnostics(){
-    const b=byId('kcDiagnosticsAdminEntry');if(!b||b.dataset.kcMobileDiagV4==='1')return;
-    b.dataset.kcMobileDiagV4='1';b.style.touchAction='manipulation';
-    let fired=false;const run=e=>{e?.preventDefault?.();e?.stopImmediatePropagation?.();if(fired)return;fired=true;setTimeout(()=>{fired=false},400);openDiagnosticsImmediate()};
-    b.addEventListener('pointerdown',run,{capture:true});b.addEventListener('touchend',run,{capture:true,passive:false});b.addEventListener('click',run,{capture:true});
-  }
-
-  function loadLoginTrace(){
-    if(window.KCDP?.loginTrace||document.querySelector('script[data-kc-login-trace]'))return;
-    const s=document.createElement('script');s.src='src/core/login-trace.js?v=0.19.55-logintrace-1';s.async=false;s.dataset.kcLoginTrace='1';document.head.appendChild(s);
-  }
+  function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-logintrace-2','kcLoginTrace')}
+  function loadDiagnosticsWatchdog(){if(!K.diagnosticsWatchdog)loadScriptOnce('script[data-kc-diag-watchdog]','src/core/diagnostics-watchdog.js?v=0.19.55-diagwatch-1','kcDiagWatchdog')}
 
   function apply(){
-    try{loadLoginTrace();if(isSessionModal()){addTopClose();wireDiagnostics()}}catch(e){console.error('KC DP2 mobile session hotfix:',e)}
+    try{
+      loadLoginTrace();loadDiagnosticsWatchdog();
+      if(isSessionModal())addTopClose();
+      K.diagnosticsWatchdog?.installButton?.();
+    }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.66-no-duplicate-leds',apply,hardClose,isSessionModal,openDiagnosticsImmediate,loadLoginTrace};
+  K.sessionMobileHotfix={version:'0.19.67-diag-watchdog',apply,hardClose,isSessionModal,loadLoginTrace,loadDiagnosticsWatchdog};
   const scheduleApply=()=>requestAnimationFrame(apply);
   new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
