@@ -40,24 +40,6 @@
     try{return !!(K.supabaseConnection?.hasAccessToken?.()||K.memberAccess?.state?.status==='authenticated'||K.session?.state?.provider==='supabase')}catch(_){return false}
   }
 
-  function ensureMobileLeds(){
-    if(byId('kcMobileDbStatus'))return;
-    const host=document.querySelector('#kcdpUxRoot .ux-topbar,#kcdpUxRoot header,.ux-topbar,.topbar');
-    if(!host)return;
-    const box=document.createElement('div');
-    box.id='kcMobileDbStatus';box.setAttribute('aria-label','Datenbankstatus');
-    Object.assign(box.style,{display:'flex',alignItems:'center',gap:'7px',marginLeft:'auto',marginRight:'4px',fontSize:'10px',fontWeight:'800',flex:'0 0 auto'});
-    box.innerHTML='<span style="display:flex;align-items:center;gap:3px">IDX <i id="kcMobileIdxLed" style="width:10px;height:10px;border-radius:50%;background:#2b7751;display:inline-block"></i></span><span style="display:flex;align-items:center;gap:3px">SUP <i id="kcMobileSupLed" style="width:10px;height:10px;border-radius:50%;background:#2f77c6;display:inline-block"></i></span>';
-    const directUser=[...host.children].find(el=>el.matches?.('.ux-userchip,#userBtn,button[aria-label*=Benutzer i],button[title*=Benutzer i]'));
-    if(directUser&&directUser.parentNode===host)host.insertBefore(box,directUser);else host.appendChild(box);
-  }
-
-  function updateMobileLeds(){
-    const i=byId('kcMobileIdxLed'),s=byId('kcMobileSupLed');
-    if(i){let c='#2b7751';try{if(K.localStorageStatus?.ok===false)c='#c83d3d'}catch(_){}i.style.background=c}
-    if(s){let c='#2f77c6';try{const st=K.sync?.state?.status,auth=K.supabaseConnection?.state?.authStatus;if(authReady()||(auth==='authenticated'&&st==='ready'))c='#2b7751';else if(auth==='error'||st==='error'||st==='offline')c='#c83d3d'}catch(_){}s.style.background=c}
-  }
-
   function diagOverlay(){
     let ov=byId('kcDiagImmediateOverlay');if(ov)return ov;
     ov=document.createElement('div');ov.id='kcDiagImmediateOverlay';
@@ -95,15 +77,14 @@
   }
 
   function apply(){
-    try{loadLoginTrace();ensureMobileLeds();updateMobileLeds();if(isSessionModal()){addTopClose();wireDiagnostics()}}catch(e){console.error('KC DP2 mobile session hotfix:',e)}
+    try{loadLoginTrace();if(isSessionModal()){addTopClose();wireDiagnostics()}}catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.65-logintrace',apply,hardClose,isSessionModal,openDiagnosticsImmediate,ensureMobileLeds,updateMobileLeds,loadLoginTrace};
+  K.sessionMobileHotfix={version:'0.19.66-no-duplicate-leds',apply,hardClose,isSessionModal,openDiagnosticsImmediate,loadLoginTrace};
   const scheduleApply=()=>requestAnimationFrame(apply);
   new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isSessionModal()){e.preventDefault();hardClose()}},true);
   window.addEventListener('pageshow',()=>setTimeout(apply,0));
-  setInterval(updateMobileLeds,2000);
   apply();
 })();
