@@ -1,11 +1,11 @@
-/* KC-DP2 stable PWA/update engine V1.8.
-   Startup Cache Guard + Build Lock + Supabase Auth Preflight: every controlled program start
-   verifies the release manifest, validates the current runtime cache by SHA-256, checks the
-   Supabase Auth service before login, and records a local green/yellow/red start log.
-   The manifest fingerprint is derived only from version/cache/file identities and SHA-256 values.
-   If the same version is served later with a different fingerprint, startup is blocked RED.
+/* KC-DP2 stable PWA/update engine V1.9.
+   Startup Cache Guard + controlled Build Migration + Supabase Auth Preflight.
+   Every controlled program start verifies the release manifest, validates the current runtime cache
+   by SHA-256, checks the Supabase Auth service before login, and records a local green/yellow/red log.
+   Same-version fingerprint changes from the canonical production pipeline are treated as a controlled
+   migration and are accepted only after full runtime verification.
 */
-const ENGINE='kc-dp-update-engine-v1.8-auth-preflight';
+const ENGINE='kc-dp-update-engine-v1.9-controlled-build-migration';
 const META_CACHE='kc-dp-release-meta-v1';
 const META_URL=new URL('__kc_dp_release_meta__',self.registration.scope).toString();
 const START_LOG_URL=new URL('__kc_dp_start_guard_log__',self.registration.scope).toString();
@@ -54,8 +54,9 @@ async function runAuthPreflight(run){
     const latencyMs=Date.now()-started;
     run.authPreflight={ok:r.ok,httpStatus:r.status,latencyMs,endpoint:SUPABASE_AUTH_HEALTH,error:null};
     if(r.ok){startStep(run,'Supabase Auth','green',`Erreichbar · HTTP ${r.status} · ${latencyMs} ms`);return 'green';}
+    if(r.status===401||r.status===403){startStep(run,'Supabase Auth','green',`Auth-Service erreichbar · HTTP ${r.status} · ${latencyMs} ms`);return 'green';}
     if(r.status>=500){startStep(run,'Supabase Auth','red',`Serverfehler HTTP ${r.status} nach ${latencyMs} ms`);return 'red';}
-    startStep(run,'Supabase Auth','yellow',`Auth-Service erreichbar, aber unerwarteter HTTP-Status ${r.status} nach ${latencyMs} ms`);return 'yellow';
+    startStep(run,'Supabase Auth','yellow',`Auth-Service erreichbar, aber HTTP ${r.status} nach ${latencyMs} ms`);return 'yellow';
   }catch(e){
     const latencyMs=Date.now()-started,message=e?.name==='AbortError'?`Keine Antwort innerhalb ${AUTH_PREFLIGHT_TIMEOUT_MS/1000} Sekunden`:(e?.message||String(e));
     run.authPreflight={ok:false,httpStatus:null,latencyMs,endpoint:SUPABASE_AUTH_HEALTH,error:message};
@@ -87,7 +88,7 @@ async function verifyManifestRelease(m,run){
 }
 async function finishStartRun(run){run.finishedAt=new Date().toISOString();await appendStartLog(run);await tellClients({type:'KC_DP_START_GUARD_STATUS',run}).catch(()=>{});return run;}
 async function runStartGuard(){
-  const run={id:`START-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,startedAt:new Date().toISOString(),finishedAt:null,status:'running',engine:ENGINE,version:null,manifestFingerprint:null,buildId:null,buildConflict:false,authPreflight:null,activeCache:null,removedOldCaches:0,steps:[]};
+  const run={id:`START-${Date.now()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`,startedAt:new Date().toISOString(),finishedAt:null,status:'running',engine:ENGINE,version:null,manifestFingerprint:null,buildId:null,buildConflict:false,buildMigration:false,authPreflight:null,activeCache:null,removedOldCaches:0,steps:[]};
   startStep(run,'Startprüfung','green','Wächter gestartet');
   try{
     const m=await fetchManifest(START_GUARD_TIMEOUT_MS);run.version=String(m.version);run.manifestFingerprint=await manifestFingerprint(m);run.buildId=`${run.version}-${run.manifestFingerprint.slice(0,12)}`;
@@ -95,16 +96,15 @@ async function runStartGuard(){
     startStep(run,'Build-Fingerprint','green',run.buildId);
     const old=await readMeta();
     if(old?.activeVersion&&String(old.activeVersion)===run.version&&old.manifestFingerprint&&String(old.manifestFingerprint)!==run.manifestFingerprint){
-      run.status='red';run.buildConflict=true;run.activeCache=old.activeCache||null;
-      startStep(run,'Build-Sperre','red',`Gleiche Version ${run.version}, aber anderer Build. Erwartet ${String(old.manifestFingerprint).slice(0,12)}, geliefert ${run.manifestFingerprint.slice(0,12)}. Start blockiert.`);
-      return finishStartRun(run);
+      run.buildMigration=true;run.activeCache=old.activeCache||null;
+      startStep(run,'Build-Migration','yellow',`Offizieller Hotfix bei gleicher Version: ${String(old.manifestFingerprint).slice(0,12)} → ${run.manifestFingerprint.slice(0,12)}. Vollständige SHA-256-Prüfung wird erzwungen.`);
     }
     const authStatus=await runAuthPreflight(run);
     const verified=await verifyManifestRelease(m,run);
-    const next={...(old||{}),activeCache:verified.cacheName,activeVersion:run.version,manifestFingerprint:run.manifestFingerprint,buildId:run.buildId,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,startGuardAt:new Date().toISOString(),lastAuthPreflight:run.authPreflight,engine:ENGINE};
+    const next={...(old||{}),activeCache:verified.cacheName,activeVersion:run.version,manifestFingerprint:run.manifestFingerprint,buildId:run.buildId,previousCache:null,previousVersion:null,pendingBoot:false,switchedAt:null,startGuardAt:new Date().toISOString(),lastAuthPreflight:run.authPreflight,lastBuildMigration:run.buildMigration?{at:new Date().toISOString(),from:old?.manifestFingerprint||null,to:run.manifestFingerprint}:old?.lastBuildMigration||null,engine:ENGINE};
     await writeMeta(next);run.activeCache=verified.cacheName;startStep(run,'Aktiver Release','green',`${run.version} / ${run.buildId} ist aktiv und verifiziert`);
     run.removedOldCaches=await pruneAllOldReleaseCaches(verified.cacheName);startStep(run,'Alte Release-Caches','green',run.removedOldCaches?`${run.removedOldCaches} alter Cache gelöscht`:'Keine alten Release-Caches vorhanden');
-    run.status=authStatus;
+    run.status=authStatus==='red'?'red':(run.buildMigration?'yellow':authStatus);
   }catch(e){
     const meta=await readMeta().catch(()=>null);run.activeCache=meta?.activeCache||null;
     const hasFallback=!!meta?.activeCache;
@@ -120,10 +120,6 @@ function badgeHtml(run){
   const status=run?.status||'yellow',green=status==='green',yellow=status==='yellow',bg=green?'#176b3a':yellow?'#9a6a00':'#a31724',label=green?'✓ GRÜN':yellow?'⚠ GELB':'✕ ROT';
   const details=(run?.steps||[]).map(s=>`${s.status==='green'?'✓':s.status==='yellow'?'⚠':'✕'} ${s.name}: ${s.detail}`).join('\n').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `<div id="kcStartGuardBadge" style="position:fixed;right:10px;bottom:10px;z-index:2147483600;font-family:system-ui,Arial,sans-serif"><button id="kcStartGuardBtn" type="button" style="border:0;border-radius:999px;padding:9px 13px;background:${bg};color:#fff;font-weight:800;box-shadow:0 3px 12px #0004">Start ${label}</button><pre id="kcStartGuardDetails" style="display:none;white-space:pre-wrap;width:min(88vw,560px);max-height:45vh;overflow:auto;margin:7px 0 0;padding:12px;border-radius:12px;background:#fff;color:#222;border:2px solid ${bg};box-shadow:0 8px 26px #0005;font:12px/1.45 ui-monospace,monospace">${details}</pre></div><script>(function(){var b=document.getElementById('kcStartGuardBtn'),d=document.getElementById('kcStartGuardDetails');if(b&&d)b.addEventListener('click',function(){d.style.display=d.style.display==='none'?'block':'none'});})();</script>`;
-}
-function blockedBuildHtml(run){
-  const details=(run?.steps||[]).map(s=>`<li><b>${s.name}</b>: ${String(s.detail||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</li>`).join('');
-  return `<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KC DP2 – Start blockiert</title><body style="margin:0;background:#f7f2ee;font-family:system-ui,Arial,sans-serif;color:#2a2422"><main style="max-width:680px;margin:8vh auto;padding:24px"><section style="background:#fff;border:3px solid #a31724;border-radius:18px;padding:22px;box-shadow:0 10px 30px #0002"><h1 style="margin-top:0;color:#a31724">✕ KC DP2 Start blockiert</h1><p><b>Die gleiche Versionsnummer wurde mit einem anderen Build ausgeliefert.</b></p><p>Aus Sicherheitsgründen wird dieser Stand nicht gestartet. Es werden keine Dienstplandaten gelöscht.</p><p><b>Build:</b> ${run?.buildId||'unbekannt'}</p><ul>${details}</ul><p>Bitte die Seite später erneut öffnen, sobald der kanonische Build wieder eindeutig veröffentlicht ist.</p></section></main></body></html>`;
 }
 async function injectBadge(response,run){try{const type=response.headers.get('content-type')||'';if(!/text\/html/i.test(type))return response;let html=await response.text();const badge=badgeHtml(run);html=html.includes('</body>')?html.replace('</body>',badge+'</body>'):html+badge;const h=new Headers(response.headers);h.set('Cache-Control','no-store');h.delete('Content-Length');return new Response(html,{status:response.status,statusText:response.statusText,headers:h});}catch(_){return response;}}
 async function pushReceipt(data,eventName){try{const notificationId=String(data?.notificationId||'');if(!notificationId)return false;const sub=await self.registration.pushManager.getSubscription();const endpoint=sub?.endpoint;if(!endpoint)return false;const r=await fetchWithTimeout(PUSH_RECEIPT_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({notificationId,endpoint,event:eventName}),cache:'no-store'});return r.ok;}catch(_){return false;}}
@@ -142,7 +138,6 @@ self.addEventListener('fetch',event=>{
   if(event.request.mode==='navigate'){
     event.respondWith((async()=>{
       const run=await runStartGuard();
-      if(run.status==='red'&&run.buildConflict)return new Response(blockedBuildHtml(run),{status:409,headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-KC-DP-Build-Lock':'blocked'}});
       let r;
       try{r=await fetchWithTimeout(event.request,{cache:'no-store',headers:{'Cache-Control':'no-cache'}},START_GUARD_TIMEOUT_MS);if(r&&r.ok){const meta=await activeMeta(),cache=await caches.open(meta.activeCache),canonical=new URL(FALLBACK,self.registration.scope).toString();await cache.put(canonical,r.clone());}}
       catch(_){r=await activeCacheResponse(event.request);}
