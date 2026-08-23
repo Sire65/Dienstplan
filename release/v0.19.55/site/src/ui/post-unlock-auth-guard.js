@@ -6,7 +6,7 @@
 
   const MAX_AGE_MS=120000;
   const state=K.postUnlockAuthGuard={
-    version:'0.19.55-build81',
+    version:'0.19.55-build82',
     confirmed:null,
     confirmedAt:0,
     explicitLogout:false
@@ -46,11 +46,10 @@
   function canRestore(){
     if(state.explicitLogout||!state.confirmed?.personId)return false;
     if(Date.now()-state.confirmedAt>MAX_AGE_MS)return false;
-    if(!K.storage?.unlocked)return false;
     return true;
   }
 
-  function restore(){
+  function restore(reason='ensure-login'){
     if(!canRestore())return false;
     const s=state.confirmed;
     try{
@@ -62,7 +61,7 @@
       }
       K.session?.adoptAuthenticatedUser?.({personId:s.personId,role:s.role,displayName:s.displayName,provider:'supabase'});
       try{K.postLoginIdentityGuard?.restore?.('post-unlock-direct-guard')}catch(_){}
-      trace('post-unlock-auth-restored',`${s.personId} · lokaler Schlüssel bestätigt`);
+      trace('post-unlock-auth-restored',`${s.personId} · ${reason}`);
       return true;
     }catch(e){
       trace('post-unlock-auth-restore-error',e?.message||e);
@@ -99,14 +98,14 @@
       const base=ru.ensureLogin.bind(ru);
       const wrapped=function(...args){
         if(K.memberAccess?.state?.status==='authenticated')return Promise.resolve(K.currentUser);
-        if(restore())return Promise.resolve(K.currentUser);
+        if(restore('erneute Login-Anforderung nach bestätigter Anmeldung'))return Promise.resolve(K.currentUser);
         return base(...args);
       };
       wrapped.__kcPostUnlockGuard=true;
       ru.ensureLogin=wrapped;
     }
 
-    trace('post-unlock-guard-ready','Build 81 · Doppel-Login-Schutz aktiv');
+    trace('post-unlock-guard-ready','Build 82 · Doppel-Login-Schutz aktiv');
     return true;
   }
 
