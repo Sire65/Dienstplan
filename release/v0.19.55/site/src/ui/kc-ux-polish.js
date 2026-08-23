@@ -30,7 +30,7 @@
     document.title='KC DP2 V0.19.55 · Köcheclub Werne';
   }
   function loadModule(src,key){if(window[key])return;const marker=`script[data-kcdp-module="${key}"]`;if(document.querySelector(marker))return;const s=document.createElement('script');s.src=src;s.dataset.kcdpModule=key;document.head.appendChild(s)}
-  function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.61','KCDP_SESSION_DIAG_GUARD')}
+  function loadV01955Modules(){loadModule('src/core/document-identity.js?v=0.19.55-s0','KCDP_DOC_ID');loadModule('src/core/email-inbox.js?v=0.19.55-s1','KCDP_EMAIL_CORE');loadModule('src/core/inbound-wish-import.js?v=0.19.55-s2','KCDP_INBOUND_IMPORT');loadModule('src/ui/email-center.js?v=0.19.55-s1','KCDP_EMAIL_CENTER');loadModule('src/ui/session-diagnostics-guard.js?v=0.19.64-close-only','KCDP_SESSION_DIAG_GUARD')}
   function apply(){roleUx();humanize();updateSaveState()}
   const obs=new MutationObserver(()=>{requestAnimationFrame(apply)});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']})},{once:true});
