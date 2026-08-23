@@ -2,7 +2,6 @@
   'use strict';
   const K=window.KCDP=window.KCDP||{};
   const byId=id=>document.getElementById(id);
-  const EXPECTED_DIAG_WATCHDOG='0.19.55-diagwatch-4-entry-first';
   const isSessionModal=()=>{const modal=byId('modal'),h2=modal?.querySelector('h2');return !!h2&&/Anmeldung\s*\/\s*Monitor/.test(h2.textContent||'')};
 
   function hardClose(){
@@ -42,17 +41,6 @@
     const s=document.createElement('script');s.src=src;s.async=false;s.dataset[datasetKey]='1';document.head.appendChild(s);
   }
   function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-logintrace-2','kcLoginTrace')}
-  function loadDiagnosticsWatchdog(){
-    if(K.diagnosticsWatchdog?.version===EXPECTED_DIAG_WATCHDOG)return true;
-    document.querySelectorAll('script[data-kc-diag-watchdog],script[data-kcdp-module="KCDP_DIAG_WATCHDOG_BOOT"]').forEach(s=>s.remove());
-    try{delete K.diagnosticsWatchdog}catch(_){K.diagnosticsWatchdog=null}
-    const s=document.createElement('script');
-    s.src='src/core/diagnostics-watchdog.js?v=0.19.55-diagwatch-4-entry-first-force2';
-    s.async=false;
-    s.dataset.kcDiagWatchdog='forced4';
-    document.head.appendChild(s);
-    return false;
-  }
 
   function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d)d.style.display='none'}
   function manageStartGuardBadge(){
@@ -68,13 +56,12 @@
 
   function apply(){
     try{
-      loadLoginTrace();loadDiagnosticsWatchdog();manageStartGuardBadge();
+      loadLoginTrace();manageStartGuardBadge();
       if(isSessionModal())addTopClose();
-      if(K.diagnosticsWatchdog?.version===EXPECTED_DIAG_WATCHDOG)K.diagnosticsWatchdog.installButton?.();
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.71-diagwatch4-force',apply,hardClose,isSessionModal,loadLoginTrace,loadDiagnosticsWatchdog,collapseStartGuard,manageStartGuardBadge};
+  K.sessionMobileHotfix={version:'0.19.72-no-diag-watchdog',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge};
   const scheduleApply=()=>requestAnimationFrame(apply);
   new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
