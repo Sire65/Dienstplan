@@ -27,6 +27,7 @@
     host.innerHTML=`<div class="kc-install-card">
       <div class="kc-install-head"><div><h2>📲 Installationshistorie</h2><p>KC DP2 · Wer hat wann auf welchem Gerät installiert?</p></div><button id="kcInstallClose" aria-label="Schließen">✕</button></div>
       <div class="kc-install-toolbar">
+        <button id="kcInstallBack" type="button" aria-label="Zurück zum KC-DP2-Programm">← Zurück zum Programm</button>
         <label>Anzeige <select id="kcInstallFilter"><option value="installed">Erfolgreich installiert</option><option value="all">Alle</option><option value="push">Push erfolgreich</option><option value="handy">Handy</option><option value="tablet">Tablet</option><option value="pc">PC</option><option value="none">Ohne Zugang</option></select></label>
         <button id="kcInstallReload">Aktualisieren</button>
       </div>
@@ -35,6 +36,7 @@
       <div id="kcInstallUpdated" class="kc-install-updated"></div>
     </div>`;
     host.querySelector('#kcInstallClose').onclick=close;
+    host.querySelector('#kcInstallBack').onclick=close;
     let allRows=[],loading=false;
     function filtered(){
       const f=host.querySelector('#kcInstallFilter').value;
@@ -110,5 +112,5 @@
   }
   document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
   new MutationObserver(()=>inject()).observe(document.body,{subtree:true,childList:true});
-  K.installationCenter={version:'0.19.51-install-1',open,allowed};
+  K.installationCenter={version:'0.19.55-install-back-1',open,allowed};
 })();
