@@ -39,6 +39,29 @@
       },0);
     },true);
   }
+  function installNotificationGate(){
+    if(window.__KC_DP_NOTIFICATION_GATE)return;
+    window.__KC_DP_NOTIFICATION_GATE=true;
+    window.addEventListener('click',e=>{
+      const btn=e.target?.closest?.('#notificationBtn');
+      if(!btn||K.notifications?.list)return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+      const existing=document.querySelector('script[data-kcdp-notification-reload="1"]');
+      if(existing)return;
+      const s=document.createElement('script');
+      s.src='src/core/notifications.js?v=0.19.55-notify-list-guard-1';
+      s.async=false;
+      s.dataset.kcdpNotificationReload='1';
+      s.onload=()=>{
+        if(K.notifications?.list)setTimeout(()=>btn.click(),0);
+        else document.getElementById('messageText')&&(document.getElementById('messageText').textContent='Benachrichtigungen konnten nicht geladen werden.');
+      };
+      s.onerror=()=>{document.getElementById('messageText')&&(document.getElementById('messageText').textContent='Benachrichtigungsmodul konnte nicht geladen werden.');};
+      document.head.appendChild(s);
+    },true);
+  }
   function ensureSupabaseCloseX(){
     if(diagOpen())return;
     const modal=document.getElementById('modal');
@@ -113,8 +136,9 @@
   const obs=new MutationObserver(scheduleApply);
   clearLegacyDiagnosticsState();
   installEarlyDiagnosticsGate();
+  installNotificationGate();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})},{once:true});
   else{loadV01955Modules();apply();obs.observe(document.body,{childList:true,subtree:true})}
   window.addEventListener('KC_DP_MANAGER_AUTO_SYNC',updateSaveState);
-  K.kcUxPolish={version:'0.19.55-supabase-verified-led-2',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate,ensureSupabaseCloseX};
+  K.kcUxPolish={version:'0.19.55-notification-list-guard-1',apply,updateSaveState,loadV01955Modules,clearLegacyDiagnosticsState,installEarlyDiagnosticsGate,installNotificationGate,ensureSupabaseCloseX};
 })();
