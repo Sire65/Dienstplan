@@ -42,7 +42,7 @@
   }
   function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-logintrace-2','kcLoginTrace')}
 
-  function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d)d.style.display='none'}
+  function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d&&d.style.display!=='none')d.style.display='none'}
   function manageStartGuardBadge(){
     const badge=byId('kcStartGuardBadge'),btn=byId('kcStartGuardBtn'),details=byId('kcStartGuardDetails');
     if(!badge||!btn||!details)return;
@@ -51,7 +51,7 @@
       btn.addEventListener('click',()=>{setTimeout(()=>{if(details.style.display!=='none')details.style.display='none'},7000)});
     }
     const dialogOpen=!!document.querySelector('#kcDiagOverlay,#kcDiagEmergencyOverlay,#kcDiagImmediateOverlay,#kcDiagWatchdogOverlay,#modalBackdrop:not(.hidden)');
-    if(dialogOpen)details.style.display='none';
+    if(dialogOpen&&details.style.display!=='none')details.style.display='none';
   }
 
   function apply(){
@@ -61,9 +61,16 @@
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.72-no-diag-watchdog',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge};
-  const scheduleApply=()=>requestAnimationFrame(apply);
-  new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});
+  K.sessionMobileHotfix={version:'0.19.73-no-style-observer-loop',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge};
+  let applyQueued=false;
+  const scheduleApply=()=>{
+    if(applyQueued)return;
+    applyQueued=true;
+    requestAnimationFrame(()=>{applyQueued=false;apply()});
+  };
+  // Nur echte DOM-Strukturänderungen beobachten. class/style werden bewusst NICHT beobachtet,
+  // damit eigene UI-Anpassungen keine MutationObserver-Rückkopplung erzeugen können.
+  new MutationObserver(scheduleApply).observe(document.body,{subtree:true,childList:true});
   document.addEventListener('click',e=>{if(e.target?.id==='userBtn'||e.target?.closest?.('.ux-userchip'))setTimeout(apply,0)},true);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isSessionModal()){e.preventDefault();hardClose()}},true);
   window.addEventListener('pageshow',()=>setTimeout(apply,0));
