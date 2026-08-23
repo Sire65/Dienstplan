@@ -4,7 +4,7 @@ const ROOT=path.resolve(__dirname,'..','release','v0.19.54','site');
 const index=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
 const marker='<script src="src/adapters/supabase-provider.js?v=0.19.37"></script>';
 if(!index.includes(marker))throw new Error('Supabase marker missing');
-fs.writeFileSync(path.join(ROOT,'app.html'),index.replace(marker,marker+'<script src="src/core/bootstrap-session.js?v=0.20.0-p23"></script>'));
+fs.writeFileSync(path.join(ROOT,'app.html'),index.replace(marker,marker+'<script src="src/core/bootstrap-session.js?v=0.20.0-p24"></script>'));
 const BASE=process.env.KCDP_BASE_URL||'http://127.0.0.1:4173/';
 const failures=[];const check=(v,m)=>{if(!v){failures.push(m);console.error('✕',m);return false}console.log('✓',m);return true};
 (async()=>{
