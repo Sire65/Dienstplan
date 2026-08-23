@@ -45,10 +45,25 @@
   setTimeout(load,0);
   return true;
  }
- function inject(){if(!allowed()||document.getElementById('kcDiagnosticsAdminEntryDirect')||document.getElementById('kcDiagOverlay'))return;const modal=document.getElementById('modal');if(!modal||modal.classList.contains('hidden'))return;const b=document.createElement('button');b.id='kcDiagnosticsAdminEntryDirect';b.type='button';b.className='kc-push-admin-entry';b.textContent='🛠 Zentrale Fehlerdiagnose';b.onclick=e=>{e.preventDefault();e.stopPropagation();open()};modal.appendChild(b)}
+ function inject(){
+  if(!allowed()||document.getElementById('kcDiagOverlay'))return;
+  const modal=document.getElementById('modal');if(!modal||modal.classList.contains('hidden'))return;
+  document.getElementById('kcDiagnosticsAdminEntry')?.remove();
+  let b=document.getElementById('kcDiagnosticsAdminEntryDirect');
+  if(!b){b=document.createElement('button');b.id='kcDiagnosticsAdminEntryDirect';b.type='button';b.className='kc-push-admin-entry';b.textContent='🛠 Zentrale Fehlerdiagnose';modal.appendChild(b)}
+ }
+ function directClickGuard(e){
+  const btn=e.target?.closest?.('#kcDiagnosticsAdminEntryDirect,#kcDiagnosticsAdminEntry');
+  if(!btn)return;
+  e.preventDefault();e.stopPropagation();e.stopImmediatePropagation?.();
+  try{localStorage.removeItem('kc_dp_diag_capture_freeze_v1')}catch(_){}
+  document.getElementById('kcDiagCaptureReport')?.remove();
+  open();
+ }
  function loadCompanion(id,src){if(document.getElementById(id))return;const s=document.createElement('script');s.id=id;s.src=src;s.defer=true;document.head.appendChild(s)}
+ document.addEventListener('click',directClickGuard,true);
  document.getElementById('settingsBtn')?.addEventListener('click',()=>setTimeout(inject,100));
  const settingsModal=document.getElementById('modal');if(settingsModal)new MutationObserver(()=>{if(!document.getElementById('kcDiagOverlay'))inject()}).observe(settingsModal,{subtree:true,childList:true});
  loadCompanion('kcDpSupabaseConnectionMonitor','src/core/supabase-connection-monitor.js?v=0.19.51-monitor3');loadCompanion('kcDpDiagnosticsHistoryView','src/ui/diagnostics-history-view.js?v=0.19.51-history4');loadCompanion('kcDpExcelMigrationCenter','src/ui/excel-migration-center.js?v=0.19.51-migration1');
- K.diagnosticsCenter={version:'0.19.66-direct-button-no-watchdog',open,allowed,isTest,friendlyTitle,close};
+ K.diagnosticsCenter={version:'0.19.67-direct-override-legacy-v5',open,allowed,isTest,friendlyTitle,close,inject};
 })();
