@@ -118,7 +118,10 @@
     if(document.querySelector(selector))return;
     const s=document.createElement('script');s.src=src;s.async=false;s.dataset[datasetKey]='1';document.head.appendChild(s);
   }
-  function loadLoginTrace(){if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-startprotokoll-3','kcLoginTrace')}
+  function loadLoginTrace(){
+    if(!K.loginTrace)loadScriptOnce('script[data-kc-login-trace]','src/core/login-trace.js?v=0.19.55-startprotokoll-4-continuous','kcLoginTrace');
+    loadScriptOnce('script[data-kc-start-protocol-copy]','src/ui/start-protocol-copy.js?v=0.19.55-copy-1','kcStartProtocolCopy');
+  }
 
   function collapseStartGuard(){const d=byId('kcStartGuardDetails');if(d&&d.style.display!=='none')d.style.display='none'}
   function manageStartGuardBadge(){
@@ -139,7 +142,7 @@
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.75-public-config-fastpath',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
+  K.sessionMobileHotfix={version:'0.19.76-startprotocol-copy',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
   let applyQueued=false;
   const scheduleApply=()=>{
     if(applyQueued)return;
