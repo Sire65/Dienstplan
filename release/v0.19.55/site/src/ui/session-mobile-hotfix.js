@@ -8,14 +8,6 @@
     try{K.loginTrace?.add?.(stage,'info',detail)}catch(_){}
   }
 
-  /*
-   * Nach einer expliziten Abmeldung ist die öffentliche Supabase-Konfiguration
-   * weiterhin im Arbeitsspeicher vorhanden. Der bisherige zweite Login rief
-   * trotzdem erneut IndexedDB/restorePublicConfig auf. Auf Android konnte genau
-   * dieser unnötige Schritt hängen bleiben, bevor die Loginmaske neu gezeichnet
-   * wurde. Wenn die Konfiguration bereits vollständig ist, wird dieser DB-Zugriff
-   * jetzt übersprungen. Nur beim echten Kaltstart wird sie weiterhin geladen.
-   */
   function installPublicConfigFastPath(){
     const ma=K.memberAccess;
     if(!ma||typeof ma.restorePublicConfig!=='function'||ma.restorePublicConfig.__kcFastPath)return;
@@ -46,23 +38,31 @@
     ma.restorePublicConfig=wrapped;
   }
 
-  /*
-   * Login-Gate muss vor dem asynchron weiterlaufenden app.js-Start greifen.
-   * role-ux.js verwaltet intern nur einen loginResolve. Zwei parallele ensureLogin()-
-   * Aufrufe konnten diesen Resolver bisher überschreiben. Ergebnis: der sichtbare
-   * Login war bereits fertig, der Programmstart wartete aber weiter und konnte
-   * später erneut auf die Passwortmaske zurückfallen.
-   */
   function installAuthGate(){
     if(K.__singleLoginGateInstalled)return;
     if(typeof K.roleUx?.ensureLogin!=='function'||typeof K.memberAccess?.signInPassword!=='function')return;
     K.__singleLoginGateInstalled=true;
-    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-3',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,events:[]};
-    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>50)flow.events.shift();trace(stage,detail);};
+    const flow=K.loginFlowGate=K.loginFlowGate||{version:'0.19.55-single-login-4',ensurePromise:null,passwordPromise:null,lastPasswordOkAt:0,events:[]};
+    const mark=(stage,detail='')=>{flow.events.push({at:new Date().toISOString(),stage,detail:String(detail||'')});if(flow.events.length>80)flow.events.shift();trace(stage,detail);};
 
     const originalEnsure=K.roleUx.ensureLogin.bind(K.roleUx);
     K.roleUx.ensureLogin=function(){
       if(K.memberAccess?.state?.status==='authenticated')return Promise.resolve(K.currentUser);
+
+      // Nach erfolgreichem Passwortlogin + lokaler Schlüsselprüfung darf ein späterer
+      // Startup-Schritt nicht noch einmal die Passwortmaske öffnen. Die bereits
+      // bestätigte Identität wird ausschließlich innerhalb eines kurzen Fensters
+      // aus dem bestehenden In-Memory-Snapshot wiederhergestellt.
+      const recentPassword=flow.lastPasswordOkAt&&Date.now()-flow.lastPasswordOkAt<120000;
+      if(recentPassword&&K.postLoginIdentityGuard?.restore){
+        try{
+          if(K.postLoginIdentityGuard.restore('recent-password-reentry')){
+            mark('login-gate-restored','Bestätigte Identität nach lokalem Entsperren wiederhergestellt');
+            return Promise.resolve(K.currentUser);
+          }
+        }catch(e){mark('login-gate-restore-error',e?.message||e)}
+      }
+
       if(flow.ensurePromise){mark('login-gate-reuse','Vorhandener Anmeldevorgang wird weiterverwendet');return flow.ensurePromise;}
       mark('login-gate-open','Einziger Anmeldevorgang gestartet');
       const p=Promise.resolve().then(()=>originalEnsure());
@@ -142,7 +142,7 @@
     }catch(e){console.error('KC DP2 mobile session hotfix:',e)}
   }
 
-  K.sessionMobileHotfix={version:'0.19.76-startprotocol-copy',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
+  K.sessionMobileHotfix={version:'0.19.77-recent-auth-reentry',apply,hardClose,isSessionModal,loadLoginTrace,collapseStartGuard,manageStartGuardBadge,installAuthGate,installPublicConfigFastPath};
   let applyQueued=false;
   const scheduleApply=()=>{
     if(applyQueued)return;
