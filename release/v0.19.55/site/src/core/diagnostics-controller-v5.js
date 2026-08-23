@@ -5,6 +5,7 @@
   const TRACE_KEY='kc_dp_diag_controller_v5_trace';
   const CAPTURE_KEY='kc_dp_diag_capture_freeze_v1';
   const DATA_TIMEOUT_MS=10000;
+  const STABILITY_MS=5000;
   let busy=false;
   const now=()=>new Date().toISOString();
   function readTrace(){try{const x=JSON.parse(localStorage.getItem(TRACE_KEY)||'[]');return Array.isArray(x)?x:[]}catch(_){return []}}
@@ -12,11 +13,11 @@
   function mark(stage,detail=''){
     const row={at:now(),stage:String(stage),detail:String(detail||'')};
     const rows=readTrace();rows.push(row);writeTrace(rows);
-    try{localStorage.setItem(ACTIVE_KEY,JSON.stringify({active:true,stage:row.stage,detail:row.detail,at:row.at,version:'v5.2'}))}catch(_){}
+    try{localStorage.setItem(ACTIVE_KEY,JSON.stringify({active:true,stage:row.stage,detail:row.detail,at:row.at,version:'v5.3'}))}catch(_){}
     return row;
   }
   function complete(){
-    try{localStorage.setItem(ACTIVE_KEY,JSON.stringify({active:false,stage:'complete',detail:'Diagnose vollständig geladen und UI reagiert',at:now(),version:'v5.2'}))}catch(_){}
+    try{localStorage.setItem(ACTIVE_KEY,JSON.stringify({active:false,stage:'complete',detail:'Diagnose vollständig geladen und 5 Sekunden stabil reagiert',at:now(),version:'v5.3'}))}catch(_){}
     try{localStorage.removeItem(CAPTURE_KEY)}catch(_){}
   }
   function readActive(){try{return JSON.parse(localStorage.getItem(ACTIVE_KEY)||'null')}catch(_){return null}}
@@ -51,10 +52,23 @@
     }
     return {ok:false,reason:`Diagnosedaten nach ${Math.round(ms/1000)} Sekunden nicht fertig gerendert`};
   }
+  async function postRenderStability(){
+    mark('post-render-stability:begin',`${STABILITY_MS/1000} Sekunden Nachlaufüberwachung gestartet`);
+    const started=performance.now();
+    let tick=0;
+    while(performance.now()-started<STABILITY_MS){
+      await new Promise(r=>setTimeout(r,500));
+      await nextFrame();
+      tick++;
+      if(tick%2===0)mark('post-render-stability:tick',`${Math.round(performance.now()-started)} ms stabil`);
+      if(!document.getElementById('kcDiagOverlay'))throw new Error('Diagnosefenster während Stabilitätsprüfung verschwunden');
+    }
+    mark('post-render-stability:end','Nachlaufüberwachung ohne Blockade abgeschlossen');
+  }
   async function run(){
     if(busy)return false;
     busy=true;
-    mark('v5-run-entry','Isolierter Diagnose-Controller V5.2 gestartet');
+    mark('v5-run-entry','Isolierter Diagnose-Controller V5.3 gestartet');
     try{
       closeSettings();
       mark('frame-wait:begin');await nextFrame();mark('frame-wait:end');
@@ -73,10 +87,11 @@
       mark('ui-responsive-probe:begin');
       await nextFrame();
       mark('ui-responsive-probe:end','Zwei Render-Zyklen nach Datenrendern abgeschlossen');
+      await postRenderStability();
       complete();
       return true;
     }catch(e){mark('v5-error',e?.message||String(e));return false}
     finally{setTimeout(()=>{busy=false},500)}
   }
-  K.diagnosticsControllerV5={version:'0.19.55-diagnostic-controller-v5.2',run,mark,readActive,readTrace};
+  K.diagnosticsControllerV5={version:'0.19.55-diagnostic-controller-v5.3',run,mark,readActive,readTrace};
 })();
