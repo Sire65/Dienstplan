@@ -95,11 +95,16 @@ const assert = require('assert');
     return {person:person.name,date:day.date,start,end,wishId:wishOut.record.id,shiftId,actualId:actualOut.record.id,version:publication.version,comparison:actualOut.comparison.status,matched:stats.matched,deviations:stats.deviations};
   });
 
-  // UI-Pfad Startauswahl -> Bearbeiten -> Vergleich.
-  // Direkte DOM-Prüfung vermeidet Locator-Retry-Flattern bei dynamischen Zusatzmodulen,
-  // löst aber den originalen app.js-Klickhandler im echten Browser aus.
+  // UI-Pfad Startauswahl -> Bearbeiten -> Tagesansicht -> Vergleich.
+  // Die Tagesansicht wird explizit gesetzt, damit ein vorheriger Wochen-/Zeitraumzustand
+  // nicht fälschlich die Tagesmatrix-Prüfung blockiert.
   await page.evaluate(()=>window.KCDP.startChoice.openEdit());
   await page.waitForSelector('body.ux-legacy',{timeout:10000});
+  await page.evaluate(()=>{
+    const K=window.KCDP;
+    K.state.view='day';
+    document.querySelectorAll('#viewTabs button').forEach(b=>b.classList.toggle('active',b.dataset.view==='day'));
+  });
   const geometry=await page.evaluate(()=>{
     const b=document.querySelector('#layerTabs button[data-layer="compare"]');
     if(!b)throw new Error('Vergleich-Button fehlt');
