@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('fs'),assert=require('assert');
+const adapter=fs.readFileSync('release/v0.19.55/site/src/adapters/matrix-photo-ocr.js','utf8');
+const role=fs.readFileSync('release/v0.19.55/site/src/ui/role-ux.js','utf8');
+const index=fs.readFileSync('release/v0.19.55/site/index.html','utf8');
+const ok=(v,m)=>{assert.ok(v,m);console.log('PASS ',m)};
+ok(adapter.includes("accepted:false"),'unsichere OCR-Zeilen sind standardmäßig nicht ausgewählt');
+ok(adapter.includes('Teilimport ist möglich'),'OCR erklärt den ergänzenden Teilimport');
+ok(adapter.includes('zweitem Foto, manuell oder per Excel'),'alle Ergänzungswege bleiben offen');
+ok(role.includes('r.accepted&&r.valid'),'nur ausgewählte vollständige Fotozeiten werden gespeichert');
+ok(!role.includes("selected.some(r=>!r.valid))return alert"),'unvollständige Zeilen blockieren gültige Zeiten nicht');
+ok(role.includes('Unsichere oder leere Tage dürfen offenbleiben'),'Oberfläche erklärt offene Tage');
+ok(index.includes('matrix-photo-ocr.js?v=0.19.55-ocr3-partial'),'neuer OCR-Teilimport ist cache-busted');
+console.log('KC DP2 photo partial import gate PASS');

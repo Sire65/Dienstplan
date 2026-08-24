@@ -4,6 +4,7 @@
   "version": "0.19.55",
   "cacheName": "kc-dp-release-0.19.55-b84",
   "releaseNotes": [
+    "Papiermatrix als Teilmeldung: sichere Zeiten sofort ergänzen; leere und unsichere Tage bleiben offen und können später per Foto, manuell oder Excel folgen",
     "Excel-Vorlage: die bereitgestellte farbige Drei-Blatt-Datei ist jetzt verbindlich; leere formatierte Zellen verschieben den Import nicht mehr",
     "Excel-Wunschzeiten: mehrseitige personalisierte Vorlage wird automatisch erkannt; ganze Stunden wie 11 bis 18 und Zeiten wie 18:30 werden sicher eingelesen",
     "Matrix-Fotoimport: lokale QR- und Handschrifterkennung erkennt markierte Zeilen, Zeitpaare und Sperrtage mit sicherer Kontrolle",
@@ -19,14 +20,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T19:42:19.312Z",
-  "totalRuntimeBytes": 8217583,
+  "generatedAt": "2026-08-24T19:50:51.915Z",
+  "totalRuntimeBytes": 8217947,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9644,
-      "sha256": "fcd4c6b6a761728d76a863725e2bd817efd101a2c41d452d543faba4b6e175db",
+      "bytes": 9653,
+      "sha256": "defb3eca2b2e54ea36fea5e3cb0debb218d9c2e4def378764949a35d2f0a3df2",
       "runtime": true,
       "forceRefresh": true
     },
@@ -75,8 +76,8 @@
       "installPath": "src/adapters/matrix-photo-ocr.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 12163,
-      "sha256": "7992969ffe2d94dfbfd0bf72c9da1b2bc17fbff22fe3097d6e7189243b2ba9c6"
+      "bytes": 12397,
+      "sha256": "e5b5e36c4c1b2c27cb7183c61a4e7441352ee8ba0ce9aea5501d2693cc430b3b"
     },
     {
       "path": "src/ui/owner-emergency-access.js",
@@ -640,8 +641,8 @@
       "installPath": "src/ui/role-ux.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 86705,
-      "sha256": "0597960c186b514fd3f91ca6f507f8d35ad3a3b64afc78ef2d6b23f044051afd"
+      "bytes": 86826,
+      "sha256": "a413c4d2375f63c7ecd521dde83509d6692cb0c9472d9e344dbfdfb097536e27"
     }
   ],
   "build": 84
