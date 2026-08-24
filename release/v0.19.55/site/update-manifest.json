@@ -1,8 +1,8 @@
 {
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
-  "version": "0.19.51",
-  "cacheName": "kc-dp-release-0.19.51",
+  "version": "0.19.55",
+  "cacheName": "kc-dp-release-0.19.55-b84",
   "releaseNotes": [
     "Supabase-Verbindung: automatischer Start-Healthcheck, laufender Heartbeat und Reconnect; Rot erst nach drei bestätigten Fehlern",
     "Fehlerdiagnose: offene Meldungen, Historie und Tests strikt getrennt",
@@ -15,184 +15,186 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-19T19:59:38.641Z",
-  "totalRuntimeBytes": 496563,
+  "generatedAt": "2026-08-24T14:12:30.623Z",
+  "totalRuntimeBytes": 613568,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 11770,
-      "sha256": "def9e7ae4540c80a8d0b7084d94de53268b2cbf1d5805f3c8e3bf48ecae529f0",
+      "bytes": 9522,
+      "sha256": "24f80b02e22fb70a3e596f4baa5eac4200c897edd6caa259d0236b112fd54117",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/adapters/pc-manager.js",
       "installPath": "src/adapters/pc-manager.js",
-      "bytes": 10204,
-      "sha256": "63b0adb4b3998569a7ab242dabf0732ce7a1832c53ac775ac4eaebcdf0278089",
+      "bytes": 10253,
+      "sha256": "60a638fde6efe9edfd928c9f423370962f541c050ddc0430c7f386413db2bd98",
       "runtime": true
     },
     {
       "path": "src/adapters/person-provider.js",
       "installPath": "src/adapters/person-provider.js",
-      "bytes": 6905,
-      "sha256": "b3bd3bfff3a1d16c3e7b49c98424aa57b6e31424a17dc3362b2509a801bda8cb",
+      "bytes": 6981,
+      "sha256": "e2e53b5d2a907787d4c3938b22907d1170e1099dad893f69341b04093cbb36bc",
       "runtime": true
     },
     {
       "path": "src/adapters/push.js",
       "installPath": "src/adapters/push.js",
-      "bytes": 10756,
-      "sha256": "b7ab19d06cb06a93bf7b6e18956ceb48a2a7ef8724d529836058705e5b49fa26",
+      "bytes": 11310,
+      "sha256": "0ce319db8762412fce8102a60a7f0a679a589449d26eb4d9014c08bf03366e7e",
       "runtime": true
     },
     {
       "path": "src/adapters/wish-import.js",
       "installPath": "src/adapters/wish-import.js",
-      "bytes": 9531,
-      "sha256": "ded5644ff468a567cf9fddb142c7e7865cf81cb0bc0a94edf8b89a69954b8cb8",
+      "bytes": 9954,
+      "sha256": "0e5d27d13abad32daecdd2c96669ce38b3df4f6901c3736d73f80feecabf58a7",
       "runtime": true
     },
     {
       "path": "src/adapters/xlsx-local.js",
       "installPath": "src/adapters/xlsx-local.js",
-      "bytes": 5149,
-      "sha256": "3a491a736276158c2934e7ae190dc7dd509971243de0617c38023014c272324e",
+      "bytes": 5173,
+      "sha256": "d24b76bf32462d91f6c45f398b58970d3f9cb484fa02f78acb9966a63e59fbd3",
       "runtime": true
     },
     {
       "path": "src/core/day-availability.js",
       "installPath": "src/core/day-availability.js",
-      "bytes": 4754,
-      "sha256": "2337e9d9cfd9c1b2d4d6c76e35ff984e98861f552f398f668b511effa1a6f897",
+      "bytes": 4835,
+      "sha256": "2c52e52e6f0c7aa0597a944efec5eddbf09a3021eb89fe7fd3916d491f134b7b",
       "runtime": true
     },
     {
       "path": "src/core/manager-auto-sync.js",
       "installPath": "src/core/manager-auto-sync.js",
-      "bytes": 4115,
-      "sha256": "511ac78765c51a42974aa6d52eb255f12a32505407b68a886fe97ee03400c783",
+      "bytes": 4178,
+      "sha256": "27d42a272a9089d45a55eb8c2ae19871c005f153e05e8c84b3008fed775f2adf",
       "runtime": true
     },
     {
       "path": "src/core/planner-application-guard.js",
       "installPath": "src/core/planner-application-guard.js",
-      "bytes": 2812,
-      "sha256": "f3f40ac4075741840e9c7644dafeaa6b17733f99b95bed3dfa78b14672632212",
-      "runtime": true
+      "bytes": 3117,
+      "sha256": "7026230930a07ed48addf71e98e429f3cc21687f39d85d704443cb4e76e1415d",
+      "runtime": true,
+      "forceRefresh": true
     },
     {
       "path": "src/core/planner-audit.js",
       "installPath": "src/core/planner-audit.js",
-      "bytes": 3594,
-      "sha256": "d15a6b0ca73690314bd76f93ed05fe4b82772c9dd1fbd9eb980ecbea7c7080a1",
+      "bytes": 3622,
+      "sha256": "b70a363dc062ae147e1938023ae430a297e5ccbccf33f4b84f523e00aa059939",
       "runtime": true
     },
     {
       "path": "src/core/planner-engine.js",
       "installPath": "src/core/planner-engine.js",
-      "bytes": 15644,
-      "sha256": "ebc6399bf2265cfd76e21bfe052424ac1aebb8d534046abdb1e25f191da697b1",
+      "bytes": 15825,
+      "sha256": "452ffa084161fdaa346b91e13ba6362ff11c8305ca5fc30572f7d2974fdf6772",
       "runtime": true
     },
     {
       "path": "src/core/planner-recommendations.js",
       "installPath": "src/core/planner-recommendations.js",
-      "bytes": 3353,
-      "sha256": "fbf8095ddfeadee42732297dea14c7200841c4ae66cc45fecbb736428d276b19",
+      "bytes": 3396,
+      "sha256": "a470d2db45eca8371b1ed1a592076248ca3f5f978ef8658a8b0486a40e797f52",
       "runtime": true
     },
     {
       "path": "src/core/replacement-recommendations.js",
       "installPath": "src/core/replacement-recommendations.js",
-      "bytes": 3168,
-      "sha256": "6989a9c9b35bde6669fad7f7e79e5c7b953bbb308f7a0ecb6cd6cd2009965bbc",
+      "bytes": 3210,
+      "sha256": "81b0e442282ed37d076b9e9e16212c13a9863c4ec4089ad23288ff395f8dcdb2",
       "runtime": true
     },
     {
       "path": "src/core/source-health.js",
       "installPath": "src/core/source-health.js",
-      "bytes": 2398,
-      "sha256": "533a7cd43ab972eb9cf471c8e16554601b2b1ef6daae15d3a14630b7b0dc3cc3",
+      "bytes": 2414,
+      "sha256": "7415516cb5b2ea303c38434a3fd5fd714b567690a27be254b820eda9b1ddd50c",
       "runtime": true
     },
     {
       "path": "src/core/update-manager.js",
       "installPath": "src/core/update-manager.js",
-      "bytes": 12270,
-      "sha256": "f8aa76bdc5c30f9bcf0744298c43a2e3e0d6dc01da86d1d299e062aa79d2bdc5",
+      "bytes": 12391,
+      "sha256": "960d69a576b8b12b7b4a1d4493eb7f2d357858b124475d34fdc31f9f8200f220",
       "runtime": true
     },
     {
       "path": "src/ui/app.js",
       "installPath": "src/ui/app.js",
-      "bytes": 233583,
-      "sha256": "e5be124f8acc5c4596f6fa70528816559aa42edee317247b817720e365cd49a0",
-      "runtime": true
+      "bytes": 234196,
+      "sha256": "2eff451eb537a69f6f21e154b60aa92991e23b7676781a1371430d9d5d57077e",
+      "runtime": true,
+      "forceRefresh": true
     },
     {
       "path": "src/ui/day-availability-filter.css",
       "installPath": "src/ui/day-availability-filter.css",
-      "bytes": 593,
-      "sha256": "c0a38f0d462a3402ba3d7269b4e450a0d3852f9d09edc0f8407c1bc3dd0a490a",
+      "bytes": 594,
+      "sha256": "27d22b40fedcbdbe0452d1d42d9eaa12040cfc1c58b74b63848d1547944de8a3",
       "runtime": true
     },
     {
       "path": "src/ui/day-availability-filter.js",
       "installPath": "src/ui/day-availability-filter.js",
-      "bytes": 5679,
-      "sha256": "119d867a8fac5a1b6f21d9964aa9b691f20e7435882bc461e7f18631fe677e54",
+      "bytes": 5752,
+      "sha256": "170b31f91574251414c1e1b531ed178395b76e212c97f1efb53d7c8d02265059",
       "runtime": true
     },
     {
       "path": "src/ui/planner-audit-ui.css",
       "installPath": "src/ui/planner-audit-ui.css",
-      "bytes": 1412,
-      "sha256": "216824b53fd28de1aad10904e432ceaaec3a67bd718392512a61ef81f51edc67",
+      "bytes": 1413,
+      "sha256": "9e0912b0161002b169be792ac707502d54cff44a25078775e047bfa9b533e629",
       "runtime": true
     },
     {
       "path": "src/ui/planner-audit-ui.js",
       "installPath": "src/ui/planner-audit-ui.js",
-      "bytes": 3727,
-      "sha256": "95a9b1255dc6a63fa5e480831381582d1274b98e197bf7778adc1f5eebdd40fb",
+      "bytes": 3755,
+      "sha256": "88b5370a76eadb1407435410606395c31f1390b2eaf3ade203fccbb412ebfbaa",
       "runtime": true
     },
     {
       "path": "src/ui/quick-plan-recommendations.css",
       "installPath": "src/ui/quick-plan-recommendations.css",
-      "bytes": 1123,
-      "sha256": "8527045b3d59072fc9962bf990cf04a51888edc0ada2db1352e70f0517716ef4",
+      "bytes": 1124,
+      "sha256": "273f68a4e47836a192d21b63e3b3f92d657210193b5c8cfd318a70fef44dff93",
       "runtime": true
     },
     {
       "path": "src/ui/quick-plan-recommendations.js",
       "installPath": "src/ui/quick-plan-recommendations.js",
-      "bytes": 5932,
-      "sha256": "ddc8277e44929ef34aeecae5de44301c1191abf0a3be6413900f7deb4d47c4fe",
+      "bytes": 5990,
+      "sha256": "c9fe6fb19e05de655a720e79471b72e1076c99887b7fad85b5ab19b6d0c93d2e",
       "runtime": true
     },
     {
       "path": "src/ui/source-health-ui.css",
       "installPath": "src/ui/source-health-ui.css",
-      "bytes": 824,
-      "sha256": "aa108fd55dfbdd962507af40da43103ccf5984b7fe6809acc836e02f396e0872",
+      "bytes": 825,
+      "sha256": "26732430feb3ac3fc1534d27441a9f0062bcd82b5e478189e76ad838c4ba1bbe",
       "runtime": true
     },
     {
       "path": "src/ui/source-health-ui.js",
       "installPath": "src/ui/source-health-ui.js",
-      "bytes": 4922,
-      "sha256": "35ae3e6e84724c646f8223f9bb01b81d99a41cfe169243c7cf5791b782a6e785",
+      "bytes": 5995,
+      "sha256": "6a3fa7fd45b07d016c55776030ccbd142bdd695cc4e31de7bf6eb80108f5211d",
       "runtime": true
     },
     {
       "path": "src/ui/push-center.js",
       "installPath": "src/ui/push-center.js",
       "runtime": true,
-      "bytes": 11181,
-      "sha256": "93cc0e6cc4885157ee6f451b0460d0f2f09417b6731e11ea90ceb8d076de4880"
+      "bytes": 11219,
+      "sha256": "b9ea3c4ebc2dbe6d0e24496188c026b3002b1701e1e4a9efc54aab7ab76ffa7f"
     },
     {
       "path": "src/ui/push-center.css",
@@ -205,83 +207,85 @@
       "path": "src/adapters/diagnostics.js",
       "installPath": "src/adapters/diagnostics.js",
       "runtime": true,
-      "bytes": 7714,
-      "sha256": "3216ca3e56e31222e849d7c4703935290d52df112a89ebd4fc67d4c450d4b2fc"
+      "bytes": 8506,
+      "sha256": "0de173d01cd147acceec556962d66c6349db0e02083fda0e871714c48c9cef93"
     },
     {
       "path": "src/ui/diagnostics-center.js",
       "installPath": "src/ui/diagnostics-center.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 11724,
-      "sha256": "c8494d4f64de38f52455c9c663ddc850a99c157e97345990b056fdc615662955"
+      "bytes": 9470,
+      "sha256": "cd8f3ef3c323329047ea755b6a40d83ed353cb99af0830c0927200084a754825"
     },
     {
       "path": "src/ui/diagnostics-center.css",
       "installPath": "src/ui/diagnostics-center.css",
       "runtime": true,
-      "bytes": 5135,
-      "sha256": "4a7ffc497c6adac9067e57ff1de9ac1b343e9c4629923ddb83a6281866f54b6b",
+      "bytes": 5204,
+      "sha256": "410bacf424101d130dc66d4e440bdda49df53712eb5a452db8e4c86ea29e86e8",
       "forceRefresh": true
     },
     {
       "path": "src/core/table-core-adapter.js",
       "installPath": "src/core/table-core-adapter.js",
       "runtime": true,
-      "bytes": 3127,
-      "sha256": "7d9d5daa3c96d4fe9815816f782d74506c79ee87de9e4b28c63ffd5d37224c43"
+      "bytes": 3153,
+      "sha256": "0da43fefcc48b39c3b31206ab5d846a245cc72246747b32b8d8975d93ecacc89"
     },
     {
       "path": "src/ui/kc-ux-polish.css",
       "installPath": "src/ui/kc-ux-polish.css",
       "runtime": true,
-      "bytes": 4422,
-      "sha256": "944c71937ebc9886fe941d89f3fb61baba6433c61ba35129f00745f8ad19b8b7"
+      "bytes": 4462,
+      "sha256": "99570fc1113b2c885d4248fc3f069663864f7213fb7efa416b89244c099de6d0",
+      "forceRefresh": true
     },
     {
       "path": "src/ui/kc-ux-polish.js",
       "installPath": "src/ui/kc-ux-polish.js",
       "runtime": true,
-      "bytes": 3028,
-      "sha256": "a9bc3bf42353255530dfd0ae8e1826a8168064bf6d6c0a37e5c9c92be36b84fe"
+      "bytes": 8469,
+      "sha256": "4468dab314788e2d330913bc305838cd54b1f4a40c9bc6ba6984096724ab26b8",
+      "forceRefresh": true
     },
     {
       "path": "pilot/index.html",
       "installPath": "pilot/index.html",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 2703,
-      "sha256": "df4a10a6ad9d74e71960215a88d09e604e30766d966751ff910099de6d16e956"
+      "bytes": 2762,
+      "sha256": "eee678c2e830ee73cf635c9d38f7afe293151a650f7cbaa05464a87a4f4515b9"
     },
     {
       "path": "pilot/manifest.webmanifest",
       "installPath": "pilot/manifest.webmanifest",
       "runtime": true,
-      "bytes": 408,
-      "sha256": "43528b344f94a715a0e52c7fa563e07c9069200a9682d68af6670f6f837a4000"
+      "bytes": 419,
+      "sha256": "2626bc6167f87e3e0549d8ad70e12dfd633d7432629a324e14e73d169dfa42f7"
     },
     {
       "path": "pilot-sw.js",
       "installPath": "pilot-sw.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 3568,
-      "sha256": "6c5cf522cc3bc3937aeceeef6863c7fd5f7ee2e3bbadf7bcd662370c649937eb"
+      "bytes": 3583,
+      "sha256": "78951ca67eaeafe15176be7510d4bc737061d81e96e26a9d6f326717c2b2b978"
     },
     {
       "path": "src/core/pilot-onboarding.js",
       "installPath": "src/core/pilot-onboarding.js",
       "runtime": true,
-      "bytes": 3095,
-      "sha256": "c2e57a56c0020cf842db4c8e8b71356052ff53f91e12dd931d26f43b49851421"
+      "bytes": 3111,
+      "sha256": "8eda9bc82cec672688fbe60006d4488538189e28cf65f2da9e9339724aa6d8c8"
     },
     {
       "path": "src/ui/pilot-app.js",
       "installPath": "src/ui/pilot-app.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 19746,
-      "sha256": "9c658471645435f82f954f180b163c6a33da352117d4b14583b2b9198a16cfc0"
+      "bytes": 19895,
+      "sha256": "3c165eb8736059897fe305ed14176790f6424604660c6fda0aceb55343b605ea"
     },
     {
       "path": "src/ui/pilot.css",
@@ -295,14 +299,14 @@
       "path": "pilot/manifest-ios.webmanifest",
       "installPath": "pilot/manifest-ios.webmanifest",
       "runtime": true,
-      "bytes": 389,
-      "sha256": "6638b03baacd27ffd197d844370347636f3e7d608216b7373672a0042d670f08"
+      "bytes": 399,
+      "sha256": "2d497de2876fc00a243c3341b4e8f2f3963c6a96ae02f372dda8f0cb52673bca"
     },
     {
       "path": "src/ui/mobile-colleague-search.js",
       "installPath": "src/ui/mobile-colleague-search.js",
-      "bytes": 5155,
-      "sha256": "c18d70cc5603626ef64ee0a937676cc6b2bb22b9afe46ed27615aee48a4a8c11",
+      "bytes": 5168,
+      "sha256": "6eff70fb64a64ae498a78b36145dfd1a3a2f1f84a0269302c12a305e12b48919",
       "runtime": true
     },
     {
@@ -310,16 +314,16 @@
       "installPath": "pilot-mobile/index.html",
       "runtime": false,
       "forceRefresh": true,
-      "bytes": 2280,
-      "sha256": "d0052e52527e14db3dc386c956dcb5dc2dd2a9ed700e1c11bbb0c453c31f41e8"
+      "bytes": 2306,
+      "sha256": "28679b54418a4af170b716ce4ae23e1f4c00b203b1d669005b71a236bc69ec16"
     },
     {
       "path": "pilot-mobile/app-v4.js",
       "installPath": "pilot-mobile/app-v4.js",
       "runtime": false,
       "forceRefresh": true,
-      "bytes": 8317,
-      "sha256": "ec949a859f56ca63663da554bf261aa20c453f587a7f03ebe0b6706b32db71f2"
+      "bytes": 8345,
+      "sha256": "9ff634be9e32c53ea60d15e9e76f74c3cf7416c093375778a4fdd002ac487bdb"
     },
     {
       "path": "pilot-mobile/app-v4.css",
@@ -334,72 +338,72 @@
       "installPath": "pilot-mobile/test.html",
       "runtime": false,
       "forceRefresh": true,
-      "bytes": 2215,
-      "sha256": "9ca6119c606e0ec69a95e28d42b973514afac3907954b7db68b44a80abad132d"
+      "bytes": 2217,
+      "sha256": "6e635e643eb6131af5406be75f9ed8d788e99a7c0489ea50dad030ed131e6fcb"
     },
     {
       "path": "pilot-mobile/manifest-android.webmanifest",
       "installPath": "pilot-mobile/manifest-android.webmanifest",
       "runtime": false,
       "forceRefresh": false,
-      "bytes": 424,
-      "sha256": "c7f25a0306571748e9148615ea277ad178f2e234f64ab8492bdc3ceb5e9e08cf"
+      "bytes": 437,
+      "sha256": "473af35c2ef561168c2e5358776aaa50e5e750f4698650bc16d470f041606527"
     },
     {
       "path": "pilot-mobile/manifest-ios.webmanifest",
       "installPath": "pilot-mobile/manifest-ios.webmanifest",
       "runtime": false,
       "forceRefresh": false,
-      "bytes": 317,
-      "sha256": "8598562a0468342b00e0911448c29198641cc591d2e3fcc564efe66c600aa6fe"
+      "bytes": 327,
+      "sha256": "1b329f57919938e8504ad08f164962322f41ae577ab311665ec5a0a0bda9b532"
     },
     {
       "path": "pilot-mobile/sw.js",
       "installPath": "pilot-mobile/sw.js",
       "runtime": false,
       "forceRefresh": true,
-      "bytes": 1276,
-      "sha256": "1ada0fe324c8fcc65e8154e92abe46942f6a966e776a25883521d94d6e653594"
+      "bytes": 1281,
+      "sha256": "b9dcb241e52c174b87e4888aa0240f4c6fc12eea35082facce699159eb58c203"
     },
     {
       "path": "src/adapters/installations.js",
       "installPath": "src/adapters/installations.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 1785,
-      "sha256": "2064ae5c3ba5029e1231b36653225716a7bf6c47cdf5d82d124de0a5292ce92d"
+      "bytes": 2799,
+      "sha256": "1f3d86ba743ffdc8c1075a1dd0d6bad8a9e68fac9efd5034719b18674d47b9a9"
     },
     {
       "path": "src/ui/installation-center.js",
       "installPath": "src/ui/installation-center.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 8226,
-      "sha256": "cb763935d0c7704c4084b6a8a2c3536ace9c79e8d02fe01b075ef794b10110de"
+      "bytes": 9570,
+      "sha256": "0735826cea21a273b091609dad6da4f7378546046bca6eb1b1e0a1c6acec6b81"
     },
     {
       "path": "src/ui/installation-center.css",
       "installPath": "src/ui/installation-center.css",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 4093,
-      "sha256": "68a1cdf51a5494e8cac14dc535edb067e16285c9af9faad462f726503bb4e884"
+      "bytes": 4094,
+      "sha256": "ca15a946ca571a83268579ed2e18d9abb81ffbce1ab9cd89d60749dd6c50d525"
     },
     {
       "path": "src/adapters/admin-push-settings.js",
       "installPath": "src/adapters/admin-push-settings.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 1460,
-      "sha256": "fc3cc0b6e043e7bd5a49cd721417b1efcdfa41a7988964eccf1aa94819b258f1"
+      "bytes": 1491,
+      "sha256": "c23832ba569a746d8a48a7a6661e06ec23096b000099c4b072decf74a56d036c"
     },
     {
       "path": "src/ui/admin-push-settings.js",
       "installPath": "src/ui/admin-push-settings.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 5558,
-      "sha256": "2d90ba40cacee07a8f12ab4443ef0857361e9d7873670981bb1c1c8ac79ee02e"
+      "bytes": 5605,
+      "sha256": "9d2cb2ba321d712bab51d2c336b6c148566d1793509a63111f4701d8300aede7"
     },
     {
       "path": "src/ui/admin-push-settings.css",
@@ -414,24 +418,121 @@
       "installPath": "src/core/supabase-connection-monitor.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 6595,
-      "sha256": "30052b0e5f89cb4274c195412b0f621dfccbcdd0621b324bd362100af4301f27"
+      "bytes": 6711,
+      "sha256": "d0724b8c255bf2adedb038f8608219a2416c3afa81cc43315aafedea6b74c389"
     },
     {
       "path": "src/ui/diagnostics-history-view.js",
       "installPath": "src/ui/diagnostics-history-view.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 2254,
-      "sha256": "e23979ca9f42bbb352961764e59a9941dcc1df4d595c077437751205b19d8ed1"
+      "bytes": 3900,
+      "sha256": "4b8e2a015e75abc787687046c10895cce1c4108e32136747dfa431b42480ce63"
     },
     {
       "path": "src/ui/excel-migration-center.js",
       "installPath": "src/ui/excel-migration-center.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 12734,
-      "sha256": "fd0f4231881f46ff44d8a1c9ab270cf9c0dd08b0b710b997e9fafc2c97a0533e"
+      "bytes": 12823,
+      "sha256": "8ae855386bfb28b8702ff6bb04c77eb1e60293a73e36097863394dd9f0fb7f72"
+    },
+    {
+      "path": "src/adapters/supabase-provider.js",
+      "installPath": "src/adapters/supabase-provider.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 21844,
+      "sha256": "a7145748152906124e064037cfa83deb65d96a88157e2a1f7e4b11c5ba80ea32"
+    },
+    {
+      "path": "src/core/diagnostics-controller-v5.js",
+      "installPath": "src/core/diagnostics-controller-v5.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 5546,
+      "sha256": "ded33481c8c3761b8761d49af9a41a90f3c7162f2536de787a6efd1bdac329af"
+    },
+    {
+      "path": "src/core/diagnostics-watchdog.js",
+      "installPath": "src/core/diagnostics-watchdog.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 9513,
+      "sha256": "b06610cfd9bf5e6fa24079e617f54d614600eb7a5a96804f5add52c12e26c31f"
+    },
+    {
+      "path": "src/core/diagnostics-button-router.js",
+      "installPath": "src/core/diagnostics-button-router.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 1212,
+      "sha256": "8d8888ad7bea16d53861b653a1484c015834346f2cd405905bd11896e9bac226"
+    },
+    {
+      "path": "src/ui/session-mobile-hotfix.js",
+      "installPath": "src/ui/session-mobile-hotfix.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 10397,
+      "sha256": "331f60fca86840a82e82bffe5d6ace178aa94f488ea80a071bad78ceb2c39871"
+    },
+    {
+      "path": "src/ui/post-unlock-auth-guard.js",
+      "installPath": "src/ui/post-unlock-auth-guard.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 3855,
+      "sha256": "29fae929ad8766478bc64fea622b7f4062428d6a1f6469ac2c4f4a3685cd30b4"
+    },
+    {
+      "path": "src/ui/session-diagnostics-guard.js",
+      "installPath": "src/ui/session-diagnostics-guard.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 2836,
+      "sha256": "03b1e70ec8d5cb58b97e138d1f8f751863207e11bb77a5135f1adfa77a1a8274"
+    },
+    {
+      "path": "src/ui/update-ui.js",
+      "installPath": "src/ui/update-ui.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 19104,
+      "sha256": "f465d6a26fac992917abc10dff16f842674c5bce3e767110d4008f23c6982ef6"
+    },
+    {
+      "path": "src/core/login-trace.js",
+      "installPath": "src/core/login-trace.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 11446,
+      "sha256": "36773acc46a2f3eaa2667c530f148bc80192f46fc390ebaef14598ea8cc2d880"
+    },
+    {
+      "path": "src/core/update-build-guard.js",
+      "installPath": "src/core/update-build-guard.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 3610,
+      "sha256": "9368e72e8a178663f38740ec74af16b0f7938874f8f162a93c2cbe08ad3127bb"
+    },
+    {
+      "path": "src/ui/start-choice.js",
+      "installPath": "src/ui/start-choice.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 11253,
+      "sha256": "8471d5332facbfdd152869b93aea59058132573d93e9b612c094feb63fedca00"
+    },
+    {
+      "path": "src/ui/start-choice.css",
+      "installPath": "src/ui/start-choice.css",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 6069,
+      "sha256": "789fb14b62df5ad1294d301b98d5c82d323b9cf7852a65a16209cb7387705831"
     }
-  ]
+  ],
+  "build": 84
 }
