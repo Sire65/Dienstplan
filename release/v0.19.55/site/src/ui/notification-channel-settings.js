@@ -13,3 +13,14 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   K.notificationChannelSettingsUi={version:'0.19.56',open,allowed};
 })();
+
+(function(){
+  'use strict';
+  if(document.querySelector('script[data-kc-communication-bridge]'))return;
+  const s=document.createElement('script');
+  s.src='src/adapters/kc-communication-bridge.js?v=1.0.0';
+  s.async=false;
+  s.dataset.kcCommunicationBridge='1';
+  s.onerror=()=>console.warn('KC Communication Bridge konnte nicht geladen werden; DP2 verwendet den bisherigen Push-Weg.');
+  document.head.appendChild(s);
+})();
