@@ -4,6 +4,7 @@
   "version": "0.19.55",
   "cacheName": "kc-dp-release-0.19.55-b84",
   "releaseNotes": [
+    "Matrix-Fotoimport: lokale QR- und Handschrifterkennung erkennt markierte Zeilen, Zeitpaare und Sperrtage mit sicherer Kontrolle",
     "Farbige Original-Excelvorlage mit drei Blättern, sichtbarer Personalisierung und personengebundenem QR-Code",
     "Supabase-Verbindung: automatischer Start-Healthcheck, laufender Heartbeat und Reconnect; Rot erst nach drei bestätigten Fehlern",
     "Fehlerdiagnose: offene Meldungen, Historie und Tests strikt getrennt",
@@ -16,16 +17,64 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T18:15:54.213Z",
-  "totalRuntimeBytes": 774541,
+  "generatedAt": "2026-08-24T19:15:55.439Z",
+  "totalRuntimeBytes": 8125608,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9548,
-      "sha256": "72f2d99acf5165c80afc617e29edc525ff1059bab4ac81c633362a3a316f9c66",
+      "bytes": 9619,
+      "sha256": "128fc33dff2e01f2bcbff4fb708ebaa7f1154cbad93f83852f1f2adf070aba3b",
       "runtime": true,
       "forceRefresh": true
+    },
+    {
+      "path": "vendor/tesseract/lang-data/eng.traineddata.gz",
+      "installPath": "vendor/tesseract/lang-data/eng.traineddata.gz",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 2952873,
+      "sha256": "45b4cb346724ac1774f1c36f42f182b887bcdb28ebe63e6fff90ac41f3fcff91"
+    },
+    {
+      "path": "vendor/tesseract/tesseract-core-simd-lstm.wasm.js",
+      "installPath": "vendor/tesseract/tesseract-core-simd-lstm.wasm.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 3938656,
+      "sha256": "18797eef96bab787636c40b53efaa445cf5ca1c97abd735c4fd8dc3d03652959"
+    },
+    {
+      "path": "vendor/tesseract/worker.min.js",
+      "installPath": "vendor/tesseract/worker.min.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 123724,
+      "sha256": "aca1229639fc9907d86f96e825955a2b7c5716d17f3bc3acd71f9c7ab66181fc"
+    },
+    {
+      "path": "vendor/tesseract/tesseract.min.js",
+      "installPath": "vendor/tesseract/tesseract.min.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 66695,
+      "sha256": "a8e29918d098b2b06e1012bdaeffb4aec0445c5d5654709023e0bd1f442a80e8"
+    },
+    {
+      "path": "vendor/jsQR.js",
+      "installPath": "vendor/jsQR.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 256885,
+      "sha256": "bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859"
+    },
+    {
+      "path": "src/adapters/matrix-photo-ocr.js",
+      "installPath": "src/adapters/matrix-photo-ocr.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 12163,
+      "sha256": "7992969ffe2d94dfbfd0bf72c9da1b2bc17fbff22fe3097d6e7189243b2ba9c6"
     },
     {
       "path": "src/ui/owner-emergency-access.js",

@@ -61,6 +61,13 @@ jobs:
           grep -q 'wish-sprint.js?v=0.19.51-excel3' dist/index.html
           grep -q '0.19.55-original-excel-qr-2' dist/src/ui/excel-paper-tools.js
           test -s dist/vendor/jszip.min.js
+          grep -q 'matrix-photo-ocr.js?v=0.19.55-ocr2' dist/index.html
+          grep -q '0.19.55-matrix-photo-ocr-2' dist/src/adapters/matrix-photo-ocr.js
+          test -s dist/vendor/jsQR.js
+          test -s dist/vendor/tesseract/tesseract.min.js
+          test -s dist/vendor/tesseract/worker.min.js
+          test -s dist/vendor/tesseract/tesseract-core-simd-lstm.wasm.js
+          test -s dist/vendor/tesseract/lang-data/eng.traineddata.gz
           grep -q 'window.KC_DP_BUILD=84' dist/index.html
           printf '%s\n' 'KC DP2 emergency hotfix deployment build 84 owner-recovery-10 clean-restart' > dist/HOTFIX_BUILD.txt
       - name: Setup Pages
