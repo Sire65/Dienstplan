@@ -24,7 +24,15 @@
 <script>
 (async function(){
   const state=document.getElementById('state'),again=document.getElementById('again'),main=document.querySelector('main');
-  again.onclick=()=>{const tab=window.open('./?kc_fresh='+Date.now(),'_blank','noopener');if(!tab){state.textContent='Das neue Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben und erneut klicken.'}};
+  again.onclick=()=>{
+    const tab=window.open('about:blank','_blank');
+    if(!tab){state.textContent='Das neue Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben und erneut klicken.';return}
+    const clean=new URL('./',location.href).href;
+    tab.document.write('<!doctype html><html lang="de"><head><meta charset="utf-8"><title>DP2 startet</title></head><body style="font:18px system-ui;padding:32px">DP2 wird sauber gestartet …</body></html>');
+    tab.document.close();tab.opener=null;tab.location.replace(clean);
+    state.textContent='DP2 wurde in einem unabhängigen Fenster geöffnet. Dieses alte Fenster jetzt schließen.';
+    again.disabled=true;again.textContent='DP2 wurde geöffnet';
+  };
   try{
     state.textContent='Alten Service Worker entfernen …';
     if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.filter(r=>r.scope.includes('/Dienstplan/')).map(r=>r.unregister()))}
