@@ -1,12 +1,15 @@
 // KC DP2 -> KC Communication
-// Uses the already authenticated Supabase client from DP2. No secret keys belong here.
+// Uses DP2's already authenticated Supabase client. No provider secrets belong here.
 export function createKcCommunication(supabaseClient) {
   if (!supabaseClient?.functions?.invoke) throw new Error('Supabase client fehlt');
   const SOURCE = 'kc-dp2';
+  const ORG_ID = 'KC_WERNE';
+
   async function send(eventKey, recipients, variables = {}, options = {}) {
     const body = {
       sourceProgram: SOURCE,
       eventKey,
+      orgId: options.orgId || ORG_ID,
       recipients: Array.isArray(recipients) ? recipients : [],
       variables,
       priority: options.priority || 'normal',
@@ -17,11 +20,20 @@ export function createKcCommunication(supabaseClient) {
     if (error) throw error;
     return data;
   }
+
+  async function currentUserRecipient() {
+    const { data, error } = await supabaseClient.auth.getUser();
+    if (error || !data?.user?.id) throw error || new Error('Kein angemeldeter Benutzer');
+    return [{ userId: data.user.id, email: data.user.email || null }];
+  }
+
   return {
     send,
-    testPush: (recipients, message='KC DP2 Test-Push') => send('shift_changed', recipients, { title:'KC DP2', body:message, message }, { testOnly:true }),
+    async testPush(message='KC DP2 Test-Push') {
+      return send('shift_changed', await currentUserRecipient(), { title:'KC DP2', body:message, message }, { testOnly:true });
+    },
     shiftChanged: (recipients, variables) => send('shift_changed', recipients, variables),
-    planReleased: (recipients, variables) => send('plan_released', recipients, variables),
+    planReleased: (variables, options={}) => send('plan_released', [], variables, { ...options, orgId: options.orgId || ORG_ID }),
     replacementRequested: (recipients, variables) => send('replacement_requested', recipients, variables, { priority:'high' })
   };
 }
