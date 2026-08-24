@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const K=window.KCDP=window.KCDP||{};
-const recoveryReady=new Promise((resolve,reject)=>{if(K.localRecoveryVault){resolve(true);return}const s=document.createElement('script');s.src='src/ui/local-recovery-vault.js?build=84-owner-recovery-7';s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Lokales Wiederherstellungsmodul konnte nicht geladen werden.'));document.head.appendChild(s)});
+const recoveryReady=new Promise((resolve,reject)=>{if(K.localRecoveryVault){resolve(true);return}const s=document.createElement('script');s.src='src/ui/local-recovery-vault.js?build=84-owner-recovery-8';s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Lokales Wiederherstellungsmodul konnte nicht geladen werden.'));document.head.appendChild(s)});
 const OWNER_EMAIL='ha-joko@web.de',MAX_TRIES=5,LOCK_MS=15*60*1000,PIN_KEY='owner_emergency_pin_v2',PUK_KEY='owner_emergency_puk_v1';
 let tries=0,lockedUntil=0;const $=id=>document.getElementById(id),enc=new TextEncoder();
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -44,7 +44,7 @@ cloudScreen=function(){
   frame('<h1>3. Einmaligen Neustart prüfen</h1><p class="ux-lead">Der bisherige 16-stellige Schlüssel ist verloren. Die aktiven lokalen Daten können deshalb nicht entschlüsselt werden.</p>'+message('<b>Es wird nichts gelöscht:</b> Die bisherigen verschlüsselten Datensätze werden in derselben IndexedDB mit einem Archivpräfix erhalten. Der neue aktive Speicher beginnt leer.','warning')+'<div class="ux-actions"><button class="ux-btn ghost" id="back">← Zurück</button><button class="ux-btn primary" id="next">Weiter zur Wiederherstellung</button></div>',3);
   $('back').onclick=()=>pinScreen();$('next').onclick=restoreScreen;
 };
-restoreScreen=function(){
+function restoreScreen(){
   frame('<h1>4. DP2 wiederherstellen</h1>'+message('Eigentümer und Notfallzugang bestätigt.','success')+'<div class="ux-note"><b>Einmaliger Neustart:</b> Die bisherigen verschlüsselten Datensätze werden unverändert archiviert. DP2 legt einen neuen leeren aktiven Datenspeicher an. Danach öffnen PIN oder Super-PUK künftig immer denselben Speicher – ohne weiteres Leeren.</div><form id="freshVault"><div class="ux-field ux-code"><label>6-stellige PIN nochmals bestätigen</label><input id="freshPin" type="password" inputmode="numeric" maxlength="6" required></div><button class="ux-btn primary full">Altdaten archivieren und DP2 neu öffnen</button></form><div id="result"></div><div class="ux-actions"><button class="ux-btn ghost" id="back" type="button">← Zur Prüfung</button></div>',4);
   $('back').onclick=cloudScreen;
   $('freshVault').onsubmit=async e=>{
@@ -75,5 +75,5 @@ function keepInjecting(){let n=0;const t=setInterval(()=>{n++;if(injectButton()|
 new MutationObserver(()=>injectButton()).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 window.addEventListener('pageshow',keepInjecting);window.addEventListener('load',keepInjecting);document.addEventListener('DOMContentLoaded',keepInjecting);
 keepInjecting();
-K.ownerEmergencyAccess={version:'0.19.55-owner-recovery-7',open,eligible,onlineAuthenticated,injectButton};
+K.ownerEmergencyAccess={version:'0.19.55-owner-recovery-8',open,eligible,onlineAuthenticated,injectButton};
 })();
