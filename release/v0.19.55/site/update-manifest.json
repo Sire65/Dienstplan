@@ -4,6 +4,7 @@
   "version": "0.19.55",
   "cacheName": "kc-dp-release-0.19.55-b84",
   "releaseNotes": [
+    "Excel-Wunschzeiten: mehrseitige personalisierte Vorlage wird automatisch erkannt; ganze Stunden wie 11 bis 18 und Zeiten wie 18:30 werden sicher eingelesen",
     "Matrix-Fotoimport: lokale QR- und Handschrifterkennung erkennt markierte Zeilen, Zeitpaare und Sperrtage mit sicherer Kontrolle",
     "Farbige Original-Excelvorlage mit drei Blättern, sichtbarer Personalisierung und personengebundenem QR-Code",
     "Supabase-Verbindung: automatischer Start-Healthcheck, laufender Heartbeat und Reconnect; Rot erst nach drei bestätigten Fehlern",
@@ -17,14 +18,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T19:15:55.439Z",
-  "totalRuntimeBytes": 8125608,
+  "generatedAt": "2026-08-24T19:24:49.157Z",
+  "totalRuntimeBytes": 8212857,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9619,
-      "sha256": "128fc33dff2e01f2bcbff4fb708ebaa7f1154cbad93f83852f1f2adf070aba3b",
+      "bytes": 9643,
+      "sha256": "2d4256c262fc7b6497576b0a870de8ccecd39a5827f756e0b9ed09b1348b6a1a",
       "runtime": true,
       "forceRefresh": true
     },
@@ -148,16 +149,18 @@
     {
       "path": "src/adapters/wish-import.js",
       "installPath": "src/adapters/wish-import.js",
-      "bytes": 9954,
-      "sha256": "0e5d27d13abad32daecdd2c96669ce38b3df4f6901c3736d73f80feecabf58a7",
-      "runtime": true
+      "bytes": 10030,
+      "sha256": "02c7082a8f2122ddb90d46f8502242ace23292245501cf6fe621a95ad53c1993",
+      "runtime": true,
+      "forceRefresh": true
     },
     {
       "path": "src/adapters/xlsx-local.js",
       "installPath": "src/adapters/xlsx-local.js",
-      "bytes": 5173,
-      "sha256": "d24b76bf32462d91f6c45f398b58970d3f9cb484fa02f78acb9966a63e59fbd3",
-      "runtime": true
+      "bytes": 5617,
+      "sha256": "f22a3981640c6550f664043f2f657af3a3afb4e189487832d81be8d086d6a788",
+      "runtime": true,
+      "forceRefresh": true
     },
     {
       "path": "src/core/day-availability.js",
@@ -630,6 +633,14 @@
       "forceRefresh": true,
       "bytes": 6069,
       "sha256": "789fb14b62df5ad1294d301b98d5c82d323b9cf7852a65a16209cb7387705831"
+    },
+    {
+      "path": "src/ui/role-ux.js",
+      "installPath": "src/ui/role-ux.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 86705,
+      "sha256": "0597960c186b514fd3f91ca6f507f8d35ad3a3b64afc78ef2d6b23f044051afd"
     }
   ],
   "build": 84

@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const K=window.KCDP=window.KCDP||{};
-if(!window.XLSX&&document.readyState==='loading')document.write('<script src="src/adapters/xlsx-local.js?v=0.19.42"><\/script>');
+if(!window.XLSX&&document.readyState==='loading')document.write('<script src="src/adapters/xlsx-local.js?v=0.19.55-multisheet-1"><\/script>');
 
 const clean=v=>String(v??'').replace(/\u00a0/g,' ').trim();
 const norm=v=>clean(v).toLowerCase().replace(/[„“”]/g,'"').replace(/\s+/g,' ');
@@ -24,6 +24,7 @@ function parseTime(v){
   if(v instanceof Date&&!Number.isNaN(v.getTime()))return v.getHours()+v.getMinutes()/60+v.getSeconds()/3600;
   if(typeof v==='number'&&Number.isFinite(v))return v>=0&&v<1?v*24:(v>=0&&v<=24?v:null);
   const s=clean(v);if(!s||s==='–'||s==='-')return null;
+  if(/^\d{1,2}$/.test(s)){const h=Number(s);return h<=24?h:null;}
   let m=s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);if(m){const h=Number(m[1]),mi=Number(m[2]),se=Number(m[3]||0);return h<=24&&mi<60&&se<60?h+mi/60+se/3600:null;}
   m=s.match(/^(\d{1,2})[.,](\d{1,2})$/);if(m){const h=Number(m[1]),mins=Number(m[2]);return h<=24&&mins<60?h+mins/60:null;}
   return null;

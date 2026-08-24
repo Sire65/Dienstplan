@@ -68,6 +68,10 @@ jobs:
           test -s dist/vendor/tesseract/worker.min.js
           test -s dist/vendor/tesseract/tesseract-core-simd-lstm.wasm.js
           test -s dist/vendor/tesseract/lang-data/eng.traineddata.gz
+          grep -q 'wish-import.js?v=0.19.55-excel-import-1' dist/index.html
+          grep -q 'role-ux.js?v=0.19.55-excel-import-1' dist/index.html
+          grep -q 'KC-local-1.1-multisheet' dist/src/adapters/xlsx-local.js
+          grep -q 'enthält aber noch keine ausgefüllten Zeiten' dist/src/ui/role-ux.js
           grep -q 'window.KC_DP_BUILD=84' dist/index.html
           printf '%s\n' 'KC DP2 emergency hotfix deployment build 84 owner-recovery-10 clean-restart' > dist/HOTFIX_BUILD.txt
       - name: Setup Pages
