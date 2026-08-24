@@ -15,11 +15,11 @@ function search(){if(!shell(`<div class="ux-pagebar"><button class="ux-btn secon
 async function copy(sourceId,ids){const p=K.person(sourceId),src=K.wishes.filter(w=>ids.includes(w.id)&&positive(w)),before=JSON.parse(JSON.stringify(K.wishes)),existing=K.wishes.filter(w=>w.personId===K.currentUser.personId&&w.status!=='deleted');if(!confirm(`${src.length} Zeitfenster von ${p.name} übernehmen? Eigene vorhandene Angaben bleiben erhalten.`))return;let added=0,skipped=0;for(const w of src){if(existing.some(x=>x.date===w.date&&x.start===w.start&&x.end===w.end&&x.wishType===w.wishType)){skipped++;continue}K.mutations.saveWish({...w,id:'',personId:K.currentUser.personId,source:'colleague_copy',comment:`Vorlage von ${p.name}`,status:'confirmed'},{reason:'Kollegenplan als Vorlage übernommen'});added++}await K.persistAll?.();K.memberUxData=K.memberUxData||{};K.memberUxData.lastColleagueCopy={sourceId,added,skipped,at:new Date().toISOString()};K.wishSprint.undo=async()=>{K.wishes=before;await K.persistAll?.();search()};alert(`${added} Zeitfenster übernommen${skipped?` · ${skipped} bereits vorhanden`:''}.`);search();}
 async function personalizedTemplate(){
  const user=K.currentUser||{},person=K.person?.(user.personId),name=user.displayName||person?.name||'Mitarbeiter',id=user.personId||person?.personId||'';
- const XLSX=await (K.excelPaperTools?.ensureFullXlsx?.()||Promise.reject(new Error('Die Excel-Exportkomponente ist noch nicht geladen. Bitte die Seite neu öffnen.')));
- const r=await fetch('templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx'),buf=await r.arrayBuffer(),wb=XLSX.read(buf,{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]];
- ws.D4={t:'s',v:name};ws.H4={t:'s',v:id};ws.D5={t:'s',v:user.email||''};
+ const tools=K.excelPaperTools;if(!tools?.personalizeExcel)throw new Error('Die Excel-Personalisierung ist noch nicht geladen. Bitte die Seite neu öffnen.');
+ const documentId=tools.docId('EXCEL'),qrUrl=await tools.qrDataUrl(tools.payload('EXCEL_WISH_MATRIX',documentId));
+ const r=await fetch('templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx'),buf=await r.arrayBuffer(),data=await tools.personalizeExcel(buf,{name,personId:id,email:user.email||'',documentId,qrUrl});
  const safe=name.replace(/[^A-Za-z0-9ÄÖÜäöüß_-]+/g,'-').replace(/-+/g,'-'),fileName=`KC_DP2_Wunschzeiten_${safe}_${id||'ohne-ID'}.xlsx`;
- if(typeof XLSX.writeFile==='function')XLSX.writeFile(wb,fileName);else{const data=XLSX.write(wb,{bookType:'xlsx',type:'array'}),blob=new Blob([data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+ tools.downloadBlob(new Blob([data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),fileName);
 }
 K.wishSprint={version:'0.19.51a',search,detail,copy,personalizedTemplate,undo:null};
 })();

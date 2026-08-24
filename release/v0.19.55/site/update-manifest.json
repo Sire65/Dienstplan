@@ -4,6 +4,7 @@
   "version": "0.19.55",
   "cacheName": "kc-dp-release-0.19.55-b84",
   "releaseNotes": [
+    "Farbige Original-Excelvorlage mit drei Blättern, sichtbarer Personalisierung und personengebundenem QR-Code",
     "Supabase-Verbindung: automatischer Start-Healthcheck, laufender Heartbeat und Reconnect; Rot erst nach drei bestätigten Fehlern",
     "Fehlerdiagnose: offene Meldungen, Historie und Tests strikt getrennt",
     "Alt-Excel-Migration: mehrere Wunschlisten gesammelt prüfen, Mitglied über Name/ID zuordnen und Dubletten verhindern",
@@ -15,14 +16,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T18:30:00.000Z",
-  "totalRuntimeBytes": 667267,
+  "generatedAt": "2026-08-24T18:15:54.213Z",
+  "totalRuntimeBytes": 774541,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9537,
-      "sha256": "8c010f4727ed77abb67218dc73d100bee034ca5a54a0cf2f8eb550835628061b",
+      "bytes": 9548,
+      "sha256": "72f2d99acf5165c80afc617e29edc525ff1059bab4ac81c633362a3a316f9c66",
       "runtime": true,
       "forceRefresh": true
     },
@@ -45,24 +46,32 @@
     {
       "path": "src/ui/excel-paper-tools.js",
       "installPath": "src/ui/excel-paper-tools.js",
-      "bytes": 10923,
-      "sha256": "a365f33252b44512a2704e526413b31a72d21f6236245df7c2ea76dff3491019",
+      "bytes": 16782,
+      "sha256": "862302813efb6e1910139e9c3d982ecb64c56a40464e266d9ad8e4984adcef2b",
       "runtime": true,
       "forceRefresh": true
     },
     {
+      "path": "vendor/jszip.min.js",
+      "installPath": "vendor/jszip.min.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 97630,
+      "sha256": "acc7e41455a80765b5fd9c7ee1b8078a6d160bbbca455aeae854de65c947d59e"
+    },
+    {
       "path": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
       "installPath": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
-      "bytes": 6557,
-      "sha256": "53da7a28f5c885ac88d54b9391e407f205e437a4848ee3f3f14390eb97d25dfd",
+      "bytes": 10553,
+      "sha256": "a4a8541ab3f147014b84be60781e74d4f3be4373f7b62a80cc04ec609ef2c7a3",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/ui/wish-sprint.js",
       "installPath": "src/ui/wish-sprint.js",
-      "bytes": 8644,
-      "sha256": "1ec075ead75e334aedec8ff9e279fff950325c3708a249188b61b49bb78ea295",
+      "bytes": 8422,
+      "sha256": "8b3514c0b0e638c07d1b4768ede76360397e1b150358cb7556c92b3a54459bc6",
       "runtime": true,
       "forceRefresh": true
     },
