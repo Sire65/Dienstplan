@@ -2,12 +2,13 @@ const fs=require('fs'),path=require('path');
 const current=require('../release/current.json');
 const root=path.join(__dirname,'..',current.releasePath);
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const html=read('index.html'),css=read('src/ui/kc-ux-polish.css'),js=read('src/ui/kc-ux-polish.js'),loader=read('src/ui/source-health-ui.js'),mobile=read('src/ui/mobile-day.css'),mobileJs=read('src/ui/mobile-day.js'),model=read('src/core/model.js'),update=read('src/core/update-manager.js');
+const html=read('index.html'),css=read('src/ui/kc-ux-polish.css'),js=read('src/ui/kc-ux-polish.js'),loader=read('src/ui/source-health-ui.js'),mobile=read('src/ui/mobile-day.css'),mobileJs=read('src/ui/mobile-day.js'),model=read('src/core/model.js'),update=read('src/core/update-manager.js'),buildGuard=read('src/core/update-build-guard.js');
 function must(cond,msg){if(!cond)throw new Error(msg)}
 const v=current.version.replaceAll('.','\\.');
 must(new RegExp(`<title>KC DP2 V${v}<\\/title>`).test(html),'HTML-Titel nicht aktuelle Version');
 must(new RegExp(`KC DP2 V${v} – Dienstplanung bereit\\.`).test(html),'Startmeldung nicht aktuelle Version');
-must(new RegExp(`EXPECTED='${v}'`).test(html),'Versionskonflikt-Guard nicht aktuelle Version');
+must(buildGuard.includes(`CURRENT_RELEASE=String(K.updateManager?.CURRENT_RELEASE||K.APP_RELEASE||'${current.version}')`),'Versions-/Build-Guard nicht aktuelle Version');
+must(buildGuard.includes('CURRENT_BUILD=Number(window.KC_DP_BUILD||0)'),'Build-Guard liest die aktuelle Build-ID nicht');
 must(model.includes(`K.VERSION='${current.version}'`),'Globale Runtime-Version nicht aktuelle Version');
 must(update.includes(`CURRENT_RELEASE='${current.version}'`),'Update-Manager nicht aktuelle Version');
 must(!/KC DP V0\.17\.10 – kompakte Plansteuerung bereit\./.test(html),'Alte sichtbare Versionsmeldung vorhanden');
