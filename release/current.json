@@ -2,7 +2,7 @@
   "app": "KC DP2",
   "version": "0.19.55",
   "build": 83,
-  "mode": "verified-direct-site-candidate",
+  "mode": "owner-pin-emergency-hotfix",
   "baseVersion": "0.19.54",
   "previousVersion": "0.19.54",
   "releasePath": "release/v0.19.55/site"
