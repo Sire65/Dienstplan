@@ -1,14 +1,14 @@
 (function(){
 'use strict';
 const K=window.KCDP=window.KCDP||{};
-const recoveryReady=new Promise((resolve,reject)=>{if(K.localRecoveryVault){resolve(true);return}const s=document.createElement('script');s.src='src/ui/local-recovery-vault.js?build=84-owner-recovery-8';s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Lokales Wiederherstellungsmodul konnte nicht geladen werden.'));document.head.appendChild(s)});
+const recoveryReady=new Promise((resolve,reject)=>{if(K.localRecoveryVault){resolve(true);return}const s=document.createElement('script');s.src='src/ui/local-recovery-vault.js?build=84-owner-recovery-10';s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Lokales Wiederherstellungsmodul konnte nicht geladen werden.'));document.head.appendChild(s)});
 const OWNER_EMAIL='ha-joko@web.de',MAX_TRIES=5,LOCK_MS=15*60*1000,PIN_KEY='owner_emergency_pin_v2',PUK_KEY='owner_emergency_puk_v1';
 let tries=0,lockedUntil=0;const $=id=>document.getElementById(id),enc=new TextEncoder();
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function eligible(){return String(K.currentUser?.role||'')==='admin'||String(K.memberAccess?.state?.user?.role||'')==='admin'}
 function onlineAuthenticated(){return K.memberAccess?.state?.status==='authenticated'&&eligible()}
-function cancel(){location.reload()}
-function frame(inner,step=1){document.body.classList.add('ux-login');const root=$('kcdpUxRoot');if(!root)return false;root.innerHTML=`<div class="ux-login-shell"><section class="ux-login-card" style="max-width:720px"><div class="ux-brand"><img class="ux-logo-banner" src="assets/kc-login-logo.webp" alt="Köcheclub Werne – since 1991"><div class="ux-club">Köcheclub Werne</div></div><div class="ux-note" style="margin-bottom:14px"><b>Notfall-Wiederherstellung · Schritt ${step} von 4</b></div>${inner}<div class="ux-login-system"><span>KC DP2 · Eigentümer-Notfallzugang</span></div></section></div>`;return true}
+function cancel(){location.assign(new URL('./',location.href).href)}
+function frame(inner,step=1){document.body.classList.add('ux-login');document.body.classList.remove('modal-open');document.documentElement.classList.remove('modal-open');const root=$('kcdpUxRoot');if(!root)return false;const backdrop=$('modalBackdrop'),modal=$('modal');backdrop?.classList.add('hidden');if(modal){modal.innerHTML='';modal.classList.remove('wide')}root.hidden=false;root.style.removeProperty('display');root.innerHTML=`<div class="ux-login-shell"><section class="ux-login-card" style="max-width:720px"><div class="ux-brand"><img class="ux-logo-banner" src="assets/kc-login-logo.webp" alt="Köcheclub Werne – since 1991"><div class="ux-club">Köcheclub Werne</div></div><div class="ux-note" style="margin-bottom:14px"><b>Notfall-Wiederherstellung · Schritt ${step} von 4</b></div>${inner}<div class="ux-login-system"><span>KC DP2 · Eigentümer-Notfallzugang</span></div></section></div>`;return true}
 function message(t,type='warning'){return `<div class="ux-note ux-${type}">${t}</div>`}
 async function db(){return new Promise((res,rej)=>{const q=indexedDB.open('KC_DP_BOOTSTRAP',1);q.onupgradeneeded=()=>{if(!q.result.objectStoreNames.contains('public_config'))q.result.createObjectStore('public_config',{keyPath:'key'})};q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
 async function getVal(key){const d=await db();return new Promise((res,rej)=>{const q=d.transaction('public_config','readonly').objectStore('public_config').get(key);q.onsuccess=()=>res(q.result?.value||null);q.onerror=()=>rej(q.error)})}
@@ -54,7 +54,7 @@ function restoreScreen(){
       if(typeof K.localRecoveryVault?.startFresh!=='function')throw new Error('Das lokale Wiederherstellungsmodul ist nicht geladen.');
       const r=await K.localRecoveryVault.startFresh(pin);await saveSecret(PUK_KEY,r.puk);
       frame('<h1>4. Neuer Super-PUK</h1>'+message('✓ Neuer Datenspeicher eingerichtet. '+r.archived+' bisherige verschlüsselte Datensätze wurden archiviert.','success')+message('<b>Diesen Super-PUK jetzt ausdrucken oder sicher abschreiben.</b> Er öffnet künftig dieselbe Datenbank, falls 16-stelliger Schlüssel und PIN verloren sind.','warning')+'<div class="ux-note" style="font-size:22px;text-align:center;letter-spacing:2px;word-break:break-all"><b>'+esc(r.puk)+'</b></div><div class="ux-actions"><button class="ux-btn ghost" id="print">Drucken</button><button class="ux-btn primary" id="restart">PUK ist gesichert · DP2 neu starten</button></div>',4);
-      $('print').onclick=()=>window.print();$('restart').onclick=()=>location.reload();
+      $('print').onclick=()=>window.print();$('restart').onclick=()=>{const clean=new URL('./',location.href).href;const next=window.open(clean,'_blank','noopener');if(!next){location.assign(clean);return}$('restart').textContent='DP2 wurde neu geöffnet · dieses Fenster schließen';$('restart').disabled=true};
     }catch(x){out.innerHTML=message(esc(x.message),'error');b.disabled=false}
   };
 };
@@ -75,5 +75,5 @@ function keepInjecting(){let n=0;const t=setInterval(()=>{n++;if(injectButton()|
 new MutationObserver(()=>injectButton()).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 window.addEventListener('pageshow',keepInjecting);window.addEventListener('load',keepInjecting);document.addEventListener('DOMContentLoaded',keepInjecting);
 keepInjecting();
-K.ownerEmergencyAccess={version:'0.19.55-owner-recovery-8',open,eligible,onlineAuthenticated,injectButton};
+K.ownerEmergencyAccess={version:'0.19.55-owner-recovery-10',open,eligible,onlineAuthenticated,injectButton};
 })();
