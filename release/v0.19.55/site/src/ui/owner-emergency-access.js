@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const K=window.KCDP=window.KCDP||{};
-const recoveryReady=new Promise((resolve,reject)=>{if(K.localRecoveryVault){resolve(true);return}const s=document.createElement('script');s.src='src/ui/local-recovery-vault.js?build=84-owner-recovery-5';s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Lokales Wiederherstellungsmodul konnte nicht geladen werden.'));document.head.appendChild(s)});
+const recoveryReady=new Promise((resolve,reject)=>{if(K.localRecoveryVault){resolve(true);return}const s=document.createElement('script');s.src='src/ui/local-recovery-vault.js?build=84-owner-recovery-6';s.onload=()=>resolve(true);s.onerror=()=>reject(new Error('Lokales Wiederherstellungsmodul konnte nicht geladen werden.'));document.head.appendChild(s)});
 const OWNER_EMAIL='ha-joko@web.de',MAX_TRIES=5,LOCK_MS=15*60*1000,PIN_KEY='owner_emergency_pin_v2',PUK_KEY='owner_emergency_puk_v1';
 let tries=0,lockedUntil=0;const $=id=>document.getElementById(id),enc=new TextEncoder();
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -75,5 +75,5 @@ function keepInjecting(){let n=0;const t=setInterval(()=>{n++;if(injectButton()|
 new MutationObserver(()=>injectButton()).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
 window.addEventListener('pageshow',keepInjecting);window.addEventListener('load',keepInjecting);document.addEventListener('DOMContentLoaded',keepInjecting);
 keepInjecting();
-K.ownerEmergencyAccess={version:'0.19.55-owner-recovery-5',open,eligible,onlineAuthenticated,injectButton};
+K.ownerEmergencyAccess={version:'0.19.55-owner-recovery-6',open,eligible,onlineAuthenticated,injectButton};
 })();

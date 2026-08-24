@@ -16,7 +16,7 @@
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
   "generatedAt": "2026-08-24T14:12:30.623Z",
-  "totalRuntimeBytes": 638403,
+  "totalRuntimeBytes": 638811,
   "files": [
     {
       "path": "index.html",
@@ -30,15 +30,15 @@
       "path": "src/ui/owner-emergency-access.js",
       "installPath": "src/ui/owner-emergency-access.js",
       "bytes": 17688,
-      "sha256": "8465e2d03c4dfb4ad7c01d31d340b5ec3cfe4136eb24d63643e89bc34f1f679c",
+      "sha256": "470533e029f2d3539c98f014b0085e7815acc7b114217df89d8473a2fa40f56c",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/ui/local-recovery-vault.js",
       "installPath": "src/ui/local-recovery-vault.js",
-      "bytes": 7147,
-      "sha256": "847884e9d47f12b164fd81f8e90451312c97d7cbb6291c5d7237b31909fd6b8e",
+      "bytes": 7555,
+      "sha256": "a189e0b0ea3efc1e8c20ebdb8c32785251a9f8ff1ab8c9dcfc5bfba19083a929",
       "runtime": true,
       "forceRefresh": true
     },
