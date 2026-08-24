@@ -34,10 +34,12 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p "require('./release/current.json').version")"
           RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          BUILD="$(node -p "require('./release/current.json').build")"
           test "$RELEASE_PATH" = "release/v${VERSION}/site"
           test -f "$RELEASE_PATH/index.html"
           test -f "$RELEASE_PATH/src/ui/owner-emergency-access.js"
-          grep -q "owner-pin" "$RELEASE_PATH/src/ui/owner-emergency-access.js"
+          grep -q "owner-recovery" "$RELEASE_PATH/src/ui/owner-emergency-access.js"
+          test "$BUILD" -ge 84
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
       - name: Prepare Pages artifact
         shell: bash
@@ -45,7 +47,7 @@ jobs:
           rm -rf dist
           mkdir dist
           cp -a "${{ steps.release.outputs.path }}/." dist/
-          printf '%s\n' 'KC DP2 emergency hotfix deployment' > dist/HOTFIX_BUILD.txt
+          printf '%s\n' 'KC DP2 emergency hotfix deployment build 84' > dist/HOTFIX_BUILD.txt
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact
