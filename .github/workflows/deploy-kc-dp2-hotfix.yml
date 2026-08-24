@@ -1,0 +1,57 @@
+name: KC DP2 Emergency Pages Hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release/current.json'
+      - 'release/v*/site/**'
+      - '.github/workflows/deploy-kc-dp2-hotfix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: kc-dp2-pages-hotfix
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Resolve current release
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./release/current.json').version")"
+          RELEASE_PATH="$(node -p "require('./release/current.json').releasePath")"
+          test "$RELEASE_PATH" = "release/v${VERSION}/site"
+          test -f "$RELEASE_PATH/index.html"
+          test -f "$RELEASE_PATH/src/ui/owner-emergency-access.js"
+          grep -q "owner-pin" "$RELEASE_PATH/src/ui/owner-emergency-access.js"
+          echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Prepare Pages artifact
+        shell: bash
+        run: |
+          rm -rf dist
+          mkdir dist
+          cp -a "${{ steps.release.outputs.path }}/." dist/
+          printf '%s\n' 'KC DP2 emergency hotfix deployment' > dist/HOTFIX_BUILD.txt
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
