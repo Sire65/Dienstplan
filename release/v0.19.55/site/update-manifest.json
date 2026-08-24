@@ -4,6 +4,7 @@
   "version": "0.19.55",
   "cacheName": "kc-dp-release-0.19.55-b84",
   "releaseNotes": [
+    "Excel-Vorlage: die bereitgestellte farbige Drei-Blatt-Datei ist jetzt verbindlich; leere formatierte Zellen verschieben den Import nicht mehr",
     "Excel-Wunschzeiten: mehrseitige personalisierte Vorlage wird automatisch erkannt; ganze Stunden wie 11 bis 18 und Zeiten wie 18:30 werden sicher eingelesen",
     "Matrix-Fotoimport: lokale QR- und Handschrifterkennung erkennt markierte Zeilen, Zeitpaare und Sperrtage mit sicherer Kontrolle",
     "Farbige Original-Excelvorlage mit drei Blättern, sichtbarer Personalisierung und personengebundenem QR-Code",
@@ -18,14 +19,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T19:24:49.157Z",
-  "totalRuntimeBytes": 8212857,
+  "generatedAt": "2026-08-24T19:42:19.312Z",
+  "totalRuntimeBytes": 8217583,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9643,
-      "sha256": "2d4256c262fc7b6497576b0a870de8ccecd39a5827f756e0b9ed09b1348b6a1a",
+      "bytes": 9644,
+      "sha256": "fcd4c6b6a761728d76a863725e2bd817efd101a2c41d452d543faba4b6e175db",
       "runtime": true,
       "forceRefresh": true
     },
@@ -96,8 +97,8 @@
     {
       "path": "src/ui/excel-paper-tools.js",
       "installPath": "src/ui/excel-paper-tools.js",
-      "bytes": 16782,
-      "sha256": "862302813efb6e1910139e9c3d982ecb64c56a40464e266d9ad8e4984adcef2b",
+      "bytes": 16970,
+      "sha256": "f3854889d359a866a6a5a716a3bf2a22b14d077f82206648d6e3f9b6a7c55110",
       "runtime": true,
       "forceRefresh": true
     },
@@ -112,8 +113,8 @@
     {
       "path": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
       "installPath": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
-      "bytes": 10553,
-      "sha256": "a4a8541ab3f147014b84be60781e74d4f3be4373f7b62a80cc04ec609ef2c7a3",
+      "bytes": 15079,
+      "sha256": "c53a6e8d316586bb2d5b36401ceabca6d321212c0fa8708562e7b4e2b824cd82",
       "runtime": true,
       "forceRefresh": true
     },
@@ -149,16 +150,16 @@
     {
       "path": "src/adapters/wish-import.js",
       "installPath": "src/adapters/wish-import.js",
-      "bytes": 10030,
-      "sha256": "02c7082a8f2122ddb90d46f8502242ace23292245501cf6fe621a95ad53c1993",
+      "bytes": 10035,
+      "sha256": "427bc98309ac49db06162e506293fae8fd3441b3644cb5b5981041dd195a060c",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/adapters/xlsx-local.js",
       "installPath": "src/adapters/xlsx-local.js",
-      "bytes": 5617,
-      "sha256": "f22a3981640c6550f664043f2f657af3a3afb4e189487832d81be8d086d6a788",
+      "bytes": 5623,
+      "sha256": "73a1b24b86e1c72b21b4c1d73efd6dd4075a9a72e9f8493d4d27a0dfc0efe757",
       "runtime": true,
       "forceRefresh": true
     },
