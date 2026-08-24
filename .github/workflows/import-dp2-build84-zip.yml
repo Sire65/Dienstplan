@@ -1,0 +1,121 @@
+name: Import KC DP2 Build 84 ZIP
+
+on:
+  push:
+    paths:
+      - 'KC_DP2_BUILD84.zip'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-kc-dp2-build84
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require incoming ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f KC_DP2_BUILD84.zip || {
+            echo 'KC_DP2_BUILD84.zip fehlt.' >&2
+            exit 1
+          }
+
+      - name: Extract exact Build 84 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .dp2-build84-import
+          mkdir -p .dp2-build84-import
+          unzip -q KC_DP2_BUILD84.zip -d .dp2-build84-import
+
+          # Manche Windows-ZIPs enthalten Backslashes in den Eintragsnamen.
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('.dp2-build84-import')
+          for p in sorted(root.rglob('*'), key=lambda x: len(str(x)), reverse=True):
+              if not p.is_file() or '\\' not in p.name:
+                  continue
+              rel = p.relative_to(root)
+              parts = []
+              for part in rel.parts:
+                  parts.extend(part.split('\\'))
+              target = root.joinpath(*parts)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              if target.exists():
+                  target.unlink()
+              p.replace(target)
+          PY
+
+          test -f .dp2-build84-import/index.html
+          test -f .dp2-build84-import/RELEASE.txt
+          grep -q 'Build 84' .dp2-build84-import/RELEASE.txt
+          grep -q 'KC_DP_BUILD=84' .dp2-build84-import/index.html
+
+          rm -rf release/v0.19.55/site
+          mkdir -p release/v0.19.55
+          mv .dp2-build84-import release/v0.19.55/site
+
+      - name: Update current release marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('release/current.json')
+          data = json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+          data.update({
+              'app': 'KC DP2',
+              'version': '0.19.55',
+              'build': 84,
+              'mode': 'verified-direct-site-candidate',
+              'baseVersion': '0.19.55',
+              'previousVersion': '0.19.55',
+              'releasePath': 'release/v0.19.55/site'
+          })
+          p.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+
+      - name: Preserve original ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release/packages
+          mv KC_DP2_BUILD84.zip release/packages/KC_DP2_BUILD84.zip
+
+      - name: Verify imported package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release/v0.19.55/site
+          test -f update-manifest.json
+          test -f PACKAGE_VERIFY.txt
+          if command -v node >/dev/null 2>&1; then
+            node tools/verify-release.mjs
+            node tools/smoke-core.mjs
+          fi
+
+      - name: Commit imported release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A release/v0.19.55/site release/current.json release/packages/KC_DP2_BUILD84.zip KC_DP2_BUILD84.zip
+          if git diff --cached --quiet; then
+            echo 'Keine Änderungen zu committen.'
+            exit 0
+          fi
+          git commit -m 'release: import exact KC DP2 0.19.55 Build 84 package'
+          git push origin HEAD:main
