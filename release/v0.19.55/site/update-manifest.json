@@ -15,30 +15,54 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T14:12:30.623Z",
-  "totalRuntimeBytes": 640536,
+  "generatedAt": "2026-08-24T18:30:00.000Z",
+  "totalRuntimeBytes": 667267,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9522,
-      "sha256": "24f80b02e22fb70a3e596f4baa5eac4200c897edd6caa259d0236b112fd54117",
+      "bytes": 9537,
+      "sha256": "8c010f4727ed77abb67218dc73d100bee034ca5a54a0cf2f8eb550835628061b",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/ui/owner-emergency-access.js",
       "installPath": "src/ui/owner-emergency-access.js",
-      "bytes": 17688,
-      "sha256": "970e905c4850747cee31e8e0f38600f2015a6a2c409d3cae86e20ab2bfaf10a0",
+      "bytes": 18247,
+      "sha256": "ebcdbacf530389ad7e4ceb354710e1613e74677a5fa30b06c631fb00a233b689",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/ui/local-recovery-vault.js",
       "installPath": "src/ui/local-recovery-vault.js",
-      "bytes": 9280,
-      "sha256": "29a8838b0415ac77bd1048627cabf8b161cf07e4f898913e885299c524e46eb9",
+      "bytes": 9313,
+      "sha256": "649f2cc2f62f0f1169bf05417ff7c863e1806aa4dafb885faeea863f2b5b8ab9",
+      "runtime": true,
+      "forceRefresh": true
+    },
+    {
+      "path": "src/ui/excel-paper-tools.js",
+      "installPath": "src/ui/excel-paper-tools.js",
+      "bytes": 10923,
+      "sha256": "a365f33252b44512a2704e526413b31a72d21f6236245df7c2ea76dff3491019",
+      "runtime": true,
+      "forceRefresh": true
+    },
+    {
+      "path": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
+      "installPath": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
+      "bytes": 6557,
+      "sha256": "53da7a28f5c885ac88d54b9391e407f205e437a4848ee3f3f14390eb97d25dfd",
+      "runtime": true,
+      "forceRefresh": true
+    },
+    {
+      "path": "src/ui/wish-sprint.js",
+      "installPath": "src/ui/wish-sprint.js",
+      "bytes": 8644,
+      "sha256": "1ec075ead75e334aedec8ff9e279fff950325c3708a249188b61b49bb78ea295",
       "runtime": true,
       "forceRefresh": true
     },

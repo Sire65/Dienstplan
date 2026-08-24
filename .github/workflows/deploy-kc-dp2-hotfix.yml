@@ -53,9 +53,13 @@ jobs:
           sed -i 's/session-mobile-hotfix.js?build=83/session-mobile-hotfix.js?build=84/g' dist/index.html
           sed -i 's/post-unlock-auth-guard.js?build=83/post-unlock-auth-guard.js?build=84/g' dist/index.html
           sed -i -E 's#owner-emergency-access\.js\?build=[^"< ]+#owner-emergency-access.js?build=84-owner-recovery-10#g' dist/index.html
-          sed -i 's/excel-paper-tools.js?build=83/excel-paper-tools.js?build=84/g' dist/index.html
+          sed -i -E 's#excel-paper-tools\.js\?build=[^"< ]+#excel-paper-tools.js?build=85-excel2#g' dist/index.html
+          sed -i -E 's#wish-sprint\.js\?v=[^"< ]+#wish-sprint.js?v=0.19.51-excel2#g' dist/index.html
           grep -q 'owner-emergency-access.js?build=84-owner-recovery-10' dist/index.html
           grep -q 'owner-recovery-10' dist/src/ui/owner-emergency-access.js
+          grep -q 'excel-paper-tools.js?build=85-excel2' dist/index.html
+          grep -q 'wish-sprint.js?v=0.19.51-excel2' dist/index.html
+          grep -q '0.19.55-word-matrix-qr-1' dist/src/ui/excel-paper-tools.js
           grep -q 'window.KC_DP_BUILD=84' dist/index.html
           printf '%s\n' 'KC DP2 emergency hotfix deployment build 84 owner-recovery-10 clean-restart' > dist/HOTFIX_BUILD.txt
       - name: Setup Pages
