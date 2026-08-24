@@ -38,7 +38,7 @@ jobs:
           test "$RELEASE_PATH" = "release/v${VERSION}/site"
           test -f "$RELEASE_PATH/index.html"
           test -f "$RELEASE_PATH/src/ui/owner-emergency-access.js"
-          grep -q "owner-recovery-4" "$RELEASE_PATH/src/ui/owner-emergency-access.js"
+          grep -q "owner-recovery-5" "$RELEASE_PATH/src/ui/owner-emergency-access.js"
           test "$BUILD" -ge 84
           echo "path=$RELEASE_PATH" >> "$GITHUB_OUTPUT"
       - name: Prepare Pages artifact
@@ -52,12 +52,12 @@ jobs:
           sed -i 's/update-build-guard.js?build=83/update-build-guard.js?build=84/g' dist/index.html
           sed -i 's/session-mobile-hotfix.js?build=83/session-mobile-hotfix.js?build=84/g' dist/index.html
           sed -i 's/post-unlock-auth-guard.js?build=83/post-unlock-auth-guard.js?build=84/g' dist/index.html
-          sed -i -E 's#owner-emergency-access\.js\?build=[^"< ]+#owner-emergency-access.js?build=84-owner-recovery-4#g' dist/index.html
+          sed -i -E 's#owner-emergency-access\.js\?build=[^"< ]+#owner-emergency-access.js?build=84-owner-recovery-5#g' dist/index.html
           sed -i 's/excel-paper-tools.js?build=83/excel-paper-tools.js?build=84/g' dist/index.html
-          grep -q 'owner-emergency-access.js?build=84-owner-recovery-4' dist/index.html
-          grep -q 'owner-recovery-4' dist/src/ui/owner-emergency-access.js
+          grep -q 'owner-emergency-access.js?build=84-owner-recovery-5' dist/index.html
+          grep -q 'owner-recovery-5' dist/src/ui/owner-emergency-access.js
           grep -q 'window.KC_DP_BUILD=84' dist/index.html
-          printf '%s\n' 'KC DP2 emergency hotfix deployment build 84 owner-recovery-4 pin-puk-vault' > dist/HOTFIX_BUILD.txt
+          printf '%s\n' 'KC DP2 emergency hotfix deployment build 84 owner-recovery-5 visible-entry' > dist/HOTFIX_BUILD.txt
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages artifact

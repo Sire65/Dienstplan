@@ -2,7 +2,7 @@
   "app": "KC DP2",
   "version": "0.19.55",
   "build": 84,
-  "mode": "owner-recovery-4-pin-puk-vault",
+  "mode": "owner-recovery-5-visible-entry",
   "baseVersion": "0.19.54",
   "previousVersion": "0.19.54",
   "releasePath": "release/v0.19.55/site"
