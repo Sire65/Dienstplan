@@ -24,7 +24,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-syst
     <button data-style="metal">Metallring</button>
     <button data-style="soft">Soft Glow</button>
   </div>
-  <small>Nur Optik · keine Funktionsänderung</small>
+  <small>Traffic: unregelmäßige Paket-Bursts wie am Switch</small>
 </div>
 <script>
 (function(){
@@ -32,7 +32,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-syst
  const buttons=[...document.querySelectorAll('#ledPanel button')];
  let mode='glass';
  const common=`
- .led{position:relative!important;display:block!important;border-radius:50%!important;border:0!important;isolation:isolate;transition:filter .16s ease,box-shadow .16s ease,transform .16s ease}
+ .led{position:relative!important;display:block!important;border-radius:50%!important;border:0!important;isolation:isolate;transition:filter .045s linear,box-shadow .045s linear,opacity .045s linear,transform .045s linear}
  .led::before{content:"";position:absolute;left:20%;top:12%;width:52%;height:30%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.08));filter:blur(.15px);pointer-events:none;z-index:2}
  .led-status{width:11px!important;height:11px!important}
  .led-traffic{width:8px!important;height:8px!important;margin:auto}
@@ -40,20 +40,65 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-syst
  .led-status.maintenance{background:radial-gradient(circle at 48% 72%,#b9e8ff 0 7%,#4cb8ff 18%,#147bd8 49%,#0853a6 73%,#062e62 100%)!important;box-shadow:inset 0 -2px 3px #041f46cc,inset 0 2px 2px #d9f2ff99,0 0 0 1px #073d7e,0 0 7px 2px rgba(42,147,255,.48)!important}
  .led-status.error{background:radial-gradient(circle at 48% 72%,#ffb1ae 0 7%,#ff5b56 18%,#d82029 49%,#8c0d17 73%,#4b080e 100%)!important;box-shadow:inset 0 -2px 3px #3b0005cc,inset 0 2px 2px #ffd7d599,0 0 0 1px #720b13,0 0 7px 2px rgba(239,45,54,.5)!important}
  .led:not(.led-status.ok):not(.led-status.maintenance):not(.led-status.error):not(.led-traffic.active){background:radial-gradient(circle at 48% 72%,#f3f5f7 0 7%,#a8afb7 18%,#68717c 49%,#3f4650 73%,#242932 100%)!important;box-shadow:inset 0 -2px 3px #11151acc,inset 0 2px 2px #ffffff99,0 0 0 1px #454d57,0 1px 3px rgba(0,0,0,.32)!important}
- .led-traffic.active{background:radial-gradient(circle at 48% 70%,#fff2a6 0 8%,#ffd83c 20%,#f1a900 50%,#9b6500 74%,#543500 100%)!important;box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fff8c9cc,0 0 0 1px #9a6900,0 0 8px 2px rgba(255,193,22,.68)!important;animation:kcTrafficGlow 1.05s ease-in-out infinite}
- @keyframes kcTrafficGlow{0%,100%{filter:brightness(.9);box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fff8c9cc,0 0 0 1px #9a6900,0 0 4px 1px rgba(255,193,22,.4)}50%{filter:brightness(1.18);box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fff8c9cc,0 0 0 1px #b47c00,0 0 10px 3px rgba(255,193,22,.8)}}
+ .led-traffic.active{background:radial-gradient(circle at 48% 70%,#9a7d2a 0 7%,#786019 22%,#51420d 55%,#382d08 78%,#201a05 100%)!important;box-shadow:inset 0 -1px 2px #211600cc,inset 0 1px 1px #d8c47766,0 0 0 1px #5c4a11!important;filter:brightness(.56);opacity:.82}
+ .led-traffic.active.kc-packet-on{background:radial-gradient(circle at 48% 70%,#fff5ad 0 9%,#ffe15a 21%,#ffc313 48%,#b87800 73%,#654000 100%)!important;box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fffbd7ee,0 0 0 1px #b77a00,0 0 6px 2px rgba(255,194,25,.62)!important;filter:brightness(1.1);opacity:1;transform:scale(1.04)}
+ .led-traffic.active.kc-packet-hot{background:radial-gradient(circle at 48% 70%,#fffbdc 0 9%,#fff075 22%,#ffd11d 47%,#c98500 72%,#6d4500 100%)!important;box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #ffffff,0 0 0 1px #c28600,0 0 10px 3px rgba(255,199,29,.9)!important;filter:brightness(1.28);opacity:1;transform:scale(1.09)}
+ @media (prefers-reduced-motion:reduce){.led{transition:none!important}.led-traffic.active{filter:brightness(.9)!important;opacity:1!important}.led-traffic.active.kc-packet-on,.led-traffic.active.kc-packet-hot{transform:none!important}}
  `;
  const variants={
   glass:`.led{outline:1px solid rgba(0,0,0,.16);outline-offset:1px}`,
   metal:`.led-status{box-shadow:0 0 0 1px #31363c,0 0 0 3px #aeb4ba,0 0 0 4px #555b62,0 2px 5px rgba(0,0,0,.28)!important}.led-status.ok{box-shadow:inset 0 -2px 3px #002b10cc,inset 0 2px 2px #d9ffd699,0 0 0 1px #1f252b,0 0 0 3px #bfc4c9,0 0 0 4px #5a6066,0 0 6px rgba(39,211,73,.4)!important}.led-status.maintenance{box-shadow:inset 0 -2px 3px #041f46cc,inset 0 2px 2px #d9f2ff99,0 0 0 1px #1f252b,0 0 0 3px #bfc4c9,0 0 0 4px #5a6066,0 0 6px rgba(42,147,255,.4)!important}.led-status.error{box-shadow:inset 0 -2px 3px #3b0005cc,inset 0 2px 2px #ffd7d599,0 0 0 1px #1f252b,0 0 0 3px #bfc4c9,0 0 0 4px #5a6066,0 0 6px rgba(239,45,54,.42)!important}.db-block{column-gap:8px!important}`,
-  soft:`.led{outline:0!important}.led-status{width:10px!important;height:10px!important}.led-status.ok{box-shadow:inset 0 -1px 2px #063b17aa,inset 0 1px 2px #e4ffe0aa,0 0 9px 3px rgba(40,205,73,.55)!important}.led-status.maintenance{box-shadow:inset 0 -1px 2px #073465aa,inset 0 1px 2px #e0f5ffaa,0 0 9px 3px rgba(42,147,255,.55)!important}.led-status.error{box-shadow:inset 0 -1px 2px #5a0710aa,inset 0 1px 2px #ffe1dfaa,0 0 9px 3px rgba(239,45,54,.58)!important}.led-traffic.active{box-shadow:0 0 9px 3px rgba(255,193,22,.7)!important}`
+  soft:`.led{outline:0!important}.led-status{width:10px!important;height:10px!important}.led-status.ok{box-shadow:inset 0 -1px 2px #063b17aa,inset 0 1px 2px #e4ffe0aa,0 0 9px 3px rgba(40,205,73,.55)!important}.led-status.maintenance{box-shadow:inset 0 -1px 2px #073465aa,inset 0 1px 2px #e0f5ffaa,0 0 9px 3px rgba(42,147,255,.55)!important}.led-status.error{box-shadow:inset 0 -1px 2px #5a0710aa,inset 0 1px 2px #ffe1dfaa,0 0 9px 3px rgba(239,45,54,.58)!important}`
  };
+ function rnd(a,b){return Math.floor(a+Math.random()*(b-a+1))}
+ function clearPacket(led){led.classList.remove('kc-packet-on','kc-packet-hot')}
+ function scheduleLed(led){
+   if(led.__kcTrafficTimer)clearTimeout(led.__kcTrafficTimer);
+   const tick=()=>{
+     if(!led.isConnected)return;
+     if(!led.classList.contains('active')){
+       clearPacket(led);
+       led.__kcTrafficTimer=setTimeout(tick,rnd(350,700));
+       return;
+     }
+     if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+       clearPacket(led);
+       led.__kcTrafficTimer=setTimeout(tick,800);
+       return;
+     }
+     const burst=rnd(1,5);
+     let n=0;
+     const flash=()=>{
+       if(!led.isConnected||!led.classList.contains('active')){clearPacket(led);led.__kcTrafficTimer=setTimeout(tick,300);return}
+       clearPacket(led);
+       led.classList.add(Math.random()<.28?'kc-packet-hot':'kc-packet-on');
+       led.__kcTrafficTimer=setTimeout(()=>{
+         clearPacket(led);n++;
+         if(n<burst)led.__kcTrafficTimer=setTimeout(flash,rnd(35,135));
+         else led.__kcTrafficTimer=setTimeout(tick,rnd(180,1050));
+       },rnd(35,95));
+     };
+     flash();
+   };
+   led.__kcTrafficTimer=setTimeout(tick,rnd(60,420));
+ }
+ function installTrafficFlicker(){
+   try{
+     const d=frame.contentDocument;if(!d)return;
+     d.querySelectorAll('.led-traffic').forEach(led=>{if(!led.dataset.kcTrafficFlicker){led.dataset.kcTrafficFlicker='1';scheduleLed(led)}});
+     if(!d.__kcTrafficObserver){
+       d.__kcTrafficObserver=new MutationObserver(()=>d.querySelectorAll('.led-traffic').forEach(led=>{if(!led.dataset.kcTrafficFlicker){led.dataset.kcTrafficFlicker='1';scheduleLed(led)}}));
+       d.__kcTrafficObserver.observe(d.documentElement,{childList:true,subtree:true});
+     }
+   }catch(e){console.warn('Traffic flicker setup failed',e)}
+ }
  function apply(){
    try{
     const d=frame.contentDocument;if(!d)return;
     let s=d.getElementById('kcDp3LedPreviewStyle');
     if(!s){s=d.createElement('style');s.id='kcDp3LedPreviewStyle';d.head.appendChild(s)}
     s.textContent=common+(variants[mode]||variants.glass);
+    installTrafficFlicker();
    }catch(e){console.warn('LED preview injection failed',e)}
  }
  frame.addEventListener('load',()=>{apply();setTimeout(apply,500);setTimeout(apply,1800)});
