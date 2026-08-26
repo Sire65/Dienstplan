@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KC DP3 – 3D LED Probe</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#eef1f5}
+#appFrame{display:block;width:100%;height:100%;border:0}
+#ledPanel{position:fixed;right:14px;bottom:14px;z-index:99999;background:rgba(20,24,30,.94);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 10px;box-shadow:0 10px 30px rgba(0,0,0,.28);backdrop-filter:blur(8px);font-size:12px}
+#ledPanel strong{display:block;margin-bottom:6px;font-size:12px;letter-spacing:.02em}
+#ledPanel .buttons{display:flex;gap:5px}
+#ledPanel button{border:1px solid #5e6875;background:#2a3038;color:#fff;border-radius:7px;padding:5px 8px;font:inherit;cursor:pointer}
+#ledPanel button.active{background:#fff;color:#17202a;border-color:#fff;font-weight:700}
+#ledPanel small{display:block;color:#aeb8c5;margin-top:6px}
+</style>
+</head>
+<body>
+<iframe id="appFrame" src="index.html?dp3-led-preview=1" title="KC DP3 LED Vorschau"></iframe>
+<div id="ledPanel">
+  <strong>KC DP3 · LED-Probe</strong>
+  <div class="buttons">
+    <button data-style="glass" class="active">3D Glas</button>
+    <button data-style="metal">Metallring</button>
+    <button data-style="soft">Soft Glow</button>
+  </div>
+  <small>Nur Optik · keine Funktionsänderung</small>
+</div>
+<script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ const buttons=[...document.querySelectorAll('#ledPanel button')];
+ let mode='glass';
+ const common=`
+ .led{position:relative!important;display:block!important;border-radius:50%!important;border:0!important;isolation:isolate;transition:filter .16s ease,box-shadow .16s ease,transform .16s ease}
+ .led::before{content:"";position:absolute;left:20%;top:12%;width:52%;height:30%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.08));filter:blur(.15px);pointer-events:none;z-index:2}
+ .led-status{width:11px!important;height:11px!important}
+ .led-traffic{width:8px!important;height:8px!important;margin:auto}
+ .led-status.ok{background:radial-gradient(circle at 48% 72%,#a8ff7b 0 7%,#46e04f 18%,#12a52f 48%,#07651f 72%,#043515 100%)!important;box-shadow:inset 0 -2px 3px #002b10cc,inset 0 2px 2px #d9ffd699,0 0 0 1px #064b1c,0 0 7px 2px rgba(39,211,73,.48)!important}
+ .led-status.maintenance{background:radial-gradient(circle at 48% 72%,#b9e8ff 0 7%,#4cb8ff 18%,#147bd8 49%,#0853a6 73%,#062e62 100%)!important;box-shadow:inset 0 -2px 3px #041f46cc,inset 0 2px 2px #d9f2ff99,0 0 0 1px #073d7e,0 0 7px 2px rgba(42,147,255,.48)!important}
+ .led-status.error{background:radial-gradient(circle at 48% 72%,#ffb1ae 0 7%,#ff5b56 18%,#d82029 49%,#8c0d17 73%,#4b080e 100%)!important;box-shadow:inset 0 -2px 3px #3b0005cc,inset 0 2px 2px #ffd7d599,0 0 0 1px #720b13,0 0 7px 2px rgba(239,45,54,.5)!important}
+ .led:not(.led-status.ok):not(.led-status.maintenance):not(.led-status.error):not(.led-traffic.active){background:radial-gradient(circle at 48% 72%,#f3f5f7 0 7%,#a8afb7 18%,#68717c 49%,#3f4650 73%,#242932 100%)!important;box-shadow:inset 0 -2px 3px #11151acc,inset 0 2px 2px #ffffff99,0 0 0 1px #454d57,0 1px 3px rgba(0,0,0,.32)!important}
+ .led-traffic.active{background:radial-gradient(circle at 48% 70%,#fff2a6 0 8%,#ffd83c 20%,#f1a900 50%,#9b6500 74%,#543500 100%)!important;box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fff8c9cc,0 0 0 1px #9a6900,0 0 8px 2px rgba(255,193,22,.68)!important;animation:kcTrafficGlow 1.05s ease-in-out infinite}
+ @keyframes kcTrafficGlow{0%,100%{filter:brightness(.9);box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fff8c9cc,0 0 0 1px #9a6900,0 0 4px 1px rgba(255,193,22,.4)}50%{filter:brightness(1.18);box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #fff8c9cc,0 0 0 1px #b47c00,0 0 10px 3px rgba(255,193,22,.8)}}
+ `;
+ const variants={
+  glass:`.led{outline:1px solid rgba(0,0,0,.16);outline-offset:1px}`,
+  metal:`.led-status{box-shadow:0 0 0 1px #31363c,0 0 0 3px #aeb4ba,0 0 0 4px #555b62,0 2px 5px rgba(0,0,0,.28)!important}.led-status.ok{box-shadow:inset 0 -2px 3px #002b10cc,inset 0 2px 2px #d9ffd699,0 0 0 1px #1f252b,0 0 0 3px #bfc4c9,0 0 0 4px #5a6066,0 0 6px rgba(39,211,73,.4)!important}.led-status.maintenance{box-shadow:inset 0 -2px 3px #041f46cc,inset 0 2px 2px #d9f2ff99,0 0 0 1px #1f252b,0 0 0 3px #bfc4c9,0 0 0 4px #5a6066,0 0 6px rgba(42,147,255,.4)!important}.led-status.error{box-shadow:inset 0 -2px 3px #3b0005cc,inset 0 2px 2px #ffd7d599,0 0 0 1px #1f252b,0 0 0 3px #bfc4c9,0 0 0 4px #5a6066,0 0 6px rgba(239,45,54,.42)!important}.db-block{column-gap:8px!important}`,
+  soft:`.led{outline:0!important}.led-status{width:10px!important;height:10px!important}.led-status.ok{box-shadow:inset 0 -1px 2px #063b17aa,inset 0 1px 2px #e4ffe0aa,0 0 9px 3px rgba(40,205,73,.55)!important}.led-status.maintenance{box-shadow:inset 0 -1px 2px #073465aa,inset 0 1px 2px #e0f5ffaa,0 0 9px 3px rgba(42,147,255,.55)!important}.led-status.error{box-shadow:inset 0 -1px 2px #5a0710aa,inset 0 1px 2px #ffe1dfaa,0 0 9px 3px rgba(239,45,54,.58)!important}.led-traffic.active{box-shadow:0 0 9px 3px rgba(255,193,22,.7)!important}`
+ };
+ function apply(){
+   try{
+    const d=frame.contentDocument;if(!d)return;
+    let s=d.getElementById('kcDp3LedPreviewStyle');
+    if(!s){s=d.createElement('style');s.id='kcDp3LedPreviewStyle';d.head.appendChild(s)}
+    s.textContent=common+(variants[mode]||variants.glass);
+   }catch(e){console.warn('LED preview injection failed',e)}
+ }
+ frame.addEventListener('load',()=>{apply();setTimeout(apply,500);setTimeout(apply,1800)});
+ buttons.forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.style;buttons.forEach(x=>x.classList.toggle('active',x===b));apply()}));
+})();
+</script>
+</body>
+</html>
