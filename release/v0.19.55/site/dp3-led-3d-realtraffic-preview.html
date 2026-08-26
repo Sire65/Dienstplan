@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KC DP3 – 3D LED Real-Traffic Probe</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#eef1f5}
+#appFrame{display:block;width:100%;height:100%;border:0}
+#panel{position:fixed;right:14px;bottom:14px;z-index:99999;background:rgba(20,24,30,.94);color:#fff;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 10px;box-shadow:0 10px 30px rgba(0,0,0,.28);font-size:12px}
+#panel strong{display:block;margin-bottom:6px}#panel .buttons{display:flex;gap:5px}#panel button{border:1px solid #5e6875;background:#2a3038;color:#fff;border-radius:7px;padding:5px 8px;font:inherit;cursor:pointer}#panel button.active{background:#fff;color:#17202a;border-color:#fff;font-weight:700}#panel small{display:block;color:#aeb8c5;margin-top:6px}
+</style>
+</head>
+<body>
+<iframe id="appFrame" src="index.html?dp3-led-realtraffic-preview=1" title="KC DP3 LED Real-Traffic Vorschau"></iframe>
+<div id="panel"><strong>KC DP3 · Real-Traffic LED</strong><div class="buttons"><button data-style="glass" class="active">3D Glas</button><button data-style="metal">Metallring</button><button data-style="soft">Soft Glow</button></div><small>Kein Deko-Flackern · nur echte Traffic-Aufrufe</small></div>
+<script>
+(function(){
+ const frame=document.getElementById('appFrame');
+ const buttons=[...document.querySelectorAll('#panel button')];
+ let mode='glass';
+ const base=`
+ .led{position:relative!important;display:block!important;border-radius:50%!important;border:0!important;isolation:isolate;transition:filter .025s linear,box-shadow .025s linear,opacity .025s linear,transform .025s linear}
+ .led::before{content:"";position:absolute;left:20%;top:12%;width:52%;height:30%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(255,255,255,.08));pointer-events:none;z-index:2}
+ .led-status{width:11px!important;height:11px!important}
+ .led-traffic{width:8px!important;height:8px!important;margin:auto;background:radial-gradient(circle at 48% 70%,#5d512c 0 10%,#40391f 40%,#242116 75%,#17150e 100%)!important;box-shadow:inset 0 -1px 2px #0008,inset 0 1px 1px #fff2,0 0 0 1px #4e4730!important;filter:brightness(.68)!important;opacity:.72!important;transform:none!important}
+ .led-traffic.active{background:radial-gradient(circle at 48% 70%,#5d512c 0 10%,#40391f 40%,#242116 75%,#17150e 100%)!important;box-shadow:inset 0 -1px 2px #0008,inset 0 1px 1px #fff2,0 0 0 1px #4e4730!important;filter:brightness(.68)!important;opacity:.72!important;transform:none!important}
+ .led-traffic.kc-real-pulse,.led-traffic.active.kc-real-pulse{background:radial-gradient(circle at 48% 70%,#fffbdc 0 9%,#fff075 22%,#ffd11d 47%,#c98500 72%,#6d4500 100%)!important;box-shadow:inset 0 -1px 2px #5b3600cc,inset 0 1px 1px #ffffff,0 0 0 1px #c28600,0 0 9px 3px rgba(255,199,29,.86)!important;filter:brightness(1.24)!important;opacity:1!important;transform:scale(1.08)!important}
+ .led-status.ok{background:radial-gradient(circle at 48% 72%,#a8ff7b 0 7%,#46e04f 18%,#12a52f 48%,#07651f 72%,#043515 100%)!important;box-shadow:inset 0 -2px 3px #002b10cc,inset 0 2px 2px #d9ffd699,0 0 0 1px #064b1c,0 0 7px 2px rgba(39,211,73,.48)!important}
+ .led-status.maintenance{background:radial-gradient(circle at 48% 72%,#b9e8ff 0 7%,#4cb8ff 18%,#147bd8 49%,#0853a6 73%,#062e62 100%)!important;box-shadow:inset 0 -2px 3px #041f46cc,inset 0 2px 2px #d9f2ff99,0 0 0 1px #073d7e,0 0 7px 2px rgba(42,147,255,.48)!important}
+ .led-status.error{background:radial-gradient(circle at 48% 72%,#ffb1ae 0 7%,#ff5b56 18%,#d82029 49%,#8c0d17 73%,#4b080e 100%)!important;box-shadow:inset 0 -2px 3px #3b0005cc,inset 0 2px 2px #ffd7d599,0 0 0 1px #720b13,0 0 7px 2px rgba(239,45,54,.5)!important}
+ `;
+ const variants={glass:`.led{outline:1px solid rgba(0,0,0,.16);outline-offset:1px}`,metal:`.led-status{outline:2px solid #aeb4ba;outline-offset:1px}`,soft:`.led{outline:0!important}.led-status.ok{box-shadow:inset 0 -1px 2px #063b17aa,inset 0 1px 2px #e4ffe0aa,0 0 9px 3px rgba(40,205,73,.55)!important}.led-status.maintenance{box-shadow:inset 0 -1px 2px #073465aa,inset 0 1px 2px #e0f5ffaa,0 0 9px 3px rgba(42,147,255,.55)!important}.led-status.error{box-shadow:inset 0 -1px 2px #5a0710aa,inset 0 1px 2px #ffe1dfaa,0 0 9px 3px rgba(239,45,54,.58)!important}`};
+ function installRealTrafficHook(w){
+   if(!w||w.__kcRealTrafficLedHook)return;
+   const P=w.DOMTokenList&&w.DOMTokenList.prototype;if(!P)return;
+   const add=P.add,remove=P.remove;
+   P.add=function(...tokens){
+     const isTraffic=this.contains('led-traffic');
+     const realTrafficCall=isTraffic&&tokens.includes('active');
+     const out=add.apply(this,tokens);
+     if(realTrafficCall){
+       add.call(this,'kc-real-pulse');
+       if(this.__kcRealPulseTimer)w.clearTimeout(this.__kcRealPulseTimer);
+       this.__kcRealPulseTimer=w.setTimeout(()=>{try{remove.call(this,'kc-real-pulse')}catch(_){}},55);
+     }
+     return out;
+   };
+   w.__kcRealTrafficLedHook=true;
+ }
+ function apply(){
+   try{
+     const d=frame.contentDocument,w=frame.contentWindow;if(!d||!w)return;
+     let s=d.getElementById('kcDp3RealTrafficLedStyle');if(!s){s=d.createElement('style');s.id='kcDp3RealTrafficLedStyle';d.head.appendChild(s)}
+     s.textContent=base+(variants[mode]||variants.glass);
+     installRealTrafficHook(w);
+   }catch(e){console.warn('Real traffic LED preview setup failed',e)}
+ }
+ frame.addEventListener('load',()=>{apply();setTimeout(apply,300);setTimeout(apply,1200)});
+ buttons.forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.style;buttons.forEach(x=>x.classList.toggle('active',x===b));apply()}));
+})();
+</script>
+</body>
+</html>
