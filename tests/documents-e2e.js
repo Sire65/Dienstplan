@@ -87,17 +87,24 @@ const assert = require('assert');
     if(!noProviderError.includes('Kein E-Mail-Provider verbunden'))throw new Error('Fehlender Mail-Provider wird nicht sauber blockiert');
 
     // Provider-Schnittstelle mit isoliertem Testprovider inklusive echtem PDF-Anhang prüfen.
+    // Der produktive TEST-Sicherheitsmodus muss weiterhin blockieren; nur der isolierte Fake-Provider
+    // wird danach explizit mit bypassSafety ausgeführt. Es verlässt keine E-Mail den Testprozess.
     let captured=null;
     K.emailAdapter.configure({send:async message=>{captured=clone(message);return{id:'E2E-MAIL-1',accepted:message.to};}});
     const mail={
       to:['test@example.invalid'],subject:`KC DP Sollplan V${publication.version}`,text:'Automatischer Dokumenttest',
       attachments:[docs.planned_plan.attachment]
     };
-    const sent=await K.emailAdapter.send(mail);
+    let safetyError='';
+    try{await K.emailAdapter.send(mail);}catch(e){safetyError=e.message;}
+    if(!safetyError.includes('TEST-Modus'))throw new Error('E-Mail-Sicherheitsmodus blockiert Testversand nicht');
+    if(captured)throw new Error('Testmodus hat den Fake-Provider unerwartet aufgerufen');
+
+    const sent=await K.emailAdapter.send(mail,{bypassSafety:true});
     if(sent.id!=='E2E-MAIL-1'||!captured||captured.attachments?.[0]?.mimeType!=='application/pdf')throw new Error('Mail-Provider-Schnittstelle übergibt PDF-Anhang nicht korrekt');
     if(K.emailAdapter.state.status!=='ready'||!K.emailAdapter.state.lastSendAt)throw new Error('Mail-Status wird nach Versand nicht korrekt geführt');
 
-    const out={person:person.name,date:day.date,version:publication.version,shiftId:shift.id,actualId:actual.id,noProviderError,mailId:sent.id,documents:Object.fromEntries(Object.entries(docs).map(([k,v])=>[k,{fileName:v.fileName,bytes:v.bytes,pages:v.pages}]))};
+    const out={person:person.name,date:day.date,version:publication.version,shiftId:shift.id,actualId:actual.id,noProviderError,safetyError,mailId:sent.id,documents:Object.fromEntries(Object.entries(docs).map(([k,v])=>[k,{fileName:v.fileName,bytes:v.bytes,pages:v.pages}]))};
 
     K.shifts=before.shifts;K.wishes=before.wishes;K.standby=before.standby;K.planVersions=before.planVersions;K.acknowledgements=before.acknowledgements;
     K.actualShifts=before.actualShifts;K.actualWorkflow=before.actualWorkflow;K.workflow=before.workflow;K.breakConfig=before.breakConfig;K.documentLog=before.documentLog;K.currentUser=before.currentUser;K.state=before.state;K.emailAdapter.clear();
@@ -107,6 +114,7 @@ const assert = require('assert');
   assert(result.documents.planned_plan.bytes>1500);
   assert(result.documents.compare_plan.bytes>1500);
   assert(result.noProviderError.includes('Kein E-Mail-Provider verbunden'));
+  assert(result.safetyError.includes('TEST-Modus'));
   console.log('KC DP2 documents/PDF/email E2E: PASS');
   console.log(JSON.stringify(result));
   await browser.close();
