@@ -10,11 +10,11 @@ const assert = require('assert');
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto('http://127.0.0.1:4173/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>window.KCDP?.sessionMobileHotfix,{timeout:20000});
+  await page.waitForFunction(()=>window.KCDP?.sessionMobileHotfix&&window.KCDP?.diagnosticsCenter,{timeout:20000});
 
   // Mobile status area must be restorable by the production hotfix.
   await page.evaluate(()=>{
-    let root=document.getElementById('kcdpUxRoot');
+    const root=document.getElementById('kcdpUxRoot');
     root.innerHTML='<header class="ux-topbar"><button class="ux-userchip">Benutzer</button></header>';
     window.KCDP.sessionMobileHotfix.apply();
   });
@@ -22,25 +22,27 @@ const assert = require('assert');
   assert(await page.locator('#kcMobileIdxLed').count(),'IDX LED missing');
   assert(await page.locator('#kcMobileSupLed').count(),'SUP LED missing');
 
-  // Reproduce the exact Anmeldung / Monitor modal seen on Android.
+  // Reproduce the exact Anmeldung / Monitor modal seen on Android with an authorized test admin.
   await page.evaluate(()=>{
+    const K=window.KCDP;
+    K.auth?.setCurrentUser?.({personId:'E2E-MOBILE-ADMIN',role:'admin',displayName:'E2E Mobile Admin'});
     const back=document.getElementById('modalBackdrop');
     const modal=document.getElementById('modal');
     back.classList.remove('hidden');
     document.body.classList.add('modal-open');
     modal.innerHTML='<h2>👤 Anmeldung / Monitor</h2><div class="ai-summary"><b>Aktuell:</b> Test · Administrator</div><div class="modal-actions"><button id="sessionClose">Schließen</button></div><button id="kcDiagnosticsAdminEntry">🛠 Zentrale Fehlerdiagnose</button>';
-    window.KCDP.sessionMobileHotfix.apply();
+    K.sessionMobileHotfix.apply();
   });
   await page.waitForSelector('#kcSessionTopClose',{state:'visible',timeout:5000});
   const size=await page.locator('#kcSessionTopClose').boundingBox();
   assert(size && size.width>=44 && size.height>=44,'Close button touch target too small');
 
-  // Diagnostics must react immediately instead of leaving the modal frozen.
+  // Diagnostics must open the current canonical diagnostics center and release the session modal.
   await page.locator('#kcDiagnosticsAdminEntry').tap();
-  await page.waitForSelector('#kcDiagImmediateOverlay',{state:'visible',timeout:5000});
+  await page.waitForSelector('#kcDiagOverlay',{state:'visible',timeout:5000});
   assert(!(await page.locator('#modalBackdrop').isVisible()),'Session modal still blocks after diagnostics tap');
-  await page.locator('#kcDiagImmediateClose').tap();
-  await page.waitForSelector('#kcDiagImmediateOverlay',{state:'detached',timeout:5000});
+  await page.locator('#kcDiagClose').tap();
+  await page.waitForSelector('#kcDiagOverlay',{state:'detached',timeout:5000});
 
   // Reopen and verify both close paths.
   await page.evaluate(()=>{
