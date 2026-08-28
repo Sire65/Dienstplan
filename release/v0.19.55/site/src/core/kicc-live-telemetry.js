@@ -17,81 +17,16 @@
   const now=()=>new Date().toISOString();
   const uuid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
   function headersFrom(input,init){try{return new Headers(init?.headers||(input instanceof Request?input.headers:undefined));}catch(_){return new Headers();}}
-  function captureCredentials(input,init){
-    const h=headersFrom(input,init),auth=h.get('authorization'),key=h.get('apikey');
-    if(auth&&/^Bearer\s+\S+/i.test(auth)){authorization=auth;lastCredentialAt=now();}
-    if(key)apikey=key;
-  }
+  function captureCredentials(input,init){const h=headersFrom(input,init),auth=h.get('authorization'),key=h.get('apikey');if(auth&&/^Bearer\s+\S+/i.test(auth)){authorization=auth;lastCredentialAt=now();}if(key)apikey=key;}
   function state(){return {programId:PROGRAM_ID,instanceId,version:VERSION,build:BUILD,credentialsObserved:!!authorization,lastCredentialAt,lastHeartbeatAt,lastHeartbeatError,lastFlowAt,lastFlowError};}
   function telemetryHeaders(){if(!authorization||!apikey)return null;return {'content-type':'application/json','accept':'application/json',authorization,apikey};}
-  function classify(url,method){
-    const p=url.pathname.toLowerCase(),m=String(method||'GET').toUpperCase();
-    if(p.includes('/rpc/kc_dp_push_operation'))return 'SYNC';
-    if(p.includes('/rpc/kc_dp_pull_operations'))return 'SYNC';
-    if(p.includes('/functions/v1/'))return 'API';
-    if(m==='GET'||m==='HEAD')return 'READ';
-    if(['POST','PUT','PATCH','DELETE'].includes(m))return 'WRITE';
-    return 'OTHER';
-  }
-  function targetFor(url){
-    if(url.pathname.includes('/rest/v1/'))return 'db-supabase-core';
-    if(url.pathname.includes('/functions/v1/'))return 'service:supabase-edge-core';
-    if(url.pathname.includes('/auth/v1/'))return 'service:supabase-auth-core';
-    return 'db-supabase-core';
-  }
-  async function sendHeartbeat(){
-    const h=telemetryHeaders();if(!h)return false;
-    const started=performance.now();
-    const heartbeat={schema:'kicc.program-heartbeat.v1',programId:PROGRAM_ID,instanceId,name:PROGRAM_NAME,deviceType:'WEB_APP',version:VERSION,build:String(BUILD),status:'ONLINE',measuredAt:now(),latencyMs:null,errorCount:0,source:'KC_DP2_RUNTIME',trust:'SELF_REPORTED',message:'KC DP2 Browser-Runtime aktiv'};
-    const envelope={schema:'kicc.remote-program-heartbeat.v1',nonce:uuid(),sentAt:now(),authState:'AUTHENTICATED',sourceId:instanceId,heartbeat};
-    try{
-      const r=await nativeFetch(CORE_ORIGIN+HEARTBEAT_PATH,{method:'POST',headers:h,body:JSON.stringify(envelope),cache:'no-store',credentials:'omit'});
-      if(!r.ok)throw new Error(`HTTP ${r.status}`);
-      lastHeartbeatAt=now();lastHeartbeatError=null;
-      heartbeat.latencyMs=Math.round(performance.now()-started);
-      window.dispatchEvent(new CustomEvent('kcdp:kicc-heartbeat-sent',{detail:{...heartbeat,latencyMs:heartbeat.latencyMs}}));
-      return true;
-    }catch(e){lastHeartbeatError=e instanceof Error?e.message:String(e);return false;}
-  }
-  async function sendFlow(observation){
-    const h=telemetryHeaders();if(!h)return false;
-    const flow={schema:'kicc.program-flow.v1',eventId:uuid(),programId:PROGRAM_ID,instanceId,from:`program:${PROGRAM_ID}`,to:observation.to,type:observation.type,direction:'OUTBOUND',status:observation.status,count:1,bytes:observation.bytes??null,latencyMs:observation.latencyMs,measuredAt:observation.measuredAt,source:'KC_DP2_FETCH_OBSERVER',trust:'SELF_REPORTED',message:observation.message};
-    const envelope={schema:'kicc.remote-program-flow.v1',nonce:uuid(),sentAt:now(),authState:'AUTHENTICATED',sourceId:instanceId,flow};
-    try{
-      const r=await nativeFetch(CORE_ORIGIN+FLOW_PATH,{method:'POST',headers:h,body:JSON.stringify(envelope),cache:'no-store',credentials:'omit'});
-      if(!r.ok)throw new Error(`HTTP ${r.status}`);
-      lastFlowAt=now();lastFlowError=null;
-      window.dispatchEvent(new CustomEvent('kcdp:kicc-flow-sent',{detail:flow}));
-      return true;
-    }catch(e){lastFlowError=e instanceof Error?e.message:String(e);return false;}
-  }
-  window.fetch=async function(input,init){
-    let url=null;try{url=new URL(input instanceof Request?input.url:String(input),location.href);}catch(_){return nativeFetch(input,init);}
-    const isCore=url.origin===CORE_ORIGIN;
-    const isTelemetry=isCore&&(url.pathname===HEARTBEAT_PATH||url.pathname===FLOW_PATH);
-    if(isCore&&!isTelemetry)captureCredentials(input,init);
-    const method=String(init?.method||(input instanceof Request?input.method:'GET')).toUpperCase();
-    const started=performance.now(),measuredAt=now();
-    try{
-      const response=await nativeFetch(input,init);
-      if(isCore&&!isTelemetry&&authorization&&apikey){
-        const latencyMs=Math.max(0,Math.round(performance.now()-started));
-        const len=Number(response.headers.get('content-length'));
-        queueMicrotask(()=>sendFlow({to:targetFor(url),type:classify(url,method),status:response.ok?'OK':response.status>=500?'FAILED':'DEGRADED',latencyMs,bytes:Number.isFinite(len)&&len>=0?len:null,measuredAt,message:`${method} ${url.pathname} · HTTP ${response.status}`}));
-      }
-      return response;
-    }catch(error){
-      if(isCore&&!isTelemetry&&authorization&&apikey){
-        const latencyMs=Math.max(0,Math.round(performance.now()-started));
-        queueMicrotask(()=>sendFlow({to:targetFor(url),type:classify(url,method),status:'FAILED',latencyMs,bytes:null,measuredAt,message:`${method} ${url.pathname} · Netzwerkfehler`}));
-      }
-      throw error;
-    }
-  };
+  function classify(url,method){const p=url.pathname.toLowerCase(),m=String(method||'GET').toUpperCase();if(p.includes('/rpc/kc_dp_push_operation'))return 'SYNC';if(p.includes('/rpc/kc_dp_pull_operations'))return 'SYNC';if(p.includes('/functions/v1/'))return 'API';if(m==='GET'||m==='HEAD')return 'READ';if(['POST','PUT','PATCH','DELETE'].includes(m))return 'WRITE';return 'OTHER';}
+  function targetFor(url){if(url.pathname.includes('/rest/v1/'))return 'db-supabase-core';if(url.pathname.includes('/functions/v1/'))return 'service:supabase-edge-core';if(url.pathname.includes('/auth/v1/'))return 'service:supabase-auth-core';return 'db-supabase-core';}
+  async function sendHeartbeat(){const h=telemetryHeaders();if(!h)return false;const started=performance.now();const heartbeat={schema:'kicc.program-heartbeat.v1',programId:PROGRAM_ID,instanceId,name:PROGRAM_NAME,deviceType:'WEB_APP',version:VERSION,build:String(BUILD),status:'ONLINE',measuredAt:now(),latencyMs:null,errorCount:0,source:'KC_DP2_RUNTIME',trust:'SELF_REPORTED',message:'KC DP2 Browser-Runtime aktiv'};const envelope={schema:'kicc.remote-program-heartbeat.v1',nonce:uuid(),sentAt:now(),authState:'AUTHENTICATED',sourceId:instanceId,heartbeat};try{const r=await nativeFetch(CORE_ORIGIN+HEARTBEAT_PATH,{method:'POST',headers:h,body:JSON.stringify(envelope),cache:'no-store',credentials:'omit'});if(!r.ok)throw new Error(`HTTP ${r.status}`);lastHeartbeatAt=now();lastHeartbeatError=null;heartbeat.latencyMs=Math.round(performance.now()-started);window.dispatchEvent(new CustomEvent('kcdp:kicc-heartbeat-sent',{detail:{...heartbeat,latencyMs:heartbeat.latencyMs}}));return true;}catch(e){lastHeartbeatError=e instanceof Error?e.message:String(e);return false;}}
+  async function sendFlow(observation){const h=telemetryHeaders();if(!h)return false;const flow={schema:'kicc.program-flow.v1',eventId:uuid(),programId:PROGRAM_ID,instanceId,from:`program:${PROGRAM_ID}`,to:observation.to,type:observation.type,direction:'OUTBOUND',status:observation.status,count:1,bytes:observation.bytes??null,latencyMs:observation.latencyMs,measuredAt:observation.measuredAt,source:'KC_DP2_FETCH_OBSERVER',trust:'SELF_REPORTED',message:observation.message};const envelope={schema:'kicc.remote-program-flow.v1',nonce:uuid(),sentAt:now(),authState:'AUTHENTICATED',sourceId:instanceId,flow};try{const r=await nativeFetch(CORE_ORIGIN+FLOW_PATH,{method:'POST',headers:h,body:JSON.stringify(envelope),cache:'no-store',credentials:'omit'});if(!r.ok)throw new Error(`HTTP ${r.status}`);lastFlowAt=now();lastFlowError=null;window.dispatchEvent(new CustomEvent('kcdp:kicc-flow-sent',{detail:flow}));return true;}catch(e){lastFlowError=e instanceof Error?e.message:String(e);return false;}}
+  window.fetch=async function(input,init){let url=null;try{url=new URL(input instanceof Request?input.url:String(input),location.href);}catch(_){return nativeFetch(input,init);}const isCore=url.origin===CORE_ORIGIN;const isTelemetry=isCore&&(url.pathname===HEARTBEAT_PATH||url.pathname===FLOW_PATH);if(isCore&&!isTelemetry)captureCredentials(input,init);const method=String(init?.method||(input instanceof Request?input.method:'GET')).toUpperCase();const started=performance.now(),measuredAt=now();try{const response=await nativeFetch(input,init);if(isCore&&!isTelemetry&&authorization&&apikey){const latencyMs=Math.max(0,Math.round(performance.now()-started));const len=Number(response.headers.get('content-length'));queueMicrotask(()=>sendFlow({to:targetFor(url),type:classify(url,method),status:response.ok?'OK':response.status>=500?'FAILED':'DEGRADED',latencyMs,bytes:Number.isFinite(len)&&len>=0?len:null,measuredAt,message:`${method} ${url.pathname} · HTTP ${response.status}`}));}return response;}catch(error){if(isCore&&!isTelemetry&&authorization&&apikey){const latencyMs=Math.max(0,Math.round(performance.now()-started));queueMicrotask(()=>sendFlow({to:targetFor(url),type:classify(url,method),status:'FAILED',latencyMs,bytes:null,measuredAt,message:`${method} ${url.pathname} · Netzwerkfehler`}));}throw error;}};
   function start(){if(timer)return;timer=setInterval(sendHeartbeat,INTERVAL_MS);setTimeout(sendHeartbeat,3500);}
   function stop(){if(timer){clearInterval(timer);timer=null;}}
-  window.addEventListener('online',()=>setTimeout(sendHeartbeat,800));
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(sendHeartbeat,500);});
-  start();
-  K.kiccTelemetry={state,sendHeartbeat,stop,start,programId:PROGRAM_ID,instanceId};
+  window.addEventListener('online',()=>setTimeout(sendHeartbeat,800));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(sendHeartbeat,500);});start();K.kiccTelemetry={state,sendHeartbeat,stop,start,programId:PROGRAM_ID,instanceId};
+  const failoverScript=document.createElement('script');failoverScript.src='src/adapters/failover-provider.js?v=1.0.0';failoverScript.async=false;failoverScript.onerror=()=>console.error('KC DP2 Failover-Provider konnte nicht geladen werden.');document.head.appendChild(failoverScript);
 })();
