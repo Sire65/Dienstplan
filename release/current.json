@@ -1,9 +1,9 @@
 {
   "app": "KC DP2",
-  "version": "0.19.55",
-  "build": 85,
+  "version": "0.19.56",
+  "build": 86,
   "mode": "owner-recovery-7-tablet-layout",
-  "baseVersion": "0.19.54",
-  "previousVersion": "0.19.54",
-  "releasePath": "release/v0.19.55/site"
+  "baseVersion": "0.19.55",
+  "previousVersion": "0.19.55",
+  "releasePath": "release/v0.19.56/site"
 }
