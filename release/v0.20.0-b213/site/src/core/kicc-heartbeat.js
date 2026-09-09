@@ -1,0 +1,59 @@
+(function(){
+  'use strict';
+  const SCHEMA='kicc.program-heartbeat.v1';
+  const PROGRAM_ID='kc-dp2';
+  const NAME='KC DP2';
+  const VERSION='0.20.0';
+  const BUILD=String(window.KC_DP_BUILD||88);
+  const INTERVAL_MS=30000;
+  const CORE_ORIGIN='https://ptblnpiroqftcvlsrhac.supabase.co';
+  const DEFAULT_ENDPOINT=CORE_ORIGIN+'/functions/v1/kicc-program-heartbeat';
+  const DEFAULT_FLOW_ENDPOINT=CORE_ORIGIN+'/functions/v1/kicc-program-flow';
+  let errors=0,tx=0,lastSendAt=null,lastError=null,gemeldeterGrund=null;
+  // Wer seinen Meldeweg nicht benutzen kann, kann darueber auch nicht melden,
+  // dass er ihn nicht benutzen kann. Auf der Empfaengerseite sieht ein
+  // blockierter Meldeweg deshalb genauso aus wie ein Programm, das niemand
+  // benutzt - beides ist Schweigen. Die einzige Stelle, an der der Grund
+  // ueberhaupt bekannt ist, ist hier. Also steht er hier auch in der Konsole:
+  // einmal je Grund, nicht bei jedem Versuch, sonst flutet ein dauerhaft
+  // blockierter Meldeweg die Ausgabe.
+  function meldeEinmal(grund){if(grund===gemeldeterGrund)return;gemeldeterGrund=grund;try{console.warn('[kicc-heartbeat] Lebenszeichen nicht zugestellt: '+grund+' \u00b7 fuer die Ueberwachung sieht das aus wie "Programm nicht benutzt"');}catch{}}
+
+  function instanceId(){const key='kcdp.kicc.instance.v1';try{let id=localStorage.getItem(key);if(!id){id=(crypto.randomUUID?.()||('dp2-'+Date.now()+'-'+Math.random().toString(36).slice(2)));localStorage.setItem(key,id);}return id;}catch{return 'dp2-browser';}}
+  const INSTANCE_ID=instanceId();
+  function endpoint(){return window.KICC_PROGRAM_HEARTBEAT_ENDPOINT||DEFAULT_ENDPOINT;}
+  function flowEndpoint(){return window.KICC_PROGRAM_FLOW_ENDPOINT||DEFAULT_FLOW_ENDPOINT;}
+  async function credentials(){
+    try{if(typeof window.KICC_AUTH?.getProgramHeartbeatBridgeAuth==='function'){const bridged=await window.KICC_AUTH.getProgramHeartbeatBridgeAuth()||{};if(bridged.authorization)return bridged;}}catch{}
+    try{const conn=window.KCDP?.supabaseConnection;if(!conn)return {};try{if(typeof conn.ensureSession==='function')await conn.ensureSession();}catch{}const active=typeof conn.sessionSnapshot==='function'?conn.sessionSnapshot():null,cfg=typeof conn.validateConfig==='function'?conn.validateConfig():(window.KCDP?.integrationConfig?.supabase||{}),accessToken=active?.access_token||null,publishableKey=String(cfg?.publishableKey||'').trim();return{authorization:accessToken?`Bearer ${accessToken}`:null,apikey:publishableKey||null};}catch{return {};}
+  }
+  function heartbeat(latencyMs=null){return{schema:SCHEMA,programId:PROGRAM_ID,instanceId:INSTANCE_ID,name:NAME,deviceType:'WEB_APP',version:VERSION,build:BUILD,status:navigator.onLine?'ONLINE':'OFFLINE',measuredAt:new Date().toISOString(),latencyMs:Number.isFinite(latencyMs)?Math.max(0,Math.round(latencyMs)):null,trafficTx:tx,errorCount:errors,source:'PROGRAM_HEARTBEAT',trust:'SELF_REPORTED',message:document.visibilityState==='hidden'?'App im Hintergrund':'App aktiv'};}
+  function emitLocal(hb){try{window.dispatchEvent(new CustomEvent('kicc:program-heartbeat',{detail:hb}));}catch{}try{const bc=new BroadcastChannel('kicc-program-heartbeat-v1');bc.postMessage(hb);bc.close();}catch{}}
+  async function postFlow(auth,{sourceId,targetId,flowType='HEARTBEAT',eventCount=1,status='OK'}={}){const url=flowEndpoint();if(!url||!auth?.authorization||!/^https:\/\//i.test(url))return false;const headers={'content-type':'application/json','accept':'application/json',authorization:auth.authorization};if(auth.apikey)headers.apikey=auth.apikey;const body={schema:'kicc.program-flow.v1',programId:PROGRAM_ID,instanceId:INSTANCE_ID,sourceId,targetId,flowType,eventCount,status,measuredAt:new Date().toISOString(),nonce:(crypto.randomUUID?.()||String(Date.now())+Math.random())};const response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),cache:'no-store',credentials:'omit'});return response.ok;}
+  async function reportObservedFlow(type,targetId='db-supabase-core'){try{const auth=await credentials();if(auth.authorization)await postFlow(auth,{sourceId:`program:${PROGRAM_ID}`,targetId,flowType:type,eventCount:1,status:'OK'});}catch{}}
+  function bodyAction(init){try{const b=init?.body;if(typeof b!=='string')return null;return JSON.parse(b)?.action||null;}catch{return null;}}
+  function installTrafficObserver(){
+    if(window.__KC_DP_KICC_TRAFFIC_OBSERVER__)return;
+    const original=window.fetch.bind(window);
+    window.fetch=async function(input,init){
+      const response=await original(input,init);
+      try{
+        const raw=typeof input==='string'?input:input?.url,u=new URL(raw,location.href),method=String(init?.method||(typeof input!=='string'&&input?.method)||'GET').toUpperCase();
+        if(response.ok&&u.origin===CORE_ORIGIN){
+          if(u.pathname.startsWith('/rest/v1/')){
+            const type=method==='GET'?'READ':u.pathname.startsWith('/rest/v1/rpc/')?'OTHER':['POST','PUT','PATCH','DELETE'].includes(method)?'WRITE':'OTHER';
+            queueMicrotask(()=>reportObservedFlow(type,'db-supabase-core'));
+          }else if(u.pathname==='/functions/v1/kc-dp-push'&&method==='POST'&&bodyAction(init)==='send'){
+            queueMicrotask(()=>reportObservedFlow('PUSH','service:kc-communication'));
+          }
+        }
+      }catch{}
+      return response;
+    };
+    window.__KC_DP_KICC_TRAFFIC_OBSERVER__=true;
+  }
+  async function postRemote(hb){const url=endpoint();if(!url||!/^https:\/\//i.test(url))return{sent:false,reason:'REMOTE_NOT_CONFIGURED'};const auth=await credentials();if(!auth.authorization)return{sent:false,reason:'AUTH_REQUIRED'};const envelope={schema:'kicc.remote-program-heartbeat.v1',nonce:(crypto.randomUUID?.()||String(Date.now())+Math.random()),sentAt:new Date().toISOString(),authState:'AUTHENTICATED',sourceId:INSTANCE_ID,heartbeat:hb},headers={'content-type':'application/json','accept':'application/json',authorization:auth.authorization};if(auth.apikey)headers.apikey=auth.apikey;const started=performance.now(),response=await fetch(url,{method:'POST',headers,body:JSON.stringify(envelope),cache:'no-store',credentials:'omit'});if(!response.ok){let detail='';try{detail=await response.text();}catch{}throw new Error(`Heartbeat HTTP ${response.status}${detail?` · ${detail.slice(0,120)}`:''}`);}tx+=1;lastSendAt=new Date().toISOString();lastError=null;try{await postFlow(auth,{sourceId:`program:${PROGRAM_ID}`,targetId:'db-supabase-core',flowType:'HEARTBEAT',eventCount:1,status:'OK'});}catch{}return{sent:true,latencyMs:performance.now()-started};}
+  async function send(){const started=performance.now();let hb=heartbeat();emitLocal(hb);try{const result=await postRemote(hb);if(result.sent){hb=heartbeat(result.latencyMs);emitLocal(hb);gemeldeterGrund=null;}else{lastError='NICHT GESENDET: '+(result.reason||'unbekannt');meldeEinmal(lastError);}}catch(error){errors+=1;lastError=error instanceof Error?error.message:String(error);meldeEinmal(lastError);}window.KC_DP_KICC_HEARTBEAT_STATE={programId:PROGRAM_ID,version:VERSION,build:BUILD,instanceId:INSTANCE_ID,lastAttemptAt:new Date().toISOString(),lastSendAt,lastError,remoteConfigured:Boolean(endpoint()),flowConfigured:Boolean(flowEndpoint()),trafficObserver:true,elapsedMs:Math.round(performance.now()-started)};}
+  installTrafficObserver();
+  addEventListener('online',send);addEventListener('offline',send);addEventListener('visibilitychange',send);addEventListener('error',()=>{errors+=1;});addEventListener('unhandledrejection',()=>{errors+=1;});setTimeout(send,2500);setInterval(send,INTERVAL_MS);
+})();
