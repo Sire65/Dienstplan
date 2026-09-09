@@ -2,7 +2,7 @@
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
   "version": "0.19.55",
-  "cacheName": "kc-dp-release-0.19.55-b84",
+  "cacheName": "kc-dp-release-0.19.55-b87",
   "releaseNotes": [
     "Papiermatrix als Teilmeldung: sichere Zeiten sofort ergänzen; leere und unsichere Tage bleiben offen und können später per Foto, manuell oder Excel folgen",
     "Excel-Vorlage: die bereitgestellte farbige Drei-Blatt-Datei ist jetzt verbindlich; leere formatierte Zellen verschieben den Import nicht mehr",
@@ -20,14 +20,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-08-24T19:50:51.915Z",
-  "totalRuntimeBytes": 8217947,
+  "generatedAt": "2026-09-09T10:51:37.333Z",
+  "totalRuntimeBytes": 8243318,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 9653,
-      "sha256": "defb3eca2b2e54ea36fea5e3cb0debb218d9c2e4def378764949a35d2f0a3df2",
+      "bytes": 24247,
+      "sha256": "7e94e72fb9115d06d4abf40b82a7000699eacb3e1e3d1c9bc2b8845c5ea16788",
       "runtime": true,
       "forceRefresh": true
     },
@@ -44,62 +44,62 @@
       "installPath": "vendor/tesseract/tesseract-core-simd-lstm.wasm.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 3938656,
-      "sha256": "18797eef96bab787636c40b53efaa445cf5ca1c97abd735c4fd8dc3d03652959"
+      "bytes": 3938938,
+      "sha256": "fc33768646259589ec53530cc0bae9128854e6d5cf32c80064982134c92c86cd"
     },
     {
       "path": "vendor/tesseract/worker.min.js",
       "installPath": "vendor/tesseract/worker.min.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 123724,
-      "sha256": "aca1229639fc9907d86f96e825955a2b7c5716d17f3bc3acd71f9c7ab66181fc"
+      "bytes": 123726,
+      "sha256": "d016bf3385fbf17661285540175ffaefbac124f980d76b0bfd85b267125e6012"
     },
     {
       "path": "vendor/tesseract/tesseract.min.js",
       "installPath": "vendor/tesseract/tesseract.min.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 66695,
-      "sha256": "a8e29918d098b2b06e1012bdaeffb4aec0445c5d5654709023e0bd1f442a80e8"
+      "bytes": 66697,
+      "sha256": "9cec85064f44a9c860cc1a706723564c2c42f29036af7834e4f8a3aaff24ed4d"
     },
     {
       "path": "vendor/jsQR.js",
       "installPath": "vendor/jsQR.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 256885,
-      "sha256": "bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859"
+      "bytes": 266986,
+      "sha256": "aec81b459d4e3856885fca04b497474227396ab793daedf402fd80f7b9fcc337"
     },
     {
       "path": "src/adapters/matrix-photo-ocr.js",
       "installPath": "src/adapters/matrix-photo-ocr.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 12397,
-      "sha256": "e5b5e36c4c1b2c27cb7183c61a4e7441352ee8ba0ce9aea5501d2693cc430b3b"
+      "bytes": 12423,
+      "sha256": "1bbb84be5d09ea17867c5cc137638f16124b8810a2f181261471b5212433e60c"
     },
     {
       "path": "src/ui/owner-emergency-access.js",
       "installPath": "src/ui/owner-emergency-access.js",
-      "bytes": 18247,
-      "sha256": "ebcdbacf530389ad7e4ceb354710e1613e74677a5fa30b06c631fb00a233b689",
+      "bytes": 18286,
+      "sha256": "61412a5474c13919a460a358568a8ab03bb725f17a9398e0f4fe24983591c566",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/ui/local-recovery-vault.js",
       "installPath": "src/ui/local-recovery-vault.js",
-      "bytes": 9313,
-      "sha256": "649f2cc2f62f0f1169bf05417ff7c863e1806aa4dafb885faeea863f2b5b8ab9",
+      "bytes": 9345,
+      "sha256": "419a99536fbedb665bdf91f8c23e5fbadc063d93fcbbe583659495721f1f5937",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/ui/excel-paper-tools.js",
       "installPath": "src/ui/excel-paper-tools.js",
-      "bytes": 16970,
-      "sha256": "f3854889d359a866a6a5a716a3bf2a22b14d077f82206648d6e3f9b6a7c55110",
+      "bytes": 16995,
+      "sha256": "5fe8cf23dbea32b86c8af0d6f872f772248cf77a6da9d3581e8a9264cae91b76",
       "runtime": true,
       "forceRefresh": true
     },
@@ -108,8 +108,8 @@
       "installPath": "vendor/jszip.min.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 97630,
-      "sha256": "acc7e41455a80765b5fd9c7ee1b8078a6d160bbbca455aeae854de65c947d59e"
+      "bytes": 97642,
+      "sha256": "f12f367798e35ee2d9993dba6167fc61ddb52fb89880f5a99fbb606335188410"
     },
     {
       "path": "templates/KC_DP2_Wunschzeiten_Vorlage_Weihnachtsmarkt_2026.xlsx",
@@ -122,8 +122,8 @@
     {
       "path": "src/ui/wish-sprint.js",
       "installPath": "src/ui/wish-sprint.js",
-      "bytes": 8422,
-      "sha256": "8b3514c0b0e638c07d1b4768ede76360397e1b150358cb7556c92b3a54459bc6",
+      "bytes": 8431,
+      "sha256": "9d960f489fabf1c37c419c20c7a5841ce2b946f46687dad93231060aa93bf2aa",
       "runtime": true,
       "forceRefresh": true
     },
@@ -151,16 +151,16 @@
     {
       "path": "src/adapters/wish-import.js",
       "installPath": "src/adapters/wish-import.js",
-      "bytes": 10035,
-      "sha256": "427bc98309ac49db06162e506293fae8fd3441b3644cb5b5981041dd195a060c",
+      "bytes": 10039,
+      "sha256": "22c26f861fb4438482d2a810962caae2229b065c8d3c5369d0e066843cfe7440",
       "runtime": true,
       "forceRefresh": true
     },
     {
       "path": "src/adapters/xlsx-local.js",
       "installPath": "src/adapters/xlsx-local.js",
-      "bytes": 5623,
-      "sha256": "73a1b24b86e1c72b21b4c1d73efd6dd4075a9a72e9f8493d4d27a0dfc0efe757",
+      "bytes": 5630,
+      "sha256": "d5008bb85a01fae9885d2a2d82898548dc05f99d9997a5acf139e40a2f3fa18e",
       "runtime": true,
       "forceRefresh": true
     },
@@ -641,9 +641,9 @@
       "installPath": "src/ui/role-ux.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 86826,
-      "sha256": "a413c4d2375f63c7ecd521dde83509d6692cb0c9472d9e344dbfdfb097536e27"
+      "bytes": 87062,
+      "sha256": "ab6686d9cf03e9a6474a8745622bb06d3ec72bcd2ee88afaeadc1ad7eeb6a7a9"
     }
   ],
-  "build": 84
+  "build": 87
 }
