@@ -2,7 +2,7 @@
   "schema": "KC_DP_UPDATE_MANIFEST_V1",
   "app": "KC DP2",
   "version": "0.19.55",
-  "cacheName": "kc-dp-release-0.19.55-b87",
+  "cacheName": "kc-dp-release-0.19.55-b88",
   "releaseNotes": [
     "Papiermatrix als Teilmeldung: sichere Zeiten sofort ergänzen; leere und unsichere Tage bleiben offen und können später per Foto, manuell oder Excel folgen",
     "Excel-Vorlage: die bereitgestellte farbige Drei-Blatt-Datei ist jetzt verbindlich; leere formatierte Zellen verschieben den Import nicht mehr",
@@ -20,14 +20,14 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-09-09T10:51:37.333Z",
-  "totalRuntimeBytes": 8243318,
+  "generatedAt": "2026-09-09T13:15:32.662Z",
+  "totalRuntimeBytes": 8247007,
   "files": [
     {
       "path": "index.html",
       "installPath": "index.html",
-      "bytes": 24247,
-      "sha256": "7e94e72fb9115d06d4abf40b82a7000699eacb3e1e3d1c9bc2b8845c5ea16788",
+      "bytes": 24310,
+      "sha256": "52d2ca7c0b69c0ed1b446e3b94c386db4a4e8770279a761718a2faaba645d21b",
       "runtime": true,
       "forceRefresh": true
     },
@@ -643,7 +643,15 @@
       "forceRefresh": true,
       "bytes": 87062,
       "sha256": "ab6686d9cf03e9a6474a8745622bb06d3ec72bcd2ee88afaeadc1ad7eeb6a7a9"
+    },
+    {
+      "path": "src/ui/push-permission-offer.js",
+      "installPath": "src/ui/push-permission-offer.js",
+      "runtime": true,
+      "forceRefresh": true,
+      "bytes": 3626,
+      "sha256": "bb862ede653a812caa1df2f38749ff60e435314685c6730511631cdafd888eea"
     }
   ],
-  "build": 87
+  "build": 88
 }
