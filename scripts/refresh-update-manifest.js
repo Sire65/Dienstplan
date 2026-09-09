@@ -55,6 +55,7 @@ const extras=[
   ['src/ui/session-diagnostics-guard.js',true,true],
   ['src/ui/kc-ux-polish.js',true,true],
   ['src/ui/kc-ux-polish.css',true,true],
+  ['src/ui/push-permission-offer.js',true,true],
   ['src/ui/update-ui.js',true,true],
   ['src/core/login-trace.js',true,true],
   ['src/core/update-build-guard.js',true,true],
