@@ -286,6 +286,14 @@ jobs:
           node --check dist/rc-v02000-p18-isolated/src/adapters/backup.js
           node --check dist/rc-v02000-p18-isolated/src/ui/mobile-login-input.js
 
+          rm -rf dist/handtest-b213
+          mkdir -p dist/handtest-b213
+          cp -a "prod/release/v0.20.0-b213/site/." dist/handtest-b213/
+          grep -q "KC_DP3_SECURE_V020_B213_ISOLATED_1" dist/handtest-b213/src/adapters/storage.js
+          test -f dist/handtest-b213/index.html
+          test -f dist/handtest-b213/B213_ISOLATED_BUILD.txt
+          while IFS= read -r -d '' f; do node --check "$f"; done < <(find dist/handtest-b213 -type f -name '*.js' -print0)
+
           printf '%s\n' \
             "production=${{ steps.release.outputs.version }}" \
             "handtest=0.19.55-main" \
@@ -297,7 +305,8 @@ jobs:
             "p16_source=c85c03266b7b85c84c41a8ebf02ce8afe098f915" \
             "p16_isolated=0.20.0-p16-isolated-handtest" \
             "p17_isolated=0.20.0-p17-isolated-handtest" \
-            "p18_isolated=0.20.0-p18-isolated-handtest" > dist/HANDTEST_BUILD.txt
+            "p18_isolated=0.20.0-p18-isolated-handtest" \
+            "b213_isolated=0.20.0-b213-handtest" > dist/HANDTEST_BUILD.txt
           test -f dist/index.html
           test -f dist/handtest-v01955/index.html
           test -f dist/stable-v01954/index.html
@@ -313,6 +322,8 @@ jobs:
           test -f dist/rc-v02000-p17-isolated/P17_ISOLATED_BUILD.txt
           test -f dist/rc-v02000-p18-isolated/index.html
           test -f dist/rc-v02000-p18-isolated/P18_ISOLATED_BUILD.txt
+          test -f dist/handtest-b213/index.html
+          test -f dist/handtest-b213/B213_ISOLATED_BUILD.txt
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v4
         with:
