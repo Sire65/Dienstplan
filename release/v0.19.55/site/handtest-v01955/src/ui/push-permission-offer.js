@@ -21,8 +21,24 @@
     handled=true;
     const host=document.createElement('div');
     host.id='kcPushOfferOverlay';
-    host.innerHTML=`<style>#kcPushOfferOverlay{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;display:flex;justify-content:center;padding:16px;pointer-events:none}@media(min-width:640px){#kcPushOfferOverlay{justify-content:flex-end}}#kcPushOfferOverlay .kc-po-card{pointer-events:auto;width:min(400px,100%);background:#fff;border:1px solid #e7dada;border-radius:18px;padding:18px;box-shadow:0 14px 40px #0003;font-family:inherit}#kcPushOfferOverlay h2{margin:0 0 8px;color:#741521;font-size:17px}#kcPushOfferOverlay p{margin:0 0 14px;font-size:13.5px;line-height:1.5;color:#4a3f3f}#kcPushOfferOverlay .kc-po-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}#kcPushOfferOverlay button{border:0;border-radius:11px;padding:11px 16px;font-weight:750;font-size:13.5px;cursor:pointer}#kcPushOfferOverlay .kc-po-primary{background:#741521;color:#fff}#kcPushOfferOverlay .kc-po-secondary{background:#efe8e4;color:#4a3f3f}#kcPushOfferOverlay .kc-po-status{margin-top:10px;font-size:12.5px;color:#4a3f3f}</style><div class="kc-po-card"><h2>🔔 Erinnerungen aktivieren?</h2><p>KC DP2 kann Sie automatisch an offene Wunschabgaben, Planänderungen und Vertretungsanfragen erinnern. Dafür braucht es einmalig Ihre Erlaubnis für Benachrichtigungen auf diesem Gerät.</p><div class="kc-po-actions"><button type="button" class="kc-po-secondary" id="kcPushOfferLater">Später</button><button type="button" class="kc-po-primary" id="kcPushOfferEnable">Erinnerungen aktivieren</button></div><div class="kc-po-status" id="kcPushOfferStatus"></div></div>`;
+    host.innerHTML=`<style>
+#kcPushOfferOverlay{position:fixed;top:calc(78px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));z-index:2147483000;display:flex;justify-content:flex-end}
+#kcPushOfferOverlay .kc-po-badge{pointer-events:auto;width:46px;height:46px;border-radius:50%;border:0;background:#741521;color:#fff;font-size:20px;box-shadow:0 8px 22px #0004;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#kcPushOfferOverlay .kc-po-card{display:none;pointer-events:auto;width:min(300px,calc(100vw - 28px));background:#fff;border:1px solid #e7dada;border-radius:16px;padding:16px;box-shadow:0 14px 40px #0003;font-family:inherit}
+#kcPushOfferOverlay.kc-po-open .kc-po-badge{display:none}
+#kcPushOfferOverlay.kc-po-open .kc-po-card{display:block}
+#kcPushOfferOverlay h2{margin:0 0 7px;color:#741521;font-size:15.5px}
+#kcPushOfferOverlay p{margin:0 0 12px;font-size:12.5px;line-height:1.5;color:#4a3f3f}
+#kcPushOfferOverlay .kc-po-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#kcPushOfferOverlay button{border:0;border-radius:10px;padding:9px 13px;font-weight:750;font-size:12.5px;cursor:pointer}
+#kcPushOfferOverlay .kc-po-primary{background:#741521;color:#fff}
+#kcPushOfferOverlay .kc-po-secondary{background:#efe8e4;color:#4a3f3f}
+#kcPushOfferOverlay .kc-po-status{margin-top:9px;font-size:11.5px;color:#4a3f3f}
+</style>
+<button type="button" class="kc-po-badge" id="kcPushOfferBadge" aria-label="Erinnerungen aktivieren">🔔</button>
+<div class="kc-po-card"><h2>🔔 Erinnerungen aktivieren?</h2><p>KC DP2 kann Sie automatisch an offene Wunschabgaben, Planänderungen und Vertretungsanfragen erinnern. Dafür braucht es einmalig Ihre Erlaubnis für Benachrichtigungen auf diesem Gerät.</p><div class="kc-po-actions"><button type="button" class="kc-po-secondary" id="kcPushOfferLater">Später</button><button type="button" class="kc-po-primary" id="kcPushOfferEnable">Aktivieren</button></div><div class="kc-po-status" id="kcPushOfferStatus"></div></div>`;
     document.body.appendChild(host);
+    host.querySelector('#kcPushOfferBadge').onclick=()=>host.classList.add('kc-po-open');
     host.querySelector('#kcPushOfferLater').onclick=()=>{remember();close();};
     host.querySelector('#kcPushOfferEnable').onclick=async()=>{
       const btn=host.querySelector('#kcPushOfferEnable'),status=host.querySelector('#kcPushOfferStatus');

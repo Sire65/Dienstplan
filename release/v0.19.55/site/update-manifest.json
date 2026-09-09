@@ -20,8 +20,8 @@
     "Kollegen suchen: falscher UI-Root roleUxRoot auf kcdpUxRoot korrigiert",
     "Diagnose und Kollegensuche werden mit V0.19.51 Cache-Bustern sicher neu geladen"
   ],
-  "generatedAt": "2026-09-09T13:24:16.994Z",
-  "totalRuntimeBytes": 8247044,
+  "generatedAt": "2026-09-09T13:32:04.241Z",
+  "totalRuntimeBytes": 8247599,
   "files": [
     {
       "path": "index.html",
@@ -649,8 +649,8 @@
       "installPath": "src/ui/push-permission-offer.js",
       "runtime": true,
       "forceRefresh": true,
-      "bytes": 3663,
-      "sha256": "2c4caa84b1ecdbbf692b03a6f1eaa7a7c787e1273bd555d31e441c67ef22ad47"
+      "bytes": 4218,
+      "sha256": "d7b8940cdeb756a971bd8e71304cbf0f3b534a1cb002e98b2873a3ac6e59b211"
     }
   ],
   "build": 88
