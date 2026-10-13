@@ -1,0 +1,13 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),{stripTypeScriptTypes}=require('node:module'),{createHash,webcrypto}=require('node:crypto');
+let handler,token='',dbCalls=0;
+let source=fs.readFileSync('supabase/functions/kc-dp-mail-inbound/index.ts','utf8').replace(/^import .*;\r?\n/gm,'');
+const ctx={Request,Response,Headers,TextEncoder,crypto:webcrypto,console,sha256Hex:async b=>createHash('sha256').update(b).digest('hex'),Deno:{env:{get:n=>n==='KC_DP_BREVO_INBOUND_TOKEN'?token:n==='RESEND_WEBHOOK_SECRET'?'fixture-only-secret':''},serve:h=>handler=h},createClient:()=>({from:()=>{dbCalls++;throw Error('unexpected DB write')},rpc:()=>{throw Error('unexpected secret RPC')}}),Webhook:class{verify(raw,headers){if(headers['svix-signature']!=='fixture-valid')throw Error('invalid signature');return{type:'ignored.event'}}}};
+vm.runInNewContext(stripTypeScriptTypes(source),ctx);
+(async()=>{const request=headers=>new Request('https://test.invalid',{method:'POST',headers,body:'{}'});
+assert.equal((await handler(request({}))).status,403);
+token='fixture-only-token';assert.equal((await handler(request({}))).status,403);assert.equal((await handler(request({'x-kc-inbound-token':'wrong'}))).status,403);
+const normalized=await ctx.normalize(request({'x-kc-inbound-token':token}),JSON.stringify({Subject:'Fixture'}));assert.equal(normalized.provider,'brevo');
+assert.equal((await handler(request({'svix-id':'id','svix-timestamp':'1','svix-signature':'wrong'}))).status,403);
+assert.equal(await ctx.normalize(request({'svix-id':'id','svix-timestamp':'1','svix-signature':'fixture-valid'}),'{}'),null);
+assert.equal(dbCalls,0);assert.equal((await handler(request({}))).headers.get('X-KC-Function-Version'),'9');
+console.log('PASS mail inbound: unset/missing/wrong Brevo token rejected with 403 before DB; valid token accepted; Resend signature route preserved.');})().catch(e=>{console.error(e);process.exitCode=1});
