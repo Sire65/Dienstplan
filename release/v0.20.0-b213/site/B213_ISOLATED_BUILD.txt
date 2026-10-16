@@ -1,0 +1,4 @@
+candidate=0.20.0-b213-handtest
+source=KC-DP2-DP3-Build213-Admin-Twinkey (lokales Codex-Regressionspaket)
+storage=KC_DP3_SECURE_V020_B213_ISOLATED_1
+purpose=isoliertes Handtesting des DP3-Entwicklungsstands V0.20.0 Build 213 (Twinkey-Assistent), ohne die Produktionsseite (v0.19.55) zu veraendern
