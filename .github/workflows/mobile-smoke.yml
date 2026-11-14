@@ -27,13 +27,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
       - name: Prepare Playwright browser
         run: |
-          npm install --no-save playwright@1.55.0
+          npm install --ignore-scripts --no-save playwright@1.55.0
           if command -v google-chrome >/dev/null 2>&1; then
             google-chrome --version
             echo "KC_PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
