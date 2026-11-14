@@ -1,12 +1,9 @@
 name: KC DP2 V0.19.52 Wish Phase Gate
 
+# Nur per Hand (14.11.2026, Freigabe Hansi): pruefte den historischen Kandidaten 0.19.52,
+# dessen Manifest auf die nicht mehr vorhandene src/core/diagnostics-controller-v5.js zeigt.
+# Produktiv ist 0.19.55+; bei Bedarf Actions -> "Run workflow".
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'release/v0.19.52/site/**'
-      - 'tests/wish-phase-v01952-e2e.js'
-      - '.github/workflows/wish-phase-v01952.yml'
   workflow_dispatch:
 
 permissions:
