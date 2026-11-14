@@ -23,7 +23,7 @@ ok(rules.includes(`V${current.version}`)||rules.includes('versionsübergreifend 
 const manifest=JSON.parse(read('update-manifest.json'));
 ok(manifest.schema==='KC_DP_UPDATE_MANIFEST_V1','manifest schema correct');
 ok(manifest.version===current.version,'manifest version equals current release');
-ok(manifest.cacheName===`kc-dp-release-${current.version}`,'cache name equals current release');
+ok(manifest.cacheName===`kc-dp-release-${current.version}`||manifest.cacheName===`kc-dp-release-${current.version}-b${current.build}`,'cache name equals current release (optional mit Build, wie scripts/refresh-update-manifest.js)');
 let total=0;const seen=new Set();
 for(const f of manifest.files){const install=f.installPath||f.path;ok(!seen.has(install),'manifest has no duplicate install path: '+install);seen.add(install);ok(exists(install),'manifest file exists: '+install);const b=fs.readFileSync(path.join(SITE,install));ok(b.length===Number(f.bytes),'byte length matches: '+install);ok(sha(b)===String(f.sha256).toLowerCase(),'SHA-256 matches: '+install);if(f.runtime!==false)total+=b.length;}
 ok(total===Number(manifest.totalRuntimeBytes),'runtime byte total matches manifest');
