@@ -1,0 +1,3 @@
+KC DP2 V0.19.55 production redeploy trigger
+Purpose: publish KC Communication bridge in canonical GitHub Pages root.
+Date: 2026-08-24
